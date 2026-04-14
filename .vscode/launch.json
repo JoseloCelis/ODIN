@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🐍 Debug GTK: GPU (Fluido)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "python": "${command:python.interpreterPath}",
+      "console": "integratedTerminal",
+      "purpose": ["debug-test"],
+      "env": {"PYTHONPATH": "${workspaceFolder}", "GSK_RENDERER": "opengl", "GDK_DEBUG": "portals", "GTK_A11Y": "none"}
+    },
+    {
+      "name": "🐍 Debug GTK: CPU (Seguro)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "python": "${command:python.interpreterPath}",
+      "console": "integratedTerminal",
+      "purpose": ["debug-test"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "GSK_RENDERER": "cairo",
+        //"GTK_THEME": "Adwaita:dark", 
+        "GTK_A11Y": "none"
+       }
+    }
+  ]
+}

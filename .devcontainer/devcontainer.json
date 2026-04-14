@@ -1,0 +1,105 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
+{
+	"name": "GTK4 Python DevelopmentEnvironment",
+	"build": {
+		"dockerfile": "../Dockerfile"
+	},
+	"workspaceFolder": "/workspaces/code",
+	
+  // Montajes y flags para WSLg (Wayland/X11) + aceleración de GPU
+	"runArgs": [
+    // 1. Aceleración por Hardware (GPU)
+    "--ipc=host",
+    // --- WSLg (Windows Subsystem for Linux) ---
+    // GPU (DXG) para WSLg:
+    "--device=/dev/dxg",
+    // 2. Drivers de Video de Windows y runtime WSLg
+    "-v", "/usr/lib/wsl:/usr/lib/wsl",
+    // 3. Sockets de Pantalla y Audio
+    "-v", "/mnt/wslg:/mnt/wslg",
+    //"-v", "/mnt/wslg/runtime-dir/wayland-0:/run/user/0/wayland-0",
+    // --- X11 (fallback/compat) ---
+    "-v", "/tmp/.X11-unix:/tmp/.X11-unix",
+    "--gpus", "all"
+    // --- DRM/Render nodes (útil en WSL2/Linux para EGL/GL) ---
+    //"--device=/dev/dri"
+
+  ],
+
+  // Variables de entorno para WSLg (Wayland + X11 fallback)
+  "containerEnv": {
+    // Variables de Pantalla
+    "DISPLAY": ":0",
+    "WAYLAND_DISPLAY": "wayland-0",
+    "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir",
+    //"XDG_RUNTIME_DIR": "/run/user/1000",
+    //"XDG_RUNTIME_DIR": "/run/user/0",
+    // Ruta de Drivers
+    "LD_LIBRARY_PATH": "/usr/lib/wsl/lib",
+    // Preferencias Visuales de GTK/GDK
+    "GDK_BACKEND": "wayland,x11",
+    "GSK_RENDERER": "opengl",
+    "GTK_THEME": "Adwaita:dark",
+    "GTK_A11Y": "none",
+    "GTK_USE_PORTAL": "0",
+    "GIO_USE_PORTALS": "0",
+    "NO_AT_BRIDGE": "1",
+// Útil si tienes datos en /usr/local/share además de /usr/share
+    "XDG_DATA_DIRS": "/usr/local/share:/usr/share"
+    // 🔧 Activa logs de portals (solo para depurar)
+    // Activa Diálogos y Notificaciones nativas
+    //"GDK_DEBUG": "portals"
+  },
+	// Extensiones y ajustes de VS Code para que use /usr/local/bin/python
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        //"ms-azuretools.vscode-azure-pack",
+        "ms-python.python", 
+        "ms-python.debugpy", 
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "PKief.material-icon-theme"
+      ],
+      "settings": {
+        //"editor.defaultFormatter": "ms-python.black-formatter",
+        //"editor.formatOnSave": true,
+        //"python.formatting.provider": "none", 
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.interpreterPath": "/usr/local/bin/python",
+        //"python.analysis.stubPath": "/usr/local/lib/python3.12/site-packages",
+        
+       "python.analysis.extraPaths": [],
+       
+       "python.analysis.useLibraryCodeForTypes": true,
+       "python.analysis.typeCheckingMode": "basic"
+
+        
+        //"python.analysis.extraPaths": ["/usr/lib/python3/dist-packages"]
+        //"python.analysis.extraPaths": ["/usr/lib/python3/site-packages"]
+        //,"/usr/local/lib/python3.12/site-packages"
+      }
+    },
+
+	"features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+        "installZsh": true,
+        "configureZshAsDefaultShell": true,
+        "upgradePackages": true
+    }
+},
+  // Ejecutar como root para tener permisos sobre los sockets de video
+  "remoteUser": "root",
+  
+// Verificación automática post-creación: GTK4 y Adwaita disponibles en ESTE Python
+  "postCreateCommand": [
+    "git config --global user.email 'jolopez@cenam.mx'",
+    "git config --global user.name 'J. Armando López Celis",
+    "python -c \"import gi; gi.require_version('Gtk','4.0'); gi.require_version('Adw','1'); from gi.repository import Gtk, Adw; print(f'GTK {Gtk.MAJOR_VERSION} OK, Adw OK')\""
+  ]
+}
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+}

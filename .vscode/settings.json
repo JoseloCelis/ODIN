@@ -1,0 +1,17 @@
+{
+    //"python.analysis.extraPaths": [
+        //"/usr/lib/python3/site-packages",
+        //"/usr/local/lib/python3.12/site-packages"
+        ///gi-stubs",
+        //"/usr/lib/python3/dist-packages",
+        //"/usr/local/lib/python3.12/dist-packages"        
+    //],
+    
+    //"python.terminal.activateEnvInSelectedTerminal": true,
+    "python.analysis.useLibraryCodeForTypes": true,
+    "python.analysis.typeCheckingMode":"basic",
+    //"python.analysis.stubPath": "/usr/local/lib/python3.12/site-packages/gi-stubs",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none"
+    }
+}
