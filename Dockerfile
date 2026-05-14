@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y python-is-python3\
     xdg-desktop-portal xdg-desktop-portal-gtk \
 # Utilidades adicionales
     git\
+    gvfs gvfs-backends \
     adwaita-icon-theme-full \    
     fonts-noto-core fonts-dejavu-core fonts-noto-color-emoji\
     libnotify-bin \
