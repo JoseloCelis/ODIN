@@ -1,32 +1,33 @@
-from gi.repository import GdkPixbuf,Gdk
+#from gi.repository import GdkPixbuf,Gdk
 
 import sys
 import cv2 as cv
-import numpy as np
 
 
-def Carga_imagen_gray(self, path):
+
+def load_GrayImage(self, path):
 # --- Carga para Procesamiento ---
     current_image = cv.imread(path)
-    if current_image is None:
-        sys.exit("No se pudo cargar la imagen")
+    if current_image is None or len(current_image) < 2:
+        return True, "No se pudo cargar la imagen", None
     else:
         print("La imagen se cargo correctamente")
-# obtener full shape 
-    full_shape = current_image.shape
-    
-    if len(current_image.shape) == 3:
-        grayImage = cv.cvtColor(current_image, cv.COLOR_BGR2GRAY)   
-    else:
-        grayImage = current_image
-
-# Obtenemos dimensiones
-    full_shape = grayImage.shape
-    print(f"Full shape: {full_shape}")
-    height, width = grayImage.shape[:2]
-    #rowstride = width * channels
-
-    return grayImage
+        
+    try:
+        if len(current_image.shape) == 3:
+            grayImage = cv.cvtColor(current_image, cv.COLOR_BGR2GRAY)   
+        else:
+            grayImage = current_image
+        # obtener full shape 
+        full_shape = current_image.shape
+        print(f"Full shape: {full_shape}")
+        # Obtenemos dimensiones
+        height, width = grayImage.shape[:2]
+        #rowstride = width * channels
+        
+        return True, "La imagen seleccionada no se pudo procesar correctamente.\nPor favor, verifica que el formato sea válido.", grayImage
+    except Exception as e:
+        return True, "Error al cargar la imagen: {str(e)}", None
     
 """
     pixbuff = GdkPixbuf.Pixbuf.new_from_data(

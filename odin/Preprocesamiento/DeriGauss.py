@@ -1,8 +1,7 @@
 import numpy as np
-import cv2 as cv
 import matplotlib.pyplot as plt
 
-from Preprocesamiento.Convolucion import *
+from .Convolucion import Conv2D as Convolucion
 
 print("DeriGauss.py =", __package__, ",",  __name__)
 
@@ -53,14 +52,11 @@ def DerivGauss(E,sigma,wk,wConv,wr):
     DGX=np.zeros((nr,nc))
     DGY=np.zeros((nr,nc))
     
-    DGX=Convolucion.Conv2D(E,dgk,gk,nk,nr,nc)
-    DGY=Convolucion.Conv2D(E,gk,dgk,nk,nr,nc)
-    
-    
-    
-    
-    resized_image = cv.resize(DGXocv, (1280,720))
-    cv.imshow("filtered image", resized_image)
+    DGX = Convolucion.Conv2D(E,dgk,gk,nk,nr,nc)
+    DGY = Convolucion.Conv2D(E,gk,dgk,nk,nr,nc)
+
+    #resized_image = cv.resize(DGXocv, (1280,720))
+    #cv.imshow("filtered image", resized_image)
     
     y = [10]
     x = [1]

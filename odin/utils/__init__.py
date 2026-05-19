@@ -1,8 +1,9 @@
 """
 Módulo de carga de imágenes
 """
-import utils.handleImage as loadImage
 
-__all__ = ['loadImage']
+from . import handleImage as handle
+
+__all__ = ['handle']
 
 print("Manejador de imagenes was loaded")
