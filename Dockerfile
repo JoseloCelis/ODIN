@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y python-is-python3\
     gir1.2-gtk-4.0 libgirepository-2.0-dev \
 # Dependencias adwaita    
     libadwaita-1-0 gir1.2-adw-1 libadwaita-1-dev \
+# Temas e iconos oficiales    
+    adwaita-icon-theme-full \
+    gnome-themes-extra \    
 # Drivers de Video Aceleración por Hardware (Mesa/EGL y GLVND)
     libegl1 libgl1-mesa-dri \
     #libglx0  libglx-mesa0 libgles2 mesa-utils mesa-vulkan-drivers\    
@@ -30,7 +33,6 @@ RUN apt-get update && apt-get install -y python-is-python3\
 # Utilidades adicionales
     git\
     gvfs gvfs-backends \
-    adwaita-icon-theme-full \    
     fonts-noto-core fonts-dejavu-core fonts-noto-color-emoji\
     libnotify-bin \
     #ca-certificates \ 
@@ -53,7 +55,7 @@ RUN python3 -m pip install --no-cache-dir \
 #--break-system-packages 
 
 # Crear directorio de trabajo
-WORKDIR /workspaces/code
+WORKDIR /workspaces/ODIN
 
 # Instalación de requerimientos
 COPY requirements.txt .
@@ -63,6 +65,6 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import gi; gi.require_version('Gtk', '4.0'); from gi.repository import Gtk" || exit 1
 
-COPY . /workspaces/code
+#COPY . /workspaces/code
 
-CMD [ "python3", "gtk.py"]
+CMD [ "python3", "main.py"]

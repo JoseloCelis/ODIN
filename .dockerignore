@@ -1,0 +1,25 @@
+# --- Control de Versiones y VS Code ---
+.git
+.gitignore
+.gitattributes
+.devcontainer/README.md
+
+# --- Caché y Temporales de Python ---
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# --- Entornos Virtuales Locales de Windows ---
+# Evita que se suban los site-packages de tu máquina al Linux del Docker
+.venv/
+venv/
+env/
+ENV/
+dist/
+build/
+*.egg-info/

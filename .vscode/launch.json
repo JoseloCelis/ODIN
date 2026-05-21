@@ -9,7 +9,15 @@
       "python": "${command:python.interpreterPath}",
       "console": "integratedTerminal",
       "purpose": ["debug-test"],
-      "env": {"PYTHONPATH": "${workspaceFolder}", "GSK_RENDERER": "opengl", "GDK_DEBUG": "portals", "GTK_A11Y": "none"}
+      "env": {"PYTHONPATH": "${workspaceFolder}", "GSK_RENDERER": "opengl", "GDK_BACKEND": "wayland",  "GTK_A11Y": "none",
+      //"GDK_CORE_DEVICE_EVENTS": "1",
+      //"GTK_IGNORE_PORTAL": "1",
+      //"GDK_DEBUG": "no-hw-cursor",
+      //"XCURSOR_SIZE": "32",
+      //"XCURSOR_THEME": "Adwaita"
+      //"GDK_DEBUG": "no-xshm"
+      //"GDK_DEBUG": "portals",
+      }
     },
     {
       "name": "🐍 Debug ODIN_GTK: CPU (Seguro)",
@@ -22,8 +30,14 @@
       "env": {
         "PYTHONPATH": "${workspaceFolder}",
         "GSK_RENDERER": "cairo",
+        "GDK_BACKEND": "wayland",
         //"GTK_THEME": "Adwaita:dark", 
-        "GTK_A11Y": "none"
+        "GTK_A11Y": "none",
+        //"GDK_CORE_DEVICE_EVENTS": "1",
+        //"GTK_IGNORE_PORTAL": "1",
+        //"GDK_DEBUG": "no-hw-cursor",
+        //"XCURSOR_SIZE": "32",
+        //"XCURSOR_THEME": "Adwaita"
        }
     }
   ]

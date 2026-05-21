@@ -7,6 +7,32 @@
 	},
 	"workspaceFolder": "/workspaces/ODIN",
 
+  // Variables de entorno para WSLg (Wayland + X11 fallback)
+  "containerEnv": {
+    // Variables de Pantalla
+    "DISPLAY": ":0",
+    "WAYLAND_DISPLAY": "wayland-0",
+    "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir",
+    "PULSE_SERVER": "/mnt/wslg/PulseServer",
+    //"XDG_RUNTIME_DIR": "/run/user/1000",
+    //"XDG_RUNTIME_DIR": "/run/user/0",
+    // Ruta de Drivers
+    "LD_LIBRARY_PATH": "/usr/lib/wsl/lib",
+    // Preferencias Visuales de GTK/GDK
+    "GDK_BACKEND": "wayland,x11",
+    "GSK_RENDERER": "opengl",
+    "GTK_THEME": "Adwaita:dark",
+    "GTK_A11Y": "none",
+    "GTK_USE_PORTAL": "0",
+    "GIO_USE_PORTALS": "0",
+    "NO_AT_BRIDGE": "1"
+// Útil si tienes datos en /usr/local/share además de /usr/share
+    //"XDG_DATA_DIRS": "/usr/local/share:/usr/share"
+    // 🔧 Activa logs de portals (solo para depurar)
+    // Activa Diálogos y Notificaciones nativas
+    //"GDK_DEBUG": "portals"
+  },
+
 	"mounts": [
     "source=/mnt,target=/mnt,type=bind"
   ],
@@ -14,6 +40,7 @@
 	"runArgs": [
     // 1. Aceleración por Hardware (GPU)
     "--ipc=host",
+    "--shm-size=1g",
     // --- WSLg (Windows Subsystem for Linux) ---
     // GPU (DXG) para WSLg:
     "--device=/dev/dxg",
@@ -29,31 +56,6 @@
     //"--device=/dev/dri"
 
   ],
-
-  // Variables de entorno para WSLg (Wayland + X11 fallback)
-  "containerEnv": {
-    // Variables de Pantalla
-    "DISPLAY": ":0",
-    "WAYLAND_DISPLAY": "wayland-0",
-    "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir",
-    //"XDG_RUNTIME_DIR": "/run/user/1000",
-    //"XDG_RUNTIME_DIR": "/run/user/0",
-    // Ruta de Drivers
-    "LD_LIBRARY_PATH": "/usr/lib/wsl/lib",
-    // Preferencias Visuales de GTK/GDK
-    "GDK_BACKEND": "wayland,x11",
-    "GSK_RENDERER": "opengl",
-    "GTK_THEME": "Adwaita:dark",
-    "GTK_A11Y": "none",
-    "GTK_USE_PORTAL": "0",
-    "GIO_USE_PORTALS": "0",
-    "NO_AT_BRIDGE": "1",
-// Útil si tienes datos en /usr/local/share además de /usr/share
-    "XDG_DATA_DIRS": "/usr/local/share:/usr/share"
-    // 🔧 Activa logs de portals (solo para depurar)
-    // Activa Diálogos y Notificaciones nativas
-    //"GDK_DEBUG": "portals"
-  },
 	// Extensiones y ajustes de VS Code para que use /usr/local/bin/python
   "customizations": {
     "vscode": {

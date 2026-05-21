@@ -1,14 +1,13 @@
-import sys,os
-import threading
-
 import gi
 #from gi.repository.Gio import ActionGroup, ApplicationFlags, MenuModel
 
 gi.require_version('Gtk', '4.0')
-gi.require_version('Gdk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk,Adw,Gio,GLib,Gdk
+from gi.repository import Gtk,Adw,Gio,GLib,Gdk,GdkPixbuf
+
+import sys,os
+import threading
 
 #from src.utils import loadImage
 #from src.Preprocesamiento import kernelSeparable
@@ -19,40 +18,153 @@ from Preprocesamiento import kernelSeparable
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_title("ODIN")
-        self.set_default_size(1600, 900)
-        
+
+        #print("Entorno gráfico activo:", Gtk.get_major_version(), "en", Gdk.Display.get_default().get_name())
+
         # Variable para guardar la ruta del archivo actual
         self.ruta_imagen = None
         
-        #print("Entorno gráfico activo:", Gtk.get_major_version(), "en", Gdk.Display.get_default().get_name())
+        self.set_title("ODIN")
+        self.set_default_size(1600, 900)
         
-        self.root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        image_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.set_content(self.root_box)
-           
-# 3. Añadir la HeaderBar (Barra superior)
-        header_bar = Adw.HeaderBar()
-        self.root_box.append(header_bar)
+        #self.root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+# Contenedor principal adaptativo
+        toolbar_view = Adw.ToolbarView.new()
+        self.set_content(toolbar_view)
+        #self.set_child(toolbar_view)
+        
+# Añadir la Barra superior  
+        header_bar = Adw.HeaderBar.new()
+        toolbar_view.add_top_bar(header_bar)
 
-# Botón para abrir archivo
-        open_button = Gtk.Button(label="Abrir Imagen")
-        open_button.set_icon_name("document-open-symbolic")
+        #header_bar = Gtk.HeaderBar.new()
+        #self.set_titlebar(header_bar)
+
+# Botón para abrir archivo de imagen (extremo izquierdo)
+        #open_button = Gtk.Button(label="Abrir Imagen")
+        #open_button.set_icon_name("document-open-symbolic")
+        open_button = Gtk.Button.new_from_icon_name("document-open-symbolic")
+        open_button.set_tooltip_text("Cargar nueva imagen")
         open_button.connect('clicked', self.show_openDialog)
         header_bar.pack_start(open_button)
         
+# Botones (extremo derecho)
+# Nota: pack_end inserta de derecha a izquierda. 
+        # Insertamos el menú hamburguesa PRIMERO para que ocupe la esquina derecha absoluta.
+        menu = Gio.Menu.new()
+        menu.append("Cargar Imagen", "win.cargar_imagen")
+        #menu.append("Do Something", "win.something")  # Or you would do app.something if you had attached the action to the application
+        menu.append("Acerca de...", "win.about")  
+        #menu.append("Salir", "app.quit")
+        #Creación del menu manualmente        
+        #self.popover = Gtk.PopoverMenu()  
+        #self.popover.set_menu_model(menu)
+        self.hamburger = Gtk.MenuButton()
+        #self.hamburger.set_popover(self.popover)
+        self.hamburger.set_icon_name("open-menu-symbolic")  
+        self.hamburger.set_tooltip_text("Menú principal")
+        #self.hamburger.set_use_popover(False)                          ----------REVISAR
+        self.hamburger.set_menu_model(menu)
+        header_bar.pack_end(self.hamburger)
+        
+# Dar nombre a la aplicación y registrar acción
+        GLib.set_application_name("My App ODIN")
+        action_cargar = Gio.SimpleAction.new("cargar_imagen", None)
+        action_cargar.connect("activate", self.show_openDialog)
+        self.add_action(action_cargar)
+        action_about = Gio.SimpleAction.new("about", None)
+        action_about.connect("activate", self.show_about)
+        self.add_action(action_about)
+
 # Botón para Procesar (Inicia desactivado)
-        self.btn_process = Gtk.Button(label="Procesar Bordes")
+        """self.btn_process = Gtk.Button(label="Procesar Bordes")
         self.btn_process.set_icon_name("media-playback-start-symbolic")
         self.btn_process.set_sensitive(False) # Desactivado al inicio
         self.btn_process.add_css_class("suggested-action") # Color azul/llamativo
         self.btn_process.connect('clicked', self.on_process_clicked)
-        header_bar.pack_start(self.btn_process)
+        
+        right_buttons_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        right_buttons_box.append(self.btn_process)
+        right_buttons_box.append(self.hamburger)
+        
+        # Registramos la caja al final de la HeaderBar
+        header_bar.pack_end(right_buttons_box)"""
+        # Add menu button to the header bar
+        """
+        #header_bar.pack_end(self.btn_process)
+        """
 
+# Diseño del Cuerpo Principal (Panel Dividido)
+        # Usamos un Box horizontal para separar los controles de la imagen
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)       
+        main_box.set_hexpand(True)
+        main_box.set_vexpand(True) 
+        toolbar_view.set_content(main_box)
+                
+        # PANEL IZQUIERDO: Controles de parámetros (Sigma, Umbrales, etc.)
+        self.panel_controles = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.panel_controles.set_size_request(320, -1) # Ancho fijo para las herramientas
+        #self.panel_controles.set_margin_all(12)
+        self.panel_controles.set_margin_start(6)
+        self.panel_controles.set_margin_end(6)
+        self.panel_controles.set_margin_top(6)
+        self.panel_controles.set_margin_bottom(6)
+        main_box.append(self.panel_controles)
+        
+        # Aquí puedes añadir tus Gtk.Scale (sliders) para Sigma y Umbrales...
+        lbl_placeholder = Gtk.Label(label="⚙️ Parámetros de Filtrado")
+        #lbl_placeholder.set_css_classes(["title-2"])
+        self.panel_controles.append(lbl_placeholder)
+
+# ÁREA CENTRAL DE VISUALIZACIÓN (Panel derecha)
+        # Usamos un Box VERTICAL para poner la Imagen ARRIBA y las Pestañas ABAJO
+        area_derecha_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        area_derecha_box.set_hexpand(True) # Absorbe todo el ancho disponible al maximizar
+        area_derecha_box.set_vexpand(True) # Absorbe todo el alto disponible
+        main_box.append(area_derecha_box)
+        
+        # PARTE SUPERIOR: Visualizador de Imagen Principal con Scroll
+                
+        # Instanciamos la clase híbrida con el Overlay y el DrawingArea que hicimos en el paso anterior
+        # Aquí se acopla tu clase interactiva (con Overlay/DrawingArea)
+        # Usamos un marcador temporal en lo que integras la tuya
+        try:
+            self.visualizador = VisualizadorInteractivo() 
+        except NameError:
+            # Fallback temporal por si corres este script solo
+            self.visualizador = Gtk.Picture()
+            print("Aviso: 'VisualizadorInteractivo' no detectado, usando contenedor temporal.")
+        
+        scroll_visualizador = Gtk.ScrolledWindow()
+        scroll_visualizador.set_child(self.visualizador)
+        scroll_visualizador.set_hexpand(True)
+        scroll_visualizador.set_vexpand(True) # Se estira para dominar la pantalla
+        
+        area_derecha_box.append(scroll_visualizador)
+        
+        # PARTE INFERIOR: El conmutador de resultados (Adw.ViewSwitcher + Adw.ViewStack)
+        # Aquí es donde el usuario alternará entre [Original] [Kernel] [Derivada] [Bordes]
+        self.resultados_stack = Adw.ViewStack()
+        self.resultados_stack.set_hexpand(True)
+        self.resultados_stack.set_vexpand(False) # Altura limitada para que no tape la imagen
+        self.resultados_stack.set_size_request(-1, 150) # Altura fija sugerida para la sección de resultados
+        
+        # El conmutador visual de pestañas (barra de botones)
+        view_switcher = Adw.ViewSwitcher()
+        view_switcher.set_stack(self.resultados_stack)
+        view_switcher.set_halign(Gtk.Align.CENTER) # Centrado estético como en GNOME
+        
+        # Añadimos los componentes de resultados abajo de la imagen
+        area_derecha_box.append(view_switcher)
+        area_derecha_box.append(self.resultados_stack)
+                
+
+        
+        
 # View Stack
-        self.stack = Gtk.Stack()
+        """self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        self.root_box.append(self.stack)
+        #self.root_box.append(self.stack)
         
 # 4. Añadir una Página de Estado (Status Page)
 # Es un widget visualmente atractivo para bienvenidas o pantallas vacías
@@ -62,43 +174,13 @@ class MainWindow(Adw.ApplicationWindow):
         pagina_estado.set_icon_name("scanner-symbolic")
         self.stack.add_child(pagina_estado)
 
-# Contenedor de Imagen (Scrolled Window)
-        self.scroll = Gtk.ScrolledWindow()
-        self.scroll.set_vexpand(True)
-        self.scroll.set_hexpand(True)        
 # Usamos Gtk.Picture para visualizar
         self.image_container = Gtk.Picture()
         self.image_container.set_can_shrink(True)
         self.image_container.set_content_fit(Gtk.ContentFit.CONTAIN) # Ajustar sin deformar
-        self.scroll.set_child(self.image_container)
-        
+        self.scroll.set_child(self.image_container)     
         self.stack.add_child(self.scroll)
-
-        menu = Gio.Menu.new()
-        menu.append("Do Something", "win.something")  # Or you would do app.something if you had attached the
-                                                      # action to the application
-
-        # Create a popover
-        self.popover = Gtk.PopoverMenu()  # Create a new popover menu
-        self.popover.set_menu_model(menu)
-
-        # Create a menu button
-        self.hamburger = Gtk.MenuButton()
-        self.hamburger.set_popover(self.popover)
-        self.hamburger.set_icon_name("open-menu-symbolic")  # Give it a nice icon
-
-        # Add menu button to the header bar
-        header_bar.pack_start(self.hamburger)
-        # Set app name
-        GLib.set_application_name("My App")
-
-        # Create an action to run a *show about dialog* function we will create 
-        action = Gio.SimpleAction.new("about", None)
-        action.connect("activate", self.show_about)
-        self.add_action(action)
-        
-        menu.append("About", "win.about")
-
+"""
 
     def show_openDialog(self,button):
         fileDialog = Gtk.FileDialog.new()
@@ -126,9 +208,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         fileDialog.open(self, None, self.on_file_opened_callback)
         
-        
-                
-        # Configurar el selector de archivos
+    |# Configurar el selector de archivos
     def on_file_opened_callback(self, dialog, result):
         try:
             file = dialog.open_finish(result)
@@ -217,66 +297,34 @@ class MainWindow(Adw.ApplicationWindow):
         )
         
     def mostrar_alerta(self, titulo, mensaje, es_error=True):
-        """Lanza un diálogo flotante perfectamente centrado, redondeado y estilizado."""
-        # 1. Creamos el diálogo base completamente limpio (sin heading ni body nativos)
-        # para que no choquen con nuestros márgenes personalizados.
-        alert_dialog = Adw.AlertDialog.new(heading="", body="")
-        
-        # 2. Contenedor principal para encapsular TODO el contenido del popup
-        # Le damos un ancho mínimo de 380px para mantener la estética de escritorio.
-        contenedor_dialogo = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-        contenedor_dialogo.set_size_request(380, -1)
-        
-        # --- AQUÍ ESTÁ EL TRUCO DE LAS ESQUINAS INFERIORES Y MÁRGENES ---
-        # Al darle 16 píxeles de margen a todo el bloque, despegamos los botones de la base
-        # y los lados, permitiendo que las curvas nativas de Libadwaita se dibujen abajo.
-        contenedor_dialogo.set_margin_end(16)
-        contenedor_dialogo.set_margin_top(8) # Ajuste sutil para que no quede muy caído
+        """Lanza el diálogo nativo oficial de Libadwaita solucionando el conflicto del Stack."""
+        # 1. Creamos el diálogo usando la API nativa y limpia
+        alert_dialog = Adw.AlertDialog.new(heading=titulo, body=mensaje)
 
-        # 3. Título personalizado (Perfectamente centrado y despegado)
-        lbl_titulo = Gtk.Label()
-        lbl_titulo.set_markup(f"<b><span size='large'>{titulo}</span></b>")
-        lbl_titulo.set_halign(Gtk.Align.CENTER)  # <-- Fuerza el centrado horizontal
-        lbl_titulo.set_justify(Gtk.Justification.CENTER)
-        contenedor_dialogo.append(lbl_titulo)
-
-        # 4. Mensaje del cuerpo
-        lbl_cuerpo = Gtk.Label(label=mensaje)
-        lbl_cuerpo.set_wrap(True)
-        lbl_cuerpo.set_justify(Gtk.Justification.CENTER)
-        contenedor_dialogo.append(lbl_cuerpo)
-
-        # 5. Caja horizontal compacta para los botones
-        caja_botones = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        caja_botones.set_halign(Gtk.Align.CENTER)
-        
-        # Botón Cancelar
-        btn_cancelar = Gtk.Button(label="Cancelar")
-        btn_cancelar.set_size_request(110, 34)
-        btn_cancelar.connect("clicked", lambda widget: alert_dialog.close())
-        caja_botones.append(btn_cancelar)
-
-        # Botón de Acción Principal (Aceptar / Entendido)
-        texto_accion = "Entendido" if es_error else "Aceptar"
-        btn_accion = Gtk.Button(label=texto_accion)
-        btn_accion.set_size_request(110, 34)
-        
+        # 2. Configuramos las respuestas oficiales
         if es_error:
-            btn_accion.get_style_context().add_class("destructive")
+            alert_dialog.add_response(id='cancelar', label='Cancelar')
+            alert_dialog.add_response(id='cerrar', label='Entendido')
+            alert_dialog.set_response_appearance(
+                response='cerrar', 
+                appearance=Adw.ResponseAppearance.DESTRUCTIVE
+            )
         else:
-            btn_accion.get_style_context().add_class("suggested-action")
-            
-        btn_accion.connect("clicked", lambda widget: alert_dialog.close())
-        caja_botones.append(btn_accion)
+            alert_dialog.add_response(id='cancelar', label='Cancelar')
+            alert_dialog.add_response(id='cerrar', label='Aceptar')
+            alert_dialog.set_response_appearance(
+                response='cerrar', 
+                appearance=Adw.ResponseAppearance.SUGGESTED
+            )
 
-        # Añadimos la botonera al contenedor principal
-        contenedor_dialogo.append(caja_botones)
+        alert_dialog.set_default_response(response='cerrar')
+        alert_dialog.set_close_response(response='cancelar')
+        #alert_dialog.connect('response', self.on_button_dialog_clicked)
 
-        # 6. Inyectamos todo nuestro bloque estructurado al AlertDialog
-        alert_dialog.set_extra_child(contenedor_dialogo)
-
-        # Presentamos pasando None para mantener la sombra flotante impecable en Wayland
-        GLib.idle_add(alert_dialog.present, None)
+        if isinstance(self, Gtk.Widget):
+            alert_dialog.present(self)
+        else:
+            alert_dialog.present(None)
         
     def show_about(self, action, param):
         self.about = Gtk.AboutDialog()
@@ -308,21 +356,118 @@ class MainWindow(Adw.ApplicationWindow):
         
         self.about.set_visible(True)    
         
+class VisualizadorInteractivos(Gtk.Overlay):
+    def __init__(self):
+        super().__init__()
+        
+        # 1. Variables de control para el recorte
+        self.inicio_x = 0
+        self.inicio_y = 0
+        self.actual_x = 0
+        self.actual_y = 0
+        self.arrastrando = False
+        
+        # 2. El Widget de la Imagen de Fondo
+        self.picture = Gtk.Picture.new()
+        # Mantiene la relación de aspecto y escala de forma limpia en GTK 4
+        self.picture.set_keep_aspect_ratio(True)
+        self.set_child(self.picture) # Se añade como el hijo base del Overlay
+        
+        # 3. Capa Transparente para Dibujar el Rectángulo
+        self.capa_dibujo = Gtk.DrawingArea()
+        # Le decimos a GTK que use la función 'draw_callback' para pintar las líneas
+        self.capa_dibujo.set_draw_func(self.draw_callback)
+        self.add_overlay(self.capa_dibujo) # Se encima sobre la foto
+        
+        # 4. Capturar los Gestos del Ratón (Clic y Arrastre)
+        self.controlador_arrastre = Gtk.GestureDrag.new()
+        # Registramos el clic izquierdo (botón 1)
+        self.controlador_arrastre.set_button(1) 
+        
+        # Conectamos las señales del ciclo de arrastre
+        self.controlador_arrastre.connect("drag-begin", self.on_drag_begin)
+        self.controlador_arrastre.connect("drag-update", self.on_drag_update)
+        self.controlador_arrastre.connect("drag-end", self.on_drag_end)
+        
+        # Añadimos el controlador a la capa de dibujo para que intercepte el ratón
+        self.capa_dibujo.add_controller(self.controlador_arrastre)
+
+    def cargar_imagen(self, pixbuf: GdkPixbuf.Pixbuf):
+        """Asigna un nuevo Pixbuf al visualizador de forma nativa."""
+        textura = Gdk.Texture.new_for_pixbuf(pixbuf)
+        self.picture.set_paintable(textura)
+        
+    def on_drag_begin(self, gesto, x, y):
+        """Se activa justo en el momento del primer clic."""
+        self.inicio_x = x
+        self.inicio_y = y
+        self.arrastrando = True
+
+    def on_drag_update(self, gesto, offset_x, offset_y):
+        """Se ejecuta continuamente mientras el usuario arrastra el ratón."""
+        # Calculamos la posición actual sumando el desplazamiento (offset) al inicio
+        self.actual_x = self.inicio_x + offset_x
+        self.actual_y = self.inicio_y + offset_y
+        
+        # Le ordenamos al DrawingArea que se borre y se vuelva a pintar de inmediato
+        self.capa_dibujo.queue_draw()
+
+    def on_drag_end(self, gesto, offset_x, offset_y):
+        """Se activa cuando el usuario suelta el botón del ratón."""
+        self.arrastrando = False
+        
+        # Coordenadas finales calculadas del rectángulo
+        x1 = min(self.inicio_x, self.actual_x)
+        y1 = min(self.inicio_y, self.actual_y)
+        ancho = abs(self.actual_x - self.inicio_x)
+        alto = abs(self.actual_y - self.inicio_y)
+        
+        print(f"Recorte solicitado en coordenadas: X:{x1}, Y:{y1}, Ancho:{ancho}, Alto:{alto}")
+        # TODO: Aquí mandas estas coordenadas a tu función de OpenCV/NumPy para recortar la matriz
+        
+        # Limpiamos el rectángulo de la pantalla al terminar
+        self.inicio_x = self.inicio_y = self.actual_x = self.actual_y = 0
+        self.capa_dibujo.queue_draw()
+
+    def draw_callback(self, drawing_area, cr, width, height, user_data=None):
+        """Función encargada de pintar el rectángulo usando Cairo CSS."""
+        if self.arrastrando:
+            # Calculamos dimensiones correctas sin importar la dirección del arrastre
+            x = min(self.inicio_x, self.actual_x)
+            y = min(self.inicio_y, self.actual_y)
+            ancho = abs(self.actual_x - self.inicio_x)
+            alto = abs(self.actual_y - self.inicio_y)
+            
+            # 1. Pintamos un fondo semi-transparente azul dentro del cuadro
+            cr.set_source_rgba(0.0, 0.4, 1.0, 0.15) # Azul Libadwaita con 15% opacidad
+            cr.rectangle(x, y, ancho, alto)
+            cr.fill_preserve() # Rellena manteniendo la silueta para el borde
+            
+            # 2. Pintamos la línea del borde del rectángulo
+            cr.set_source_rgba(0.0, 0.4, 1.0, 0.8)  # Azul más sólido
+            cr.set_line_width(2.0)                  # Grosor de la línea
+            # Opcional: Hacer la línea punteada estilo 'marching ants'
+            cr.set_dash([4.0, 4.0], 0)
+            cr.stroke() # Dibuja la línea
+        
 class ODINAdwaita(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        #self.connect('activate', self.do_activate)
-        
-    def do_activate(self):
-        self.win = MainWindow(application=self)        
-        self.win.present()
-    
-    """def on_activate(self, app):
+        self.connect('activate', self.on_activate)
+     
+    def on_activate(self, app):
         self.win = MainWindow(application=app)
+        self.win.present()    
+        
+    """def do_activate(self):
+        Adw.Application.do_activate(self)
+        self.win = MainWindow(application=self)        
         self.win.present()"""
+    
+    
 
 # Instanciar y ejecutar la aplicación
-app = ODINAdwaita(application_id="com.detectorDistancias.GTKApp")
+app = ODINAdwaita(application_id="com.detectorDistancias.Odin")
 exit_status = app.run(sys.argv)
 sys.exit(exit_status)
 
