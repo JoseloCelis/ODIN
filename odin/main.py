@@ -1,10 +1,11 @@
 import gi
+
 #from gi.repository.Gio import ActionGroup, ApplicationFlags, MenuModel
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk,Adw,Gio,GLib,Gdk,GdkPixbuf
+from gi.repository import Gtk,Adw,Gio,GLib,Gdk
 
 import sys,os
 import threading
@@ -13,150 +14,257 @@ import threading
 #from src.Preprocesamiento import kernelSeparable
 #from odin import handle, kernelSeparable
 from utils import handle
-from Preprocesamiento import kernelSeparable
+from Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh
 
 class MainWindow(Adw.ApplicationWindow):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        #print("Entorno gráfico activo:", Gtk.get_major_version(), "en", Gdk.Display.get_default().get_name())
-
-        # Variable para guardar la ruta del archivo actual
+        # Variables de control
         self.ruta_imagen = None
+        self.image_loaded = None
         
+        # Configuración de la ventana principal
         self.set_title("ODIN")
         self.set_default_size(1600, 900)
+        self.set_size_request(width=1024, height=600)
         
-        #self.root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-# Contenedor principal adaptativo
+        # Contenedor principal adaptativo
         toolbar_view = Adw.ToolbarView.new()
         self.set_content(toolbar_view)
-        #self.set_child(toolbar_view)
         
-# Añadir la Barra superior  
+        # --- BARRA SUPERIOR (HeaderBar) ---
         header_bar = Adw.HeaderBar.new()
         toolbar_view.add_top_bar(header_bar)
 
-        #header_bar = Gtk.HeaderBar.new()
-        #self.set_titlebar(header_bar)
-
-# Botón para abrir archivo de imagen (extremo izquierdo)
-        #open_button = Gtk.Button(label="Abrir Imagen")
-        #open_button.set_icon_name("document-open-symbolic")
+        # Botón abrir archivo (Extremo izquierdo)
         open_button = Gtk.Button.new_from_icon_name("document-open-symbolic")
         open_button.set_tooltip_text("Cargar nueva imagen")
         open_button.connect('clicked', self.show_openDialog)
         header_bar.pack_start(open_button)
-        
-# Botones (extremo derecho)
-# Nota: pack_end inserta de derecha a izquierda. 
-        # Insertamos el menú hamburguesa PRIMERO para que ocupe la esquina derecha absoluta.
+
+        # Botones de control (Extremo derecho - De derecha a izquierda)
         menu = Gio.Menu.new()
         menu.append("Cargar Imagen", "win.cargar_imagen")
-        #menu.append("Do Something", "win.something")  # Or you would do app.something if you had attached the action to the application
         menu.append("Acerca de...", "win.about")  
-        #menu.append("Salir", "app.quit")
-        #Creación del menu manualmente        
-        #self.popover = Gtk.PopoverMenu()  
-        #self.popover.set_menu_model(menu)
+
         self.hamburger = Gtk.MenuButton()
-        #self.hamburger.set_popover(self.popover)
         self.hamburger.set_icon_name("open-menu-symbolic")  
         self.hamburger.set_tooltip_text("Menú principal")
-        #self.hamburger.set_use_popover(False)                          ----------REVISAR
         self.hamburger.set_menu_model(menu)
         header_bar.pack_end(self.hamburger)
         
-# Dar nombre a la aplicación y registrar acción
+        settings_button = Gtk.Button.new_from_icon_name("emblem-system-symbolic")
+        header_bar.pack_end(settings_button)
+        
+        reset_button = Gtk.Button.new_with_label("Volver a Original")
+        header_bar.pack_end(reset_button)
+
+        # Registro de acciones lógicas de la ventana
+        self._registrar_acciones()
+
+        # --- CUERPO PRINCIPAL (Panel Dividido) ---
+        split_view = Adw.NavigationSplitView.new()
+        split_view.set_min_sidebar_width(340) 
+        split_view.set_max_sidebar_width(380)
+        toolbar_view.set_content(split_view)
+
+        # --- BARRA LATERAL DE CONTROLES ---
+        vbox_sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        
+        scroll_sidebar = Gtk.ScrolledWindow.new()
+        scroll_sidebar.set_vexpand(True)
+        vbox_sidebar.append(scroll_sidebar)
+
+        # Usamos Adw.PreferencesPage con márgenes perimetrales amplios
+        pag_opciones = Adw.PreferencesPage.new()
+        pag_opciones.set_margin_start(20)   # Más separación del borde izquierdo
+        pag_opciones.set_margin_end(16)     # Más separación de la zona del visualizador
+        pag_opciones.set_margin_top(24)     # Aire superior generoso
+        pag_opciones.set_margin_bottom(24)  # Aire inferior generoso
+        scroll_sidebar.set_child(pag_opciones)
+        
+        # Grupo: Archivo
+        grupo_archivo = Adw.PreferencesGroup.new()
+        grupo_archivo.set_title("Archivo")
+        grupo_archivo.set_margin_top(28)
+        grupo_archivo.add_css_class("margin-bottom-12")
+        pag_opciones.add(grupo_archivo)
+        
+        row_cargar = Adw.ActionRow.new()
+        row_cargar.set_title("Origen de datos")
+        row_cargar.set_subtitle("Selecciona un archivo del disco")
+        
+        btn_cargar = Gtk.Button.new_with_label("Cargar Imagen")
+        btn_cargar.add_css_class("suggested-action")
+        btn_cargar.set_valign(Gtk.Align.CENTER)
+        btn_cargar.connect("clicked", self.show_openDialog)
+        row_cargar.add_suffix(btn_cargar)
+        grupo_archivo.add(row_cargar)
+
+        # Grupo: Modo de Recorte
+        grupo_recorte = Adw.PreferencesGroup.new()
+        grupo_recorte.set_title("Selección / Recorte")
+        grupo_recorte.set_margin_top(28)     # Separación contundente entre bloques (Bloque anterior -> Bloque nuevo)
+        grupo_recorte.set_margin_bottom(12)  # Despega el título de su tarjeta
+        pag_opciones.add(grupo_recorte)
+
+        self.combo_recorte = Adw.ComboRow.new()
+        self.combo_recorte.set_title("Tipo de área")
+        self.combo_recorte.set_subtitle("Elige cómo interactuar con el ratón")
+        lista_modos = Gtk.StringList.new(
+            ["Imagen Completa", "Rectángulo", "Por Puntos (Polígono)"]
+        )
+        self.combo_recorte.set_model(lista_modos)
+        grupo_recorte.add(self.combo_recorte)
+
+        row_limpiar = Adw.ActionRow.new()
+        row_limpiar.set_title("Memoria de trazado")
+        row_limpiar.set_subtitle("Borrar máscara actual")
+        
+        self.btn_limpiar_recorte = Gtk.Button.new_with_label("Limpiar")
+        self.btn_limpiar_recorte.add_css_class("flat")
+        self.btn_limpiar_recorte.set_valign(Gtk.Align.CENTER)
+        self.btn_limpiar_recorte.set_sensitive(False)
+        row_limpiar.add_suffix(self.btn_limpiar_recorte)
+        grupo_recorte.add(row_limpiar)
+
+        # Grupo: Parámetros científicos
+        grupo_parametros = Adw.PreferencesGroup.new()
+        grupo_parametros.set_title("Parámetros del Algoritmo")
+        grupo_parametros.set_margin_top(28)
+        grupo_parametros.set_margin_bottom(12)
+        pag_opciones.add(grupo_parametros)
+
+        adj_sigma = Gtk.Adjustment.new(1.4, 0.1, 5.0, 0.1, 1.0, 0.0)
+        self.row_sigma = Adw.SpinRow.new(adjustment=adj_sigma, climb_rate=0.1, digits=1)
+        self.row_sigma.set_title("Sigma (σ)")
+        grupo_parametros.add(self.row_sigma)
+
+        adj_umb_bajo = Gtk.Adjustment.new(50.0, 0.0, 255.0, 1.0, 10.0, 0.0)
+        self.row_umbral_bajo = Adw.SpinRow.new(adjustment=adj_umb_bajo, climb_rate=1.0, digits=0)
+        self.row_umbral_bajo.set_title("Umbral Mínimo (Histéresis)")
+        grupo_parametros.add(self.row_umbral_bajo)
+
+        adj_umb_alto = Gtk.Adjustment.new(150.0, 0.0, 255.0, 1.0, 10.0, 0.0)
+        self.row_umbral_alto = Adw.SpinRow.new(adjustment=adj_umb_alto, climb_rate=1.0, digits=0)
+        self.row_umbral_alto.set_title("Umbral Máximo (Histéresis)")
+        grupo_parametros.add(self.row_umbral_alto)
+        
+        # --- NUEVO GRUPO INDEPENDIENTE PARA EL BOTÓN PROCESAR ---
+        grupo_accion_procesar = Adw.PreferencesGroup.new()
+        grupo_accion_procesar.set_margin_top(24)  # Genera la separación física con las SpinRows de arriba
+        pag_opciones.add(grupo_accion_procesar)
+
+        row_procesar = Adw.ActionRow.new()
+        row_procesar.set_title("Ejecutar filtro")
+        row_procesar.set_subtitle("Iniciar detección de bordes")
+
+        self.btn_procesar = Gtk.Button.new_with_label("⚡ Procesar")
+        self.btn_procesar.add_css_class("accent")
+        self.btn_procesar.set_valign(Gtk.Align.CENTER)
+        self.btn_procesar.set_size_request(120, 40)
+        self.btn_procesar.connect("clicked", self.on_process_clicked)
+        row_procesar.add_suffix(self.btn_procesar)
+        
+        # Lo añadimos al nuevo contenedor aislado
+        grupo_accion_procesar.add(row_procesar)
+
+        # Asignamos al Sidebar
+        pagina_sidebar = Adw.NavigationPage.new(vbox_sidebar, "Controles")
+        split_view.set_sidebar(sidebar=pagina_sidebar)
+        
+        # --- PANEL CENTRAL DE VISUALIZACIÓN ---
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)       
+                
+        # Superior: Visualizador de Imagen Principal con Scroll
+        scroll_visualizador = Gtk.ScrolledWindow()
+        scroll_visualizador.set_hexpand(True)
+        scroll_visualizador.set_vexpand(True) 
+        main_box.append(scroll_visualizador)
+        
+        try:
+            self.image_container = handle.VisualizadorInteractivo() 
+        except NameError:
+            self.image_container = Gtk.Picture()
+            self.image_container.set_hexpand(True)
+            self.image_container.set_vexpand(True) 
+            self.image_container.set_can_shrink(True)
+            self.image_container.set_content_fit(Gtk.ContentFit.CONTAIN)
+            print("Aviso: 'VisualizadorInteractivo' no detectado, usando contenedor temporal.")
+        
+        scroll_visualizador.set_child(self.image_container)
+        
+        # Separador inferior para resultados
+        separador_inferior = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        main_box.append(separador_inferior)
+        
+        # Inferior: Conmutador de resultados (Adw.ViewStack)
+        self.resultados_stack = Adw.ViewStack()
+        self.resultados_stack.set_size_request(-1, 150)
+        self.resultados_stack.set_vexpand(False)
+        
+        paginas = [
+            ("Original", "image-x-generic-symbolic"),
+            ("Gradiente X", "go-next-symbolic"),
+            ("Gradiente Y", "go-down-symbolic"),
+            ("Magnitud", "view-grid-symbolic"),
+            ("Bordes Falsos", "view-conceal-symbolic"),
+            ("Bordes", "focus-windows-symbolic")
+        ]   
+        
+        self.vistas_procesadas = {}    
+       
+        for nombre, icono in paginas:
+            id_pestaña = nombre.lower()
+            
+            box_pestaña = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            #box_pestana.set_margin_all()
+            img_result = Gtk.Picture()
+            img_result.set_can_shrink(True)
+            img_result.set_content_fit(Gtk.ContentFit.CONTAIN)
+            box_pestaña.append(img_result)
+            
+            self.vistas_procesadas[id_pestaña] = img_result
+            
+            self.resultados_stack.add_titled_with_icon(box_pestaña, id_pestaña, nombre, icono)
+            
+            #label_temp = Gtk.Label(label=f"Visualización de {nombre} pendiente ...")        
+            #label_temp.set_hexpand(True)
+            #label_temp.set_vexpand(True)
+            #self.resultados_stack.add_titled_with_icon(label_temp, nombre.lower(), nombre, icono)
+            
+        # El conmutador visual de pestañas
+        view_switcher = Adw.ViewSwitcher()
+        view_switcher.set_stack(self.resultados_stack)
+        view_switcher.set_halign(Gtk.Align.CENTER) 
+        view_switcher.set_margin_top(8)
+        view_switcher.set_margin_bottom(8)
+        main_box.append(view_switcher)
+        
+        main_box.append(self.resultados_stack)
+        
+        # Integración del bloque central al split view
+        pagina_contenido = Adw.NavigationPage.new(main_box, "Visualizador")
+        split_view.set_content(content=pagina_contenido)
+
+    def _registrar_acciones(self):
+        """Inicializa y registra las acciones lógicas de la ventana."""
         GLib.set_application_name("My App ODIN")
+
         action_cargar = Gio.SimpleAction.new("cargar_imagen", None)
         action_cargar.connect("activate", self.show_openDialog)
         self.add_action(action_cargar)
+
         action_about = Gio.SimpleAction.new("about", None)
         action_about.connect("activate", self.show_about)
         self.add_action(action_about)
-
-# Botón para Procesar (Inicia desactivado)
-        """self.btn_process = Gtk.Button(label="Procesar Bordes")
-        self.btn_process.set_icon_name("media-playback-start-symbolic")
-        self.btn_process.set_sensitive(False) # Desactivado al inicio
-        self.btn_process.add_css_class("suggested-action") # Color azul/llamativo
-        self.btn_process.connect('clicked', self.on_process_clicked)
         
-        right_buttons_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        right_buttons_box.append(self.btn_process)
-        right_buttons_box.append(self.hamburger)
-        
-        # Registramos la caja al final de la HeaderBar
-        header_bar.pack_end(right_buttons_box)"""
-        # Add menu button to the header bar
-        """
-        #header_bar.pack_end(self.btn_process)
-        """
-
-# Diseño del Cuerpo Principal (Panel Dividido)
-        # Usamos un Box horizontal para separar los controles de la imagen
-        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)       
-        main_box.set_hexpand(True)
-        main_box.set_vexpand(True) 
-        toolbar_view.set_content(main_box)
-                
-        # PANEL IZQUIERDO: Controles de parámetros (Sigma, Umbrales, etc.)
-        self.panel_controles = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.panel_controles.set_size_request(320, -1) # Ancho fijo para las herramientas
-        #self.panel_controles.set_margin_all(12)
-        self.panel_controles.set_margin_start(6)
-        self.panel_controles.set_margin_end(6)
-        self.panel_controles.set_margin_top(6)
-        self.panel_controles.set_margin_bottom(6)
-        main_box.append(self.panel_controles)
-        
-        # Aquí puedes añadir tus Gtk.Scale (sliders) para Sigma y Umbrales...
-        lbl_placeholder = Gtk.Label(label="⚙️ Parámetros de Filtrado")
-        #lbl_placeholder.set_css_classes(["title-2"])
-        self.panel_controles.append(lbl_placeholder)
-
-# ÁREA CENTRAL DE VISUALIZACIÓN (Panel derecha)
-        # Usamos un Box VERTICAL para poner la Imagen ARRIBA y las Pestañas ABAJO
-        area_derecha_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        area_derecha_box.set_hexpand(True) # Absorbe todo el ancho disponible al maximizar
-        area_derecha_box.set_vexpand(True) # Absorbe todo el alto disponible
-        main_box.append(area_derecha_box)
-        
-        # PARTE SUPERIOR: Visualizador de Imagen Principal con Scroll
-                
-        # Instanciamos la clase híbrida con el Overlay y el DrawingArea que hicimos en el paso anterior
-        # Aquí se acopla tu clase interactiva (con Overlay/DrawingArea)
-        # Usamos un marcador temporal en lo que integras la tuya
-        try:
-            self.visualizador = VisualizadorInteractivo() 
-        except NameError:
-            # Fallback temporal por si corres este script solo
-            self.visualizador = Gtk.Picture()
-            print("Aviso: 'VisualizadorInteractivo' no detectado, usando contenedor temporal.")
-        
-        scroll_visualizador = Gtk.ScrolledWindow()
-        scroll_visualizador.set_child(self.visualizador)
-        scroll_visualizador.set_hexpand(True)
-        scroll_visualizador.set_vexpand(True) # Se estira para dominar la pantalla
-        
-        area_derecha_box.append(scroll_visualizador)
-        
-        # PARTE INFERIOR: El conmutador de resultados (Adw.ViewSwitcher + Adw.ViewStack)
-        # Aquí es donde el usuario alternará entre [Original] [Kernel] [Derivada] [Bordes]
-        self.resultados_stack = Adw.ViewStack()
-        self.resultados_stack.set_hexpand(True)
-        self.resultados_stack.set_vexpand(False) # Altura limitada para que no tape la imagen
-        self.resultados_stack.set_size_request(-1, 150) # Altura fija sugerida para la sección de resultados
-        
-        # El conmutador visual de pestañas (barra de botones)
-        view_switcher = Adw.ViewSwitcher()
-        view_switcher.set_stack(self.resultados_stack)
-        view_switcher.set_halign(Gtk.Align.CENTER) # Centrado estético como en GNOME
-        
+                    
         # Añadimos los componentes de resultados abajo de la imagen
-        area_derecha_box.append(view_switcher)
-        area_derecha_box.append(self.resultados_stack)
+        #area_derecha_box.append(view_switcher)
+        #area_derecha_box.append(self.resultados_stack)
                 
 
         
@@ -174,19 +282,13 @@ class MainWindow(Adw.ApplicationWindow):
         pagina_estado.set_icon_name("scanner-symbolic")
         self.stack.add_child(pagina_estado)
 
-# Usamos Gtk.Picture para visualizar
-        self.image_container = Gtk.Picture()
-        self.image_container.set_can_shrink(True)
-        self.image_container.set_content_fit(Gtk.ContentFit.CONTAIN) # Ajustar sin deformar
-        self.scroll.set_child(self.image_container)     
-        self.stack.add_child(self.scroll)
 """
 
-    def show_openDialog(self,button):
+    def show_openDialog(self, button, *args):
         fileDialog = Gtk.FileDialog.new()
-        fileDialog.set_title("Selecciona imagen")
+        fileDialog.set_title("Selecciona la imagen")
         
-        # Intentamos localizar tu carpeta de usuario en Windows desde WSL
+        # Localizar tu carpeta de usuario en Windows desde WSL
         # Normalmente el usuario de WSL coincide o se puede buscar en /mnt/c/Users/
         
         win_path = f"/mnt/c/Users/jolopez"
@@ -208,29 +310,35 @@ class MainWindow(Adw.ApplicationWindow):
 
         fileDialog.open(self, None, self.on_file_opened_callback)
         
-    |# Configurar el selector de archivos
-    def on_file_opened_callback(self, dialog, result):
+    # Configurar el selector de archivos
+    def on_file_opened_callback(self, dialog, response):
         try:
-            file = dialog.open_finish(result)
+            file = dialog.open_finish(response)
             if file:
                 self.ruta_imagen = file.get_path()
                 print(f"File path is {file.get_path()}")
+                is_error, message, self.image_loaded = handle.load_GrayImage(self, self.ruta_imagen)
+                pixbuff = handle.matriz_a_pixbuf(self.image_loaded)
+                self.mostrar_alerta("Mensaje Imagen", message, is_error)
 # --- Visualización
-                self.image_container.set_file(file)
-                self.stack.set_visible_child(self.scroll)
-                
-# ¡Activamos el abotón de procesar ahora que hay imagen!
-                self.btn_process.set_sensitive(True)
-                
+                if hasattr(self.image_container, "cargar_imagen"):
+                    self.image_container.cargar_imagen(pixbuff) # type: ignore
+                else:
+                    self.image_container.set_filename(self.ruta_imagen)  # type: ignore
         except GLib.Error as error:
+            
             print(f"Error al abrir el archivo: {error.message}")   
+            
         
     
     def on_process_clicked(self, button):
         if self.ruta_imagen:
             # Desactivamos el botón mientras procesa para evitar clics dobles
-            self.btn_process.set_sensitive(False)
+            #self.btn_process.set_sensitive(False)
             self.mostrar_alerta("Procesando", "Iniciando el cálculo de bordes...", es_error=False)
+            
+            self.current_image = handle.recortar_imagen(self)
+            
             
             # 3. Creamos un hilo de fondo para que la matemática no congele la pantalla
             hilo_matematico = threading.Thread(target=self._tarea_pesada_computacional)
@@ -240,54 +348,46 @@ class MainWindow(Adw.ApplicationWindow):
         """Aquí corre toda la matemática pesada de ODIN sin congelar la app."""
         try:
             print("Hilo secundario: Iniciando convoluciones...")
-            
-            # --- SIMULACIÓN DE TU PROCESO REAL ---
-            # Aquí es donde llamas a tus funciones de: Preprocesamiento, kernelSeparable, etc.
-            # resultado = kernelSeparable.aplicar(self.ruta_imagen)
-            
-            # --------------------------------------
-               # Lanzamos el proceso (puedes añadir un Spinner/indicador de carga aquí)
-            error, mensaje, image_loaded = handle.load_GrayImage(self, self.ruta_imagen)
-            
-            if error:
-                #self.label_estado.set_text(f"⚠️ Error: {mensaje}")
-                self.mostrar_alerta("Error al cargar archivo", mensaje, error)
-                self.btn_process.set_sensitive(False)
+            # Lanzamos el proceso (puedes añadir un Spinner/indicador de carga aquí)
+            #error, mensaje, image_loaded = handle.load_GrayImage(self, self.ruta_imagen)
+            #if error:
+                #self.label_estado.set_text(f"⚠️ Error: {mensaje}")6
+            #    self.mostrar_alerta("Error al cargar archivo", mensaje, error)
+            #    self.btn_procesar.set_sensitive(False)
                  #print(f" Mini-alerta de error: {mensaje}")
-            else:
-            # Obtenemos dimensiones
-                height, width = image_loaded.shape
-                #rowstride = width * channels
-                Gx,Gy = kernelSeparable.DerivGauss(image_loaded,3,1,1,360)
-
-            """IGx_normalized = np.zeros((Gx.shape[0], Gx.shape[1]))
-            IGx_normalized = cv.normalize(Gx, IGx_normalized, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8UC1)
-            resized_Gx = cv.resize(IGx_normalized, (1280,720))
-            IGy_normalized = np.zeros((Gy.shape[0], Gy.shape[1]))
-            IGy_normalized = cv.normalize(Gy, IGy_normalized, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8UC1)
-            resized_Gy = cv.resize(IGy_normalized, (1280,720))
-            cv.imshow("Gradiente Gx", resized_Gx)
-            cv.imshow("Gradiente Gy", resized_Gy)
-            MG, Tetha =MagFaseGradiente.MagFase( Gx, Gy )
-            #IMG_normalized = np.zeros((MG.shape[0], MG.shape[1]))
-            #IMG_normalized = cv.normalize(Gx, IMG_normalized, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8UC1)
-            resized_IMG = cv.resize(MG, (1280,720))
-            cv.imshow("Magnitud Gradiente", resized_IMG)"""
-            #GLib.idle_add(loadImage.Carga_imagen_gray, self, self.ruta_imagen, image_loaded)
-
-            # 4. Si todo sale bien, le pedimos al hilo principal de GTK que avise al usuario.
-            # IMPORTANTE: Para modificar la UI desde un hilo, usamos siempre GLib.idle_add
+            #else:
+            resultadosProcesamiento = {}
+            resultadosProcesamiento["inicial"] = handle.matriz_a_pixbuf(self.current_image)
+            Gx,Gy = kernelSeparable.DerivGauss(self.current_image,3,1,1,360)
+            MG, Tetha = MagnitudGradiente.MagFase( Gx, Gy )
+            GNMaxS = NonMaxSup.Interpolation(MG, Gx, Gy, Tetha)
+            umbral=Otsu.umbralOtsu(GNMaxS, histo=True);
+            HighE, LowE = NonMaxSup.DobleThreshold(MG, Tetha, umbral)
+            DetectedEdges = DoubleTh.EdgeTrack_Hyst(HighE, umbral)
+            
+            resultadosProcesamiento["gx"] = handle.matriz_a_pixbuf(Gx)
+            resultadosProcesamiento["gy"] = handle.matriz_a_pixbuf(Gy)
+            resultadosProcesamiento["mag"] = handle.matriz_a_pixbuf(MG)
+            resultadosProcesamiento["bordesdebiles"] = handle.matriz_a_pixbuf(LowE)
+            resultadosProcesamiento["bordesfuertes"] = handle.matriz_a_pixbuf(HighE)
+            resultadosProcesamiento["bordes"] = handle.matriz_a_pixbuf(DetectedEdges)
+            self.vistas_procesadas["original"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["inicial"]))
+            self.vistas_procesadas["gradiente x"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["gx"]))
+            self.vistas_procesadas["gradiente y"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["gy"]))
+            self.vistas_procesadas["magnitud"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["mag"]))
+            self.vistas_procesadas["bordes falsos"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordesfuertes"]))
+            self.vistas_procesadas["bordes"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordes"]))            
             GLib.idle_add(self.finalizar_proceso_exitoso)
 
         except Exception as e:
             # Si algo truena en la matemática, capturamos el error y avisamos de forma segura
             GLib.idle_add(self.mostrar_alerta, "Error Matemático", str(e), True)
-            GLib.idle_add(self.btn_process.set_sensitive, True)
+            GLib.idle_add(self.btn_procesar.set_sensitive, True)
 
     def finalizar_proceso_exitoso(self):
         """Este método corre en el hilo principal de la UI cuando la matemática termina."""
-        # Reactivamos el botón
-        self.btn_process.set_sensitive(True)
+        pass        # Reactivamos el botón
+        #self.btn_process.set_sensitive(True)
         
         # Lanzamos el pop-up de éxito que ahora sí saldrá en su momento justo
         self.mostrar_alerta(
@@ -297,34 +397,89 @@ class MainWindow(Adw.ApplicationWindow):
         )
         
     def mostrar_alerta(self, titulo, mensaje, es_error=True):
-        """Lanza el diálogo nativo oficial de Libadwaita solucionando el conflicto del Stack."""
-        # 1. Creamos el diálogo usando la API nativa y limpia
-        alert_dialog = Adw.AlertDialog.new(heading=titulo, body=mensaje)
+        """"Crea una ventana flotante independiente con la estética exacta de Adwaita."""
+        # 1. Definimos una ventana secundaria real
+        dialog_win = Gtk.Window(
+            title=titulo,
+            transient_for=self,     # Se vincula a MainWindow pero flota sobre ella
+            modal=True,              # Bloquea la interacción de la ventana de atrás
+            resizable=False
+        )
+        
+        # 2. Forzamos que use las decoraciones del sistema ocultando la barra superior clásica
+        # si quieres el look limpio y cuadrado/redondeado de Adw.AlertDialog
+        dialog_win.set_deletable(True)
+        
+        # 3. Contenedor principal con fondo oscuro estilizado (Caja vertical con márgenes amplios)
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        main_box.set_margin_top(32)
+        main_box.set_margin_bottom(32)
+        main_box.set_margin_start(32)
+        main_box.set_margin_end(32)
+        dialog_win.set_child(main_box)
 
-        # 2. Configuramos las respuestas oficiales
+        # 4. Título centrado en negrita (Heading)
+        """lbl_titulo = Gtk.Label()
+        lbl_titulo.set_markup(f"<span weight='bold' size='large'>{titulo}</span>")
+        lbl_titulo.set_justify(Gtk.Justification.CENTER)
+        main_box.append(lbl_titulo)"""
+
+        # 5. Mensaje centrado con ajuste automático de caracteres (Body)
+        lbl_mensaje = Gtk.Label()
+        lbl_mensaje.set_markup(mensaje)
+        lbl_mensaje.set_justify(Gtk.Justification.CENTER)
+        lbl_mensaje.set_wrap(True)
+        lbl_mensaje.set_max_width_chars(40) # Esto emula el ancho físico que ves en tu ejemplo
+        main_box.append(lbl_mensaje)
+
+        # 6. Fila de botones (Caja horizontal con distribución homogénea)
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        button_box.set_homogeneous(True) # Hace que ambos botones midan exactamente lo mismo
+        main_box.append(button_box)
+
+        # Botón Cancelar (Look gris estándar)
+        btn_cancelar = Gtk.Button(label="Cancelar")
+        btn_cancelar.connect("clicked", lambda w: dialog_win.destroy())
+        button_box.append(btn_cancelar)
+
+        # Botón de Acción Principal (Entendido / Reemplazar)
+        btn_accion = Gtk.Button(label="Entendido" if es_error else "Aceptar")
+        
+        # Aplicamos las clases CSS oficiales de Gnome para pintar los botones de color
         if es_error:
-            alert_dialog.add_response(id='cancelar', label='Cancelar')
-            alert_dialog.add_response(id='cerrar', label='Entendido')
-            alert_dialog.set_response_appearance(
-                response='cerrar', 
-                appearance=Adw.ResponseAppearance.DESTRUCTIVE
-            )
+            btn_accion.add_css_class("destructive-action") # Botón Rojo de Adwaita
         else:
-            alert_dialog.add_response(id='cancelar', label='Cancelar')
-            alert_dialog.add_response(id='cerrar', label='Aceptar')
-            alert_dialog.set_response_appearance(
-                response='cerrar', 
-                appearance=Adw.ResponseAppearance.SUGGESTED
-            )
+            btn_accion.add_css_class("suggested-action")   # Botón Azul de Adwaita
 
-        alert_dialog.set_default_response(response='cerrar')
-        alert_dialog.set_close_response(response='cancelar')
-        #alert_dialog.connect('response', self.on_button_dialog_clicked)
+        btn_accion.connect("clicked", lambda w: dialog_win.destroy())
+        button_box.append(btn_accion)
 
-        if isinstance(self, Gtk.Widget):
-            alert_dialog.present(self)
-        else:
-            alert_dialog.present(None)
+        dialog_win.add_css_class("dialog")
+        
+        # 2. Inyectamos un CSS sutil para asegurar que el motor de renderizado no pinte bordes rígidos
+        css_provider = Gtk.CssProvider()
+        css_code = """
+            window.dialog {
+                border-radius: 12px;
+            }
+            window.dialog > box {
+                background-color: #242424;    /* Color de fondo oficial Adwaita Oscuro */
+                border: 1px solid #353535;    /* Borde exterior sutil para dar volumen */
+                border-bottom-left-radius: 12px;
+                border-bottom-right-radius: 12px;
+            }
+        """
+        display = dialog_win.get_display()
+        Gtk.StyleContext.add_provider_for_display(
+            display,
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+
+        # 7. Desplegamos de forma flotante
+        dialog_win.present()
+
         
     def show_about(self, action, param):
         self.about = Gtk.AboutDialog()
@@ -356,99 +511,7 @@ class MainWindow(Adw.ApplicationWindow):
         
         self.about.set_visible(True)    
         
-class VisualizadorInteractivos(Gtk.Overlay):
-    def __init__(self):
-        super().__init__()
-        
-        # 1. Variables de control para el recorte
-        self.inicio_x = 0
-        self.inicio_y = 0
-        self.actual_x = 0
-        self.actual_y = 0
-        self.arrastrando = False
-        
-        # 2. El Widget de la Imagen de Fondo
-        self.picture = Gtk.Picture.new()
-        # Mantiene la relación de aspecto y escala de forma limpia en GTK 4
-        self.picture.set_keep_aspect_ratio(True)
-        self.set_child(self.picture) # Se añade como el hijo base del Overlay
-        
-        # 3. Capa Transparente para Dibujar el Rectángulo
-        self.capa_dibujo = Gtk.DrawingArea()
-        # Le decimos a GTK que use la función 'draw_callback' para pintar las líneas
-        self.capa_dibujo.set_draw_func(self.draw_callback)
-        self.add_overlay(self.capa_dibujo) # Se encima sobre la foto
-        
-        # 4. Capturar los Gestos del Ratón (Clic y Arrastre)
-        self.controlador_arrastre = Gtk.GestureDrag.new()
-        # Registramos el clic izquierdo (botón 1)
-        self.controlador_arrastre.set_button(1) 
-        
-        # Conectamos las señales del ciclo de arrastre
-        self.controlador_arrastre.connect("drag-begin", self.on_drag_begin)
-        self.controlador_arrastre.connect("drag-update", self.on_drag_update)
-        self.controlador_arrastre.connect("drag-end", self.on_drag_end)
-        
-        # Añadimos el controlador a la capa de dibujo para que intercepte el ratón
-        self.capa_dibujo.add_controller(self.controlador_arrastre)
 
-    def cargar_imagen(self, pixbuf: GdkPixbuf.Pixbuf):
-        """Asigna un nuevo Pixbuf al visualizador de forma nativa."""
-        textura = Gdk.Texture.new_for_pixbuf(pixbuf)
-        self.picture.set_paintable(textura)
-        
-    def on_drag_begin(self, gesto, x, y):
-        """Se activa justo en el momento del primer clic."""
-        self.inicio_x = x
-        self.inicio_y = y
-        self.arrastrando = True
-
-    def on_drag_update(self, gesto, offset_x, offset_y):
-        """Se ejecuta continuamente mientras el usuario arrastra el ratón."""
-        # Calculamos la posición actual sumando el desplazamiento (offset) al inicio
-        self.actual_x = self.inicio_x + offset_x
-        self.actual_y = self.inicio_y + offset_y
-        
-        # Le ordenamos al DrawingArea que se borre y se vuelva a pintar de inmediato
-        self.capa_dibujo.queue_draw()
-
-    def on_drag_end(self, gesto, offset_x, offset_y):
-        """Se activa cuando el usuario suelta el botón del ratón."""
-        self.arrastrando = False
-        
-        # Coordenadas finales calculadas del rectángulo
-        x1 = min(self.inicio_x, self.actual_x)
-        y1 = min(self.inicio_y, self.actual_y)
-        ancho = abs(self.actual_x - self.inicio_x)
-        alto = abs(self.actual_y - self.inicio_y)
-        
-        print(f"Recorte solicitado en coordenadas: X:{x1}, Y:{y1}, Ancho:{ancho}, Alto:{alto}")
-        # TODO: Aquí mandas estas coordenadas a tu función de OpenCV/NumPy para recortar la matriz
-        
-        # Limpiamos el rectángulo de la pantalla al terminar
-        self.inicio_x = self.inicio_y = self.actual_x = self.actual_y = 0
-        self.capa_dibujo.queue_draw()
-
-    def draw_callback(self, drawing_area, cr, width, height, user_data=None):
-        """Función encargada de pintar el rectángulo usando Cairo CSS."""
-        if self.arrastrando:
-            # Calculamos dimensiones correctas sin importar la dirección del arrastre
-            x = min(self.inicio_x, self.actual_x)
-            y = min(self.inicio_y, self.actual_y)
-            ancho = abs(self.actual_x - self.inicio_x)
-            alto = abs(self.actual_y - self.inicio_y)
-            
-            # 1. Pintamos un fondo semi-transparente azul dentro del cuadro
-            cr.set_source_rgba(0.0, 0.4, 1.0, 0.15) # Azul Libadwaita con 15% opacidad
-            cr.rectangle(x, y, ancho, alto)
-            cr.fill_preserve() # Rellena manteniendo la silueta para el borde
-            
-            # 2. Pintamos la línea del borde del rectángulo
-            cr.set_source_rgba(0.0, 0.4, 1.0, 0.8)  # Azul más sólido
-            cr.set_line_width(2.0)                  # Grosor de la línea
-            # Opcional: Hacer la línea punteada estilo 'marching ants'
-            cr.set_dash([4.0, 4.0], 0)
-            cr.stroke() # Dibuja la línea
         
 class ODINAdwaita(Adw.Application):
     def __init__(self, **kwargs):
@@ -463,8 +526,6 @@ class ODINAdwaita(Adw.Application):
         Adw.Application.do_activate(self)
         self.win = MainWindow(application=self)        
         self.win.present()"""
-    
-    
 
 # Instanciar y ejecutar la aplicación
 app = ODINAdwaita(application_id="com.detectorDistancias.Odin")

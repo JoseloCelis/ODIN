@@ -2,13 +2,19 @@
 Módulo de preprocesamiento de imágenes
 """
 from . import DeriGauss as kernelSeparable
-from . import MagFase as MagFaseGradiente
-#from .Convolucion import Convolucion2D
+from . import MagFase as MagnitudGradiente
+from . import NonMaxSuppressionVectorizado as NonMaxSup
+from . import MtoOtsu as Otsu
+from . import DThEdgeTrackHyst as DoubleTh
+
+
 
 __all__ = [
     'kernelSeparable',
-    'MagFaseGradiente'
-    #'Convolucion2D'
+    'MagnitudGradiente',
+    'NonMaxSup',
+    'Otsu',
+    'DoubleTh'    
 ]
 
 print("Preprocesaminento was loaded")

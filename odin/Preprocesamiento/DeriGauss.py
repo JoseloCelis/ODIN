@@ -1,5 +1,13 @@
+#import matplotlib
+#matplotlib.use('Agg')
+
 import numpy as np
+
 import matplotlib.pyplot as plt
+#from matplotlib.backends.backend_gtk4agg import FigureCanvasGTK4Agg as FigureCanvas
+#from matplotlib.figure import Figure
+
+from gi.repository import GLib
 
 from .Convolucion import Conv2D as Convolucion
 
@@ -51,29 +59,62 @@ def DerivGauss(E,sigma,wk,wConv,wr):
     
     DGX=np.zeros((nr,nc))
     DGY=np.zeros((nr,nc))
+    #DGx_normalized = np.zeros((nr, nc))
+    #DGy_normalized = np.zeros((nr, nc))
     
     DGX = Convolucion.Conv2D(E,dgk,gk,nk,nr,nc)
+    #GLib.idle_add(dibujar_en_hilo_principal,gk, dgk, wk, 0, wr, DGX, DGY)    
     DGY = Convolucion.Conv2D(E,gk,dgk,nk,nr,nc)
-
-    #resized_image = cv.resize(DGXocv, (1280,720))
-    #cv.imshow("filtered image", resized_image)
+    GLib.idle_add(dibujar_en_hilo_principal,gk, dgk, wk, wConv, wr, DGX, DGY)
     
-    y = [10]
-    x = [1]
+    
+    return DGX,DGY
+
+def dibujar_en_hilo_principal(gk, dgk, wk, wConv, wr, DGX, DGY):
+    """ventana_popup = Adw.Window()
+    ventana_popup.set_title("Visualización de Kernels")
+    ventana_popup.set_default_size(900, 500)
+    ventana_popup.set_destroy_with_parent(False)"""
+    
     if wk:
-        fig, ax = plt.subplots(1, 2, figsize=(14, 8))
-        ax[0].plot(gk)
-        ax[0].set_title("Kernel")
-        ax[0].set_xlabel("X")
-        ax[0].set_ylabel("y")
-        ax[1].plot(dgk)
-        ax[1].set_title("Derivada Kernel")
-        ax[1].set_xlabel("x")
-        ax[1].set_ylabel("y")
+        """fig = Figure (figsize=(10,4), dpi=100)
+        kernel = [fig.add_subplot(1,2,1)]
+        kernel = [fig.add_subplot(1,2,2)]
+        kernel[0].plot(gk)
+        kernel[0].set_title("Kernel")
+        kernel[0].set_xlabel("X")
+        kernel[0].set_ylabel("y")
+        kernel[1].plot(dgk)
+        kernel[1].set_title("Derivada Kernel")
+        kernel[1].set_xlabel("x")
+        kernel[1].set_ylabel("y")
+        
+        fig1.tight_layout()
+        
+        canvas = FigureCanvas(fig)
+        canvas.set_hexpand(True)
+        canvas.set_vexpand(True)
+        
+        ventana_popup.set_content(canvas)
+        ventana_popup.present()"""
+        
+        fig1, kernel = plt.subplots(1, 2, figsize=(12, 6)) 
+        kernel[0].plot(gk)
+        kernel[0].set_title("Kernel")
+        kernel[0].set_xlabel("X")
+        kernel[0].set_ylabel("y")
+        kernel[1].plot(dgk)
+        kernel[1].set_title("Derivada Kernel")
+        kernel[1].set_xlabel("x")
+        kernel[1].set_ylabel("y")
+        plt.show(block=False)
 
     if (wConv):
-        fig1, ay = plt.subplots(1, 2, figsize=(14, 8))
+        gradientes, ay = plt.subplots(1, 2, figsize=(12, 6))
+        ay[0].set_title("Derivada Gradiente en X")
         ay[0].plot(DGX[wr,:])
+        ay[1].set_title("Derivada Gradiente en Y")
         ay[1].plot(DGY[:,640])
-        
-    return DGX, DGY
+        plt.show(block=False)
+    
+    return False
