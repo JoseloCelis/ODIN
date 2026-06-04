@@ -6,6 +6,7 @@ from . import MagFase as MagnitudGradiente
 from . import NonMaxSuppressionVectorizado as NonMaxSup
 from . import MtoOtsu as Otsu
 from . import DThEdgeTrackHyst as DoubleTh
+from . import houghCircles as findCircles
 
 
 
@@ -14,7 +15,8 @@ __all__ = [
     'MagnitudGradiente',
     'NonMaxSup',
     'Otsu',
-    'DoubleTh'    
-]
+    'DoubleTh',
+    'findCircles'
+    ]
 
 print("Preprocesaminento was loaded")

@@ -1,6 +1,6 @@
 # Importamos las funciones principales para que se puedan llamar desde src directamente
 from .utils import handle
-from .Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh
+from .Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh, findCircles
 #from .Preprocesamiento import Convolucion2D
 
 __all__ = [
@@ -9,7 +9,8 @@ __all__ = [
     'MagnitudGradiente',
     'Otsu',
     'NonMaxSup',
-    'DoubleTh'
+    'DoubleTh',
+    'findCircles'
 ]
 
 # Definimos la versión de tu software

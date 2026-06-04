@@ -9,12 +9,13 @@ from gi.repository import Gtk,Adw,Gio,GLib,Gdk
 
 import sys,os
 import threading
+import numpy as np
 
 #from src.utils import loadImage
 #from src.Preprocesamiento import kernelSeparable
 #from odin import handle, kernelSeparable
 from utils import handle
-from Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh
+from Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh, findCircles
 
 class MainWindow(Adw.ApplicationWindow):
 
@@ -210,7 +211,9 @@ class MainWindow(Adw.ApplicationWindow):
             ("Gradiente X", "go-next-symbolic"),
             ("Gradiente Y", "go-down-symbolic"),
             ("Magnitud", "view-grid-symbolic"),
-            ("Bordes Falsos", "view-conceal-symbolic"),
+            ("Maximos", "view-grid-symbolic"),
+            ("Bordes debiles", "view-conceal-symbolic"),
+            ("Bordes fuertes", "focus-windows-symbolic"),
             ("Bordes", "focus-windows-symbolic")
         ]   
         
@@ -301,10 +304,10 @@ class MainWindow(Adw.ApplicationWindow):
         # Filtro para imágenes
         filtros = Gio.ListStore.new(Gtk.FileFilter)
         filtro_img = Gtk.FileFilter()
-        filtro_img.set_name("Imágenes (bmp, png, )")
+        filtro_img.set_name("Imágenes (bmp, tiff, jpeg)")
         filtro_img.add_mime_type("image/bmp")
-        filtro_img.add_mime_type("image/png")
-        #filtro_img.add_mime_type("image/jpeg")
+        filtro_img.add_mime_type("image/tiff")
+        filtro_img.add_mime_type("image/jpeg")
         filtros.append(filtro_img)
         fileDialog.set_filters(filtros)
 
@@ -358,25 +361,36 @@ class MainWindow(Adw.ApplicationWindow):
             #else:
             resultadosProcesamiento = {}
             resultadosProcesamiento["inicial"] = handle.matriz_a_pixbuf(self.current_image)
+            
             Gx,Gy = kernelSeparable.DerivGauss(self.current_image,3,1,1,360)
             MG, Tetha = MagnitudGradiente.MagFase( Gx, Gy )
-            GNMaxS = NonMaxSup.Interpolation(MG, Gx, Gy, Tetha)
+            GNMaxS = NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)
             umbral=Otsu.umbralOtsu(GNMaxS, histo=True);
-            HighE, LowE = NonMaxSup.DobleThreshold(MG, Tetha, umbral)
-            DetectedEdges = DoubleTh.EdgeTrack_Hyst(HighE, umbral)
+            HighE, LowE = NonMaxSup.DobleThreshold(GNMaxS, Tetha, umbral)
+            DetectedEdges = DoubleTh.EdgeTrack_Hyst(HighE, LowE)
+            print(f"Total de bordes detectados (Px): {np.sum(DetectedEdges == 1)}")
             
             resultadosProcesamiento["gx"] = handle.matriz_a_pixbuf(Gx)
             resultadosProcesamiento["gy"] = handle.matriz_a_pixbuf(Gy)
             resultadosProcesamiento["mag"] = handle.matriz_a_pixbuf(MG)
+            resultadosProcesamiento["maximos"] = handle.matriz_a_pixbuf(GNMaxS)
             resultadosProcesamiento["bordesdebiles"] = handle.matriz_a_pixbuf(LowE)
             resultadosProcesamiento["bordesfuertes"] = handle.matriz_a_pixbuf(HighE)
             resultadosProcesamiento["bordes"] = handle.matriz_a_pixbuf(DetectedEdges)
+            
             self.vistas_procesadas["original"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["inicial"]))
             self.vistas_procesadas["gradiente x"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["gx"]))
             self.vistas_procesadas["gradiente y"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["gy"]))
             self.vistas_procesadas["magnitud"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["mag"]))
-            self.vistas_procesadas["bordes falsos"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordesfuertes"]))
+            self.vistas_procesadas["maximos"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["maximos"]))
+            self.vistas_procesadas["bordes debiles"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordesdebiles"]))
+            self.vistas_procesadas["bordes fuertes"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordesfuertes"]))
             self.vistas_procesadas["bordes"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordes"]))            
+        
+            diametro=253    
+            xRecortada, yRecortada, n, accumulador = findCircles.hough_circles_vectorizado(DetectedEdges, diametro/2, 0.8)   
+            self.xRecorte+xRecortada
+            self.yRecorte+yRecortada
             GLib.idle_add(self.finalizar_proceso_exitoso)
 
         except Exception as e:

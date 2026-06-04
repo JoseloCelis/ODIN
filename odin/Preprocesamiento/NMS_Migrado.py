@@ -14,7 +14,7 @@ def Interpolation(MG, Gx, Gy, angle):
         output: Suppressed magnitude (2D numpy array)
     """
     row, col = MG.shape
-    output = np.zeros((row, col), dtype=MG.dtype)
+    output = np.zeros_like(MG)
     
     # Normalizar Gx y Gy
     Gx = Gx / np.max(Gx)
@@ -92,8 +92,11 @@ def DobleThreshold(M, angle, thresh):
     - Cierre de ciclos estructurales
     """
     nr, nc = M.shape
-    gnl = np.zeros((nr, nc))
-    gnh = np.zeros((nr, nc))
+    #gnl = np.zeros((nr, nc))
+    #gnh = np.zeros((nr, nc))
+    gnl = np.zeros_like(M)
+    gnh = np.zeros_like(M)
+    
     
     if thresh > 1.0:
         thresh = 1.0

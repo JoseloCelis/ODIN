@@ -98,8 +98,8 @@ def recortar_imagen(self):
         offset_y = (alto_widget - alto_pintado) / 2
 
         # 2. Traducimos las coordenadas del mouse a píxeles de la matriz
-        x1 = int((self.image_container.x1 - offset_x) / escala)
-        y1 = int((self.image_container.y1 - offset_y) / escala)
+        self.xRecorte = x1 = int((self.image_container.x1 - offset_x) / escala)
+        self.yRecorte = y1 = int((self.image_container.y1 - offset_y) / escala)
         x2 = int((self.image_container.x2 - offset_x) / escala)
         y2 = int((self.image_container.y2 - offset_y) / escala)
         
@@ -184,8 +184,8 @@ class VisualizadorInteractivo(Gtk.Overlay):
         self.arrastrando = False
         
         # Coordenadas finales calculadas del rectángulo
-        self.x1 = min(self.inicio_x, self.inicio_x + offset_x)
-        self.y1 = min(self.inicio_y, self.inicio_y + offset_y)
+        self.x1 = min(self.inicio_x, self.actual_x)
+        self.y1 = min(self.inicio_y, self.actual_x)
         self.x2 = max(self.inicio_x, self.actual_x)
         self.y2 = max(self.inicio_y, self.actual_y)
         ancho = abs(self.actual_x - self.inicio_x)
@@ -210,7 +210,7 @@ class VisualizadorInteractivo(Gtk.Overlay):
             y = min(self.inicio_y, self.actual_y)
             ancho = abs(self.actual_x - self.inicio_x)
             alto = abs(self.actual_y - self.inicio_y)
-            print (width,height)
+            print (width,height,alto, ancho)
             
             # 1. Pintamos un fondo semi-transparente azul dentro del cuadro
             cr.set_source_rgba(0.0, 0.4, 1.0, 0.15) # Azul Libadwaita con 15% opacidad

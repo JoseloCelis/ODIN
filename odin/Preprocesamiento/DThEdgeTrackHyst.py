@@ -1,8 +1,8 @@
 import numpy as np
 import sys
-from scipy.ndimage import label
+from scipy.ndimage import label, generate_binary_structure, binary_dilation
 
-def EdgeTrack_Hyst(MG, threshold):
+def EdgeTrack_Hyst(strong, weaks):
     """
     Realiza el umbralizado doble y el seguimiento de bordes por histéresis 
     de forma vectorizada (sin recursión).
@@ -14,46 +14,78 @@ def EdgeTrack_Hyst(MG, threshold):
     Returns:
     numpy.ndarray: Imagen binaria con los bordes finales (0 o 1).
     """
-    uthresh = threshold
-    lthresh = threshold * threshold
+    
+    print("--- DIAGNÓSTICO DE HISTÉRESIS ---")
+    print(f"Máximo en fuertes: {np.max(strong)}")
+    print(f"Máximo en debiles: {np.max(weaks)}")
+    print(f"Píxeles verdaderos en strong_mask: {np.sum(strong > 0)}")
+    print(f"Píxeles verdaderos en weak_mask: {np.sum(weaks > 0)}")
     
     # 1. Crear máscaras lógicas globales para bordes fuertes y débiles
     # (Evitamos los bucles for para clasificar los píxeles)
-    strong_mask = MG > uthresh
-    weak_mask = (MG >= lthresh) & (MG <= uthresh)
+    strong_mask = strong > 0
+    weak_mask = weaks > 0
     
+    #strong_mask = MG > uthresh
+    #weak_mask = (MG >= lthresh) & (MG <= uthresh)
+    
+    
+    
+    #uthresh = threshold
+    #lthresh = threshold * threshold
+    
+    
+
     # Inicializar la imagen de salida vacía (bordes en 0 por defecto)
-    output = np.zeros_like(MG, dtype=np.uint8)
-    
+    weaks_labeled = np.zeros_like(weaks, dtype=np.uint8)
+    output = np.zeros_like(strong, dtype=np.uint8)
+
     # En tu MATLAB ignoras el borde exterior de 1px en el primer bucle,
     # replicamos eso limpiando los extremos de las máscaras.
-    strong_mask[0, :] = strong_mask[-1, :] = strong_mask[:, 0] = strong_mask[:, -1] = False
-    weak_mask[0, :] = weak_mask[-1, :] = weak_mask[:, 0] = weak_mask[:, -1] = False
+    #strong_mask[0, :] = strong_mask[-1, :] = strong_mask[:, 0] = strong_mask[:, -1] = False
+    #weak_mask[0, :] = weak_mask[-1, :] = weak_mask[:, 0] = weak_mask[:, -1] = False
     
     # 2. Análisis de componentes conexas para la histéresis
     # Tu función buscaba en un vecindario de 7x7 (-3 a 3).
     # Definimos una estructura de conectividad (kernel) de 7x7 llena de 1s.
-    estructura_conectividad = np.ones((7, 7), dtype=bool)
+    # 2. El Truco del Vecindario 7x7:
+    # Como SciPy exige que la conectividad para 'label' sea de 3x3, lo que hacemos
+    # es "crecer" (dilatar) los bordes fuertes con un kernel de 7x7. 
+    # Esto simula exactamente que el borde fuerte "alcanza" a los débiles a 3px de distancia.
+    # 1. Dilatación de bordes fuertes
+        
+    dilation_kernel = np.ones((7,7), dtype=bool)
+    strong_dilated = binary_dilation(strong_mask, structure=dilation_kernel)
     
-    # 'label' agrupa todos los píxeles débiles contiguos y les asigna un ID único (1, 2, 3...)
-    g_weak_labeled, num_features = label(weak_mask, structure=estructura_conectividad)
+    kernel = generate_binary_structure(2,2)
+    #kernel = np.ones((3,3), dtype=bool)
+    num_features = label(weak_mask, kernel, weaks_labeled)
     
-    # 3. Encontrar qué grupos "débiles" tocan a al menos un píxel "fuerte"
-    # Extraemos los IDs de los grupos débiles que coinciden con la máscara fuerte
-    connected_ids = np.unique(g_weak_labeled[strong_mask])
+    if num_features == 0:
+        output[strong_mask] = True
+        return output
     
-    # El ID 0 representa el fondo, lo eliminamos si aparece
+    # 3. Identificar qué islas débiles tocan a los bordes fuertes dilatados
+   # Evitamos el 0 (que representa el fondo) directamente en el filtro
+    #touches_strong = weaks_labeled[strong_dilated.astype(bool)]
+    #valores_interseccion = weaks_labeled[strong_dilated == True]
+    
+    connected_ids = np.unique(weaks_labeled[strong_dilated == True])
     connected_ids = connected_ids[connected_ids != 0]
+    #connected_ids = np.unique(touches_strong[touches_strong != 0])
     
     # 4. Construir la imagen final
-    # Activamos los bordes que originalmente eran fuertes
-    output[strong_mask] = 1
+    output[strong_mask] = 255
     
-    # Activamos los bordes débiles cuyos IDs están conectados a un borde fuerte
-    # (Equivale a np.isin, pero más rápido si usamos indexación booleana)
+    # 5. Activar bordes débiles conectados a fuertes
     if connected_ids.size > 0:
-        connected_weak_mask = np.isin(g_weak_labeled, connected_ids)
-        output[connected_weak_mask] = 1
+        connected_weak_mask = np.isin(weaks_labeled, connected_ids)
+        output[connected_weak_mask] = 255
+        
+        
+    print(f"Bordes fuertes recuperados: {np.sum(strong_mask)}")
+    print(f"Islas débiles conectadas encontradas: {connected_ids.size} de {num_features}")
+    print(f"Total de píxeles blancos en la salida: {np.sum(output == 255)}")
         
     return output
 
