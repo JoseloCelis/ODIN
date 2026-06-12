@@ -358,7 +358,7 @@ def DobleThreshold(M, angle, thresh):
     
     gnh[M >= uthresh] = 1.0
     gnl[(M >= lthresh) & (M < uthresh)] = M[(M >= lthresh) & (M < uthresh)]
-    
+    #gnl[(M >= lthresh) & (M < uthresh)] = 1 
     
     # Aplicar el Doble Umbral simultáneamente usando máscaras booleanas globales
     """high_mask = is_max & (M >= uthresh)

@@ -15,7 +15,7 @@ import numpy as np
 #from src.Preprocesamiento import kernelSeparable
 #from odin import handle, kernelSeparable
 from utils import handle
-from Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh, findCircles
+from Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh, aproxHough, circleFilter, LSC
 
 class MainWindow(Adw.ApplicationWindow):
 
@@ -88,14 +88,14 @@ class MainWindow(Adw.ApplicationWindow):
         
         # Grupo: Archivo
         grupo_archivo = Adw.PreferencesGroup.new()
-        grupo_archivo.set_title("Archivo")
+        grupo_archivo.set_title("Origen de datos")
         grupo_archivo.set_margin_top(28)
         grupo_archivo.add_css_class("margin-bottom-12")
         pag_opciones.add(grupo_archivo)
         
         row_cargar = Adw.ActionRow.new()
-        row_cargar.set_title("Origen de datos")
-        row_cargar.set_subtitle("Selecciona un archivo del disco")
+        row_cargar.set_title("Selecciona un archivo")
+        #row_cargar.set_subtitle("Selecciona un archivo del disco")
         
         btn_cargar = Gtk.Button.new_with_label("Cargar Imagen")
         btn_cargar.add_css_class("suggested-action")
@@ -113,7 +113,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.combo_recorte = Adw.ComboRow.new()
         self.combo_recorte.set_title("Tipo de área")
-        self.combo_recorte.set_subtitle("Elige cómo interactuar con el ratón")
+        #self.combo_recorte.set_subtitle("Elige cómo interactuar con el ratón")
         lista_modos = Gtk.StringList.new(
             ["Imagen Completa", "Rectángulo", "Por Puntos (Polígono)"]
         )
@@ -138,12 +138,13 @@ class MainWindow(Adw.ApplicationWindow):
         grupo_parametros.set_margin_bottom(12)
         pag_opciones.add(grupo_parametros)
 
-        adj_sigma = Gtk.Adjustment.new(1.4, 0.1, 5.0, 0.1, 1.0, 0.0)
+        adj_sigma = Gtk.Adjustment.new(2.5, 0.1, 10.0, 0.1, 1.0, 0.0)
+        adj_sigma.connect('value_changed', self.slider_changed)
         self.row_sigma = Adw.SpinRow.new(adjustment=adj_sigma, climb_rate=0.1, digits=1)
         self.row_sigma.set_title("Sigma (σ)")
         grupo_parametros.add(self.row_sigma)
 
-        adj_umb_bajo = Gtk.Adjustment.new(50.0, 0.0, 255.0, 1.0, 10.0, 0.0)
+        """adj_umb_bajo = Gtk.Adjustment.new(50.0, 0.0, 255.0, 1.0, 10.0, 0.0)
         self.row_umbral_bajo = Adw.SpinRow.new(adjustment=adj_umb_bajo, climb_rate=1.0, digits=0)
         self.row_umbral_bajo.set_title("Umbral Mínimo (Histéresis)")
         grupo_parametros.add(self.row_umbral_bajo)
@@ -151,7 +152,7 @@ class MainWindow(Adw.ApplicationWindow):
         adj_umb_alto = Gtk.Adjustment.new(150.0, 0.0, 255.0, 1.0, 10.0, 0.0)
         self.row_umbral_alto = Adw.SpinRow.new(adjustment=adj_umb_alto, climb_rate=1.0, digits=0)
         self.row_umbral_alto.set_title("Umbral Máximo (Histéresis)")
-        grupo_parametros.add(self.row_umbral_alto)
+        grupo_parametros.add(self.row_umbral_alto)"""
         
         # --- NUEVO GRUPO INDEPENDIENTE PARA EL BOTÓN PROCESAR ---
         grupo_accion_procesar = Adw.PreferencesGroup.new()
@@ -251,6 +252,10 @@ class MainWindow(Adw.ApplicationWindow):
         # Integración del bloque central al split view
         pagina_contenido = Adw.NavigationPage.new(main_box, "Visualizador")
         split_view.set_content(content=pagina_contenido)
+        
+    def slider_changed(self, spinRow):
+            print(spinRow.get_value())    
+            self.sigma = int(spinRow.get_value())
 
     def _registrar_acciones(self):
         """Inicializa y registra las acciones lógicas de la ventana."""
@@ -362,7 +367,7 @@ class MainWindow(Adw.ApplicationWindow):
             resultadosProcesamiento = {}
             resultadosProcesamiento["inicial"] = handle.matriz_a_pixbuf(self.current_image)
             
-            Gx,Gy = kernelSeparable.DerivGauss(self.current_image,3,1,1,360)
+            Gx,Gy = kernelSeparable.DerivGauss(self.current_image,self.sigma,1,1,360)
             MG, Tetha = MagnitudGradiente.MagFase( Gx, Gy )
             GNMaxS = NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)
             umbral=Otsu.umbralOtsu(GNMaxS, histo=True);
@@ -388,9 +393,12 @@ class MainWindow(Adw.ApplicationWindow):
             self.vistas_procesadas["bordes"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordes"]))            
         
             diametro=253    
-            xRecortada, yRecortada, n, accumulador = findCircles.hough_circles_vectorizado(DetectedEdges, diametro/2, 0.8)   
-            self.xRecorte+xRecortada
-            self.yRecorte+yRecortada
+            xRecortada, yRecortada, n, accumulador = aproxHough.hough_circles_vectorizado(DetectedEdges, diametro/2, 0.8)  
+            aproxCenter = (xRecortada, yRecortada)
+            puntosFiltrados = circleFilter.find_circle(DetectedEdges, diametro/2, aproxCenter)
+            x, y, r, pv = LSC.Circulo_simple(puntosFiltrados)
+            x = self.xRecorte+x
+            y = self.yRecorte+y
             GLib.idle_add(self.finalizar_proceso_exitoso)
 
         except Exception as e:
@@ -525,7 +533,7 @@ class MainWindow(Adw.ApplicationWindow):
         
         self.about.set_visible(True)    
         
-
+        
         
 class ODINAdwaita(Adw.Application):
     def __init__(self, **kwargs):

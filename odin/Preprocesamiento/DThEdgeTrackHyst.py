@@ -1,87 +1,63 @@
 import numpy as np
+import cv2 
 import sys
-from scipy.ndimage import label, generate_binary_structure, binary_dilation
+
+#from scipy.ndimage import label, generate_binary_structure, binary_dilation
 
 def EdgeTrack_Hyst(strong, weaks):
     """
     Realiza el umbralizado doble y el seguimiento de bordes por histéresis 
     de forma vectorizada (sin recursión).
     
-    Parameters:
-    MG (numpy.ndarray): Matriz de magnitudes (generalmente resultado de NonMaxSup).
-    threshold (float): Umbral superior base.
-    
-    Returns:
-    numpy.ndarray: Imagen binaria con los bordes finales (0 o 1).
     """
     
-    print("--- DIAGNÓSTICO DE HISTÉRESIS ---")
+    print("--- DIAGNÓSTICO DE HISTÉRESIS (OPENCV) ---")
     print(f"Máximo en fuertes: {np.max(strong)}")
     print(f"Máximo en debiles: {np.max(weaks)}")
     print(f"Píxeles verdaderos en strong_mask: {np.sum(strong > 0)}")
     print(f"Píxeles verdaderos en weak_mask: {np.sum(weaks > 0)}")
     
-    # 1. Crear máscaras lógicas globales para bordes fuertes y débiles
-    # (Evitamos los bucles for para clasificar los píxeles)
+    # 1. Crear máscaras lógicas globales y asegurar formato uint8 para OpenCV
     strong_mask = strong > 0
     weak_mask = weaks > 0
     
-    #strong_mask = MG > uthresh
-    #weak_mask = (MG >= lthresh) & (MG <= uthresh)
-    
-    
-    
-    #uthresh = threshold
-    #lthresh = threshold * threshold
-    
-    
+    weak_mask_cv = weak_mask.astype(np.uint8) * 255
 
-    # Inicializar la imagen de salida vacía (bordes en 0 por defecto)
-    weaks_labeled = np.zeros_like(weaks, dtype=np.uint8)
+    # Inicializar la imagen de salida vacía
     output = np.zeros_like(strong, dtype=np.uint8)
-
-    # En tu MATLAB ignoras el borde exterior de 1px en el primer bucle,
-    # replicamos eso limpiando los extremos de las máscaras.
-    #strong_mask[0, :] = strong_mask[-1, :] = strong_mask[:, 0] = strong_mask[:, -1] = False
-    #weak_mask[0, :] = weak_mask[-1, :] = weak_mask[:, 0] = weak_mask[:, -1] = False
     
-    # 2. Análisis de componentes conexas para la histéresis
-    # Tu función buscaba en un vecindario de 7x7 (-3 a 3).
-    # Definimos una estructura de conectividad (kernel) de 7x7 llena de 1s.
-    # 2. El Truco del Vecindario 7x7:
-    # Como SciPy exige que la conectividad para 'label' sea de 3x3, lo que hacemos
-    # es "crecer" (dilatar) los bordes fuertes con un kernel de 7x7. 
-    # Esto simula exactamente que el borde fuerte "alcanza" a los débiles a 3px de distancia.
-    # 1. Dilatación de bordes fuertes
-        
-    dilation_kernel = np.ones((7,7), dtype=bool)
-    strong_dilated = binary_dilation(strong_mask, structure=dilation_kernel)
+    # 2. Dilatación de bordes fuertes (Simula el vecindario)
+    # Nota: cv2.dilate requiere uint8. El kernel de 3x3 simula conectividad de 8 vecinos.
+    dilation_kernel = np.ones((7, 7), dtype=np.uint8)
+    strong_dilated = cv2.dilate(strong_mask.astype(np.uint8), dilation_kernel).astype(bool)
     
-    kernel = generate_binary_structure(2,2)
-    #kernel = np.ones((3,3), dtype=bool)
-    num_features = label(weak_mask, kernel, weaks_labeled)
+    # 3. Análisis de componentes conexas con OpenCV en 32 BITS (Evita el crash de bits)
+    # connectivity=8 equivale a tu kernel de SciPy (incluye diagonales)
+    # ltype=cv2.CV_32S permite manejar millones de etiquetas sin desbordamiento
+    num_labels, weaks_labeled = cv2.connectedComponents(
+        weak_mask_cv, 
+        connectivity=8, 
+        ltype=cv2.CV_32S
+    )
     
-    if num_features == 0:
-        output[strong_mask] = True
+    # En OpenCV, num_labels incluye el fondo (0), restamos 1 para saber las características reales
+    num_features = num_labels - 1
+    
+    if num_features <= 0:
+        output[strong_mask] = 255
         return output
     
-    # 3. Identificar qué islas débiles tocan a los bordes fuertes dilatados
-   # Evitamos el 0 (que representa el fondo) directamente en el filtro
-    #touches_strong = weaks_labeled[strong_dilated.astype(bool)]
-    #valores_interseccion = weaks_labeled[strong_dilated == True]
+    # 4. Identificar qué islas débiles tocan a los bordes fuertes dilatados
+    connected_ids = np.unique(weaks_labeled[strong_dilated])
+    connected_ids = connected_ids[connected_ids != 0] # Excluir el fondo
     
-    connected_ids = np.unique(weaks_labeled[strong_dilated == True])
-    connected_ids = connected_ids[connected_ids != 0]
-    #connected_ids = np.unique(touches_strong[touches_strong != 0])
-    
-    # 4. Construir la imagen final
+    # 5. Construir la imagen final y activar bordes válidos
     output[strong_mask] = 255
     
-    # 5. Activar bordes débiles conectados a fuertes
     if connected_ids.size > 0:
+        # np.isin funciona perfectamente con la matriz de 32 bits generada por OpenCV
         connected_weak_mask = np.isin(weaks_labeled, connected_ids)
         output[connected_weak_mask] = 255
-        
         
     print(f"Bordes fuertes recuperados: {np.sum(strong_mask)}")
     print(f"Islas débiles conectadas encontradas: {connected_ids.size} de {num_features}")
