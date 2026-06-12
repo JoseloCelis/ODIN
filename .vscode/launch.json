@@ -2,25 +2,33 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "🐍 Debug ODIN_GTK: GPU (Fluido)",
+      "name": "🐍 Debug GPU (Híbrido Automatico)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/odin/main.py",
       "python": "${command:python.interpreterPath}",
       "console": "integratedTerminal",
       "purpose": ["debug-test"],
-      "env": {"PYTHONPATH": "${workspaceFolder}", "GSK_RENDERER": "opengl", "GDK_BACKEND": "wayland",  "GTK_A11Y": "none",
+      "env":{
+        "PYTHONPATH": "${workspaceFolder}",
+        "DISPLAY": ":0",
+        "GTK_A11Y": "none"
+      }
+      //"env": {
+      //"PYTHONPATH": "${workspaceFolder}",
+      //"GSK_RENDERER": "opengl",
+      //"GDK_BACKEND": "wayland",
+      //"GTK_A11Y": "none",
       //"GDK_CORE_DEVICE_EVENTS": "1",
       //"GTK_IGNORE_PORTAL": "1",
       //"GDK_DEBUG": "no-hw-cursor",
       //"XCURSOR_SIZE": "32",
-      //"XCURSOR_THEME": "Adwaita"
-      //"GDK_DEBUG": "no-xshm"
-      //"GDK_DEBUG": "portals",
-      }
+      //"XCURSOR_THEME": "Adwaita",
+      //"GDK_DEBUG": "no-xshm",
+      //"GDK_DEBUG": "portals"
     },
     {
-      "name": "🐍 Debug ODIN_GTK: CPU (Seguro)",
+      "name": "🐍 Debug CPU Cairo (Híbrido Automatico)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/odin/main.py",
@@ -29,10 +37,12 @@
       "purpose": ["debug-test"],
       "env": {
         "PYTHONPATH": "${workspaceFolder}",
-        "GSK_RENDERER": "cairo",
-        "GDK_BACKEND": "wayland",
-        //"GTK_THEME": "Adwaita:dark", 
+        "DISPLAY": ":0",
         "GTK_A11Y": "none",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+        "GSK_RENDERER": "cairo"
+        //"GDK_BACKEND": "wayland",
+        //"GTK_THEME": "Adwaita:dark", 
         //"GDK_CORE_DEVICE_EVENTS": "1",
         //"GTK_IGNORE_PORTAL": "1",
         //"GDK_DEBUG": "no-hw-cursor",
