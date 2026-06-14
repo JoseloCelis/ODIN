@@ -11,8 +11,20 @@
       "purpose": ["debug-test"],
       "env":{
         "PYTHONPATH": "${workspaceFolder}",
-        "DISPLAY": ":0",
-        "GTK_A11Y": "none"
+        "GTK_A11Y": "none",
+        "DISPLAY": "${env:DISPLAY}",
+        //"DISPLAY": ":0",
+        "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}",
+        "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
+        //"LD_LIBRARY_PATH": "${localEnv:LD_LIBRARY_PATH}",
+        //"GSK_RENDERER": "opengl",
+        //"GDK_BACKEND": "wayland"
+        //"MESA_DEBUG": "silent",
+        
+        
+        
+        
+        
       }
       //"env": {
       //"PYTHONPATH": "${workspaceFolder}",
@@ -37,11 +49,14 @@
       "purpose": ["debug-test"],
       "env": {
         "PYTHONPATH": "${workspaceFolder}",
-        "DISPLAY": ":0",
         "GTK_A11Y": "none",
         "LIBGL_ALWAYS_SOFTWARE": "1",
-        "GSK_RENDERER": "cairo"
-        //"GDK_BACKEND": "wayland",
+        "GSK_RENDERER": "cairo",
+        //"GDK_BACKEND": "X11",
+        "DISPLAY": "${env:DISPLAY}",
+        //"DISPLAY": ":0",
+        //"WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+        "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
         //"GTK_THEME": "Adwaita:dark", 
         //"GDK_CORE_DEVICE_EVENTS": "1",
         //"GTK_IGNORE_PORTAL": "1",

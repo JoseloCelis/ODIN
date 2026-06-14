@@ -11,14 +11,12 @@
     "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
     "PULSE_SERVER": "${localEnv:PULSE_SERVER}",
     "LD_LIBRARY_PATH": "/usr/lib/wsl/lib",
-    
     "GDK_BACKEND": "wayland,x11",
     "GTK_THEME": "Adwaita:dark",
     "GTK_A11Y": "none",
     "GTK_USE_PORTAL": "0",
     "GIO_USE_PORTALS": "0",
     "NO_AT_BRIDGE": "1",
-
     "MESA_DEBUG": "silent",
     "EGL_LOG_LEVEL": "fatal"
   },
@@ -33,7 +31,7 @@
 
     // Compatibilidad WSL2 / WSLg (Se ignoran de forma segura en Mint)
     "-v", "/usr/lib/wsl:/usr/lib/wsl:ro",
-    "-v", "/mnt/wslg:/mnt/wslg:rw",
+    "-v", "/mnt/wslg:/mnt/wslg:rw"
     //"--gpus", "all"
   ],
   "mounts": [

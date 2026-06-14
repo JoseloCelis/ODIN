@@ -17,6 +17,14 @@ import numpy as np
 from utils import handle
 from Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh, aproxHough, circleFilter, LSC
 
+display = Gdk.Display.get_default()
+
+if display:
+    backend_name = type(display).__name__
+    print(f"El backend activo de GDK es: {backend_name}")
+else:
+    print(" No se pudo inicializar ninguna pantalla gráfica")
+
 class MainWindow(Adw.ApplicationWindow):
 
     def __init__(self, *args, **kwargs):
