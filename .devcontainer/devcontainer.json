@@ -33,8 +33,7 @@
 
     // Compatibilidad WSL2 / WSLg (Se ignoran de forma segura en Mint)
     "-v", "/usr/lib/wsl:/usr/lib/wsl:ro",
-    "-v", "/mnt/wslg:/mnt/wslg:rw"
-    
+    "-v", "/mnt/wslg:/mnt/wslg:rw",
     //"--gpus", "all"
   ],
   "mounts": [
