@@ -317,14 +317,14 @@ class MainWindow(Adw.ApplicationWindow):
             win_path = "/host_home../../mnt/c/Users/jolopez" 
             if os.path.exists(win_path):
                 home_dir = win_path
-
-        if os.path.exists(home_dir):
-            folder = Gio.File.new_for_path(home_dir)
-            fileDialog.set_initial_folder(folder)
         
         # Si por alguna razón no existe /host_home, cae en el home interno del contenedor
         if not os.path.exists(home_dir):
             home_dir = str(Path.home())
+
+        if os.path.exists(home_dir):
+            folder = Gio.File.new_for_path(home_dir)
+            fileDialog.set_initial_folder(folder)    
   
         # Filtro para imágenes
         filtros = Gio.ListStore.new(Gtk.FileFilter)
