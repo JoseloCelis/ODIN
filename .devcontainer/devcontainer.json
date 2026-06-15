@@ -36,7 +36,8 @@
   ],
   "mounts": [
     // Monta la carpeta personal del host (Mint o WSL) en /host_home dentro del contenedor
-    "source=${localEnv:HOME},target=/host_home,type=bind,consistency=cached"
+    "source=${localEnv:HOME},target=/home,type=bind,consistency=cached",
+    "source=/mnt,target=/mnt,type=bind,consistency=cached"
   ],
 
   "customizations": {

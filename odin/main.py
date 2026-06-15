@@ -309,16 +309,23 @@ class MainWindow(Adw.ApplicationWindow):
         # Normalmente el usuario de WSL coincide o se puede buscar en /mnt/c/Users/
         
         # Por defecto, apuntamos al montaje del contenedor que mapea tu HOME de Mint
-        home_dir = "/host_home"
-    
+        home_dir = "/home"
+        
         # Si detectamos que la máquina anfitriona es WSL2, la ruta de Windows cambia ligeramente
         if "microsoft" in os.uname().release.lower():
-        # Dentro de WSL2, ${localEnv:HOME} apunta a /home/tu_usuario_wsl.
-            win_path = "/host_home../../mnt/c/Users/jolopez" 
+        # Si es WSL2, el contenedor mapea Windows directo en 
+            user = "jolopez"
+            win_home = f"/mnt/c/Users/{user}"
+            win_path = f"{win_home}/OneDrive - Consejo Nacional de Ciencia y Tecnologia-68760199-CENAM"
+            home_dir = win_path
+            #win_path = "/host_home../../mnt/c/Users/jolopez" 
             if os.path.exists(win_path):
                 home_dir = win_path
-        
-        # Si por alguna razón no existe /host_home, cae en el home interno del contenedor
+        else:
+            # si es Linux Mint, suamos el mapeo de HOME nativo
+            home_dir = "/home"
+            
+        # Si por alguna razón no existe /home, cae en el home interno del contenedor
         if not os.path.exists(home_dir):
             home_dir = str(Path.home())
 
