@@ -6,6 +6,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 from gi.repository import Gtk,Adw,Gio,GLib,Gdk
+from pathlib import Path
 
 import sys,os
 import threading
@@ -307,13 +308,24 @@ class MainWindow(Adw.ApplicationWindow):
         # Localizar tu carpeta de usuario en Windows desde WSL
         # Normalmente el usuario de WSL coincide o se puede buscar en /mnt/c/Users/
         
-        win_path = f"/mnt/c/Users/jolopez"
-        
-        # Si la carpeta existe, le pedimos al diálogo que empiece ahí
-        if os.path.exists(win_path):
-            folder = Gio.File.new_for_path(win_path)
+        # Por defecto, apuntamos al montaje del contenedor que mapea tu HOME de Mint
+        home_dir = "/host_home"
+    
+        # Si detectamos que la máquina anfitriona es WSL2, la ruta de Windows cambia ligeramente
+        if "microsoft" in os.uname().release.lower():
+        # Dentro de WSL2, ${localEnv:HOME} apunta a /home/tu_usuario_wsl.
+            win_path = "/host_home../../mnt/c/Users/jolopez" 
+            if os.path.exists(win_path):
+                home_dir = win_path
+
+        if os.path.exists(home_dir):
+            folder = Gio.File.new_for_path(home_dir)
             fileDialog.set_initial_folder(folder)
-            
+        
+        # Si por alguna razón no existe /host_home, cae en el home interno del contenedor
+        if not os.path.exists(home_dir):
+            home_dir = str(Path.home())
+  
         # Filtro para imágenes
         filtros = Gio.ListStore.new(Gtk.FileFilter)
         filtro_img = Gtk.FileFilter()
