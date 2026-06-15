@@ -147,7 +147,8 @@ class MainWindow(Adw.ApplicationWindow):
         grupo_parametros.set_margin_bottom(12)
         pag_opciones.add(grupo_parametros)
 
-        adj_sigma = Gtk.Adjustment.new(2.5, 0.1, 10.0, 0.1, 1.0, 0.0)
+        adj_sigma = Gtk.Adjustment.new(3, 0.1, 10.0, 0.1, 1.0, 0.0)
+        self.sigma = int(adj_sigma.get_value())
         adj_sigma.connect('value_changed', self.slider_changed)
         self.row_sigma = Adw.SpinRow.new(adjustment=adj_sigma, climb_rate=0.1, digits=1)
         self.row_sigma.set_title("Sigma (σ)")
@@ -305,9 +306,6 @@ class MainWindow(Adw.ApplicationWindow):
         fileDialog = Gtk.FileDialog.new()
         fileDialog.set_title("Selecciona la imagen")
         
-        # Localizar tu carpeta de usuario en Windows desde WSL
-        # Normalmente el usuario de WSL coincide o se puede buscar en /mnt/c/Users/
-        
         # Por defecto, apuntamos al montaje del contenedor que mapea tu HOME de Mint
         home_dir = "/home"
         
@@ -376,6 +374,7 @@ class MainWindow(Adw.ApplicationWindow):
             
             
             # 3. Creamos un hilo de fondo para que la matemática no congele la pantalla
+            
             hilo_matematico = threading.Thread(target=self._tarea_pesada_computacional)
             hilo_matematico.start()
          
@@ -393,7 +392,6 @@ class MainWindow(Adw.ApplicationWindow):
             #else:
             resultadosProcesamiento = {}
             resultadosProcesamiento["inicial"] = handle.matriz_a_pixbuf(self.current_image)
-            
             Gx,Gy = kernelSeparable.DerivGauss(self.current_image,self.sigma,1,1,360)
             MG, Tetha = MagnitudGradiente.MagFase( Gx, Gy )
             GNMaxS = NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)

@@ -73,7 +73,9 @@ def dibujar_en_hilo_principal(xcenters, counts, edges, umbral, histo=False):
     if histo:
         ancho_barras = (edges[1]-edges[0]) * 0.9
         plt.subplots(figsize=(8,5))
-        plt.bar(xcenters, counts, width=ancho_barras, edgecolor='black', alpha=0.7)
+        #plt.bar(xcenters, counts, width=ancho_barras, edgecolor='black', alpha=0.7)
+
+        plt.stairs(counts, edges, fill=True, color='blue', edgecolor='black', alpha=0.7)
         plt.title("Histograma de píxeles activos")
         plt.xlabel("Intensidad")
         plt.ylabel("Frecuencia")
