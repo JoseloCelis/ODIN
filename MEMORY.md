@@ -9,6 +9,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - CodeGraph indexado (19 archivos). Spec implícito S1-S6 extraído para la etapa ① `kernelSeparable`.
 - Cambios de Kiro revisados, corregidos (regresión `umbralOtsu`/dibujado y división por cero de Rosin) y commiteados.
 - Deuda de Otsu duplicado saldada: helpers privados `_preparar_histograma` y `_umbral_otsu`; verificada por equivalencia numérica contra HEAD (33 casos, idénticos).
+- Quick wins hechos: `.gitignore` (fusión con el previo: Python + env + VS Code) y eliminación de la función legada `MtoOtsu()` (307 → 194 líneas, cero llamadores verificados).
 
 ## Decisiones (y por qué)
 
@@ -26,6 +27,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 
 ## Próximos pasos
 
-- Formalizar el spec de `kernelSeparable` (etapa ①) o continuar la fase 2 con `MagFase` (etapa ②).
-- Eliminar la función legada `MtoOtsu(IG, histo=0)` del final del archivo: Otsu con bucle `for`, nadie la usa, y calcula los centros de bin con `edges + wbin` (diferente al resto del archivo).
-- Agregar `.gitignore` para `__pycache__/` y core dumps.
+- Formalizar el spec de `kernelSeparable` (etapa ①) con el off-by-one de `ConvR`/`ConvC`, o continuar la fase 2 con `MagFase` (etapa ②).
+- Orden acordado: quick wins ✅ → spec-driven (`kernelSeparable` → `MagFase`) → slice de arranque de `.kiro` → refactor `src/odin/` al final (con specs/tests como red de seguridad).
