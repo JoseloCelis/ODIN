@@ -10,10 +10,12 @@
 
 ## Tarea 2: Decisión de limpieza (pendiente de usuario)
 
-- [ ] D1: quitar `import cv2 as cv` sin uso de `MagFase.py` (R4.1).
-- [ ] D3: guardar de arrays vacíos — pospuesto hasta existir suite de tests.
+- [x] D1: quitar `import cv2 as cv` sin uso de `MagFase.py` (R4.1).
+- [x] D3: guarda de arrays vacíos → tupla vacía sin excepción (decisión del
+      usuario: aplicar D1 + D3).
 
 ## Tarea 3: Commit y memoria
 
-- [ ] Commit del spec.
-- [ ] Actualizar `MEMORY.md`.
+- [x] Commit del spec.
+- [ ] Commit de la limpieza D1 + D3.
+- [x] Actualizar `MEMORY.md`.

@@ -1,8 +1,12 @@
 #[ MGr, angle ] 
 import numpy as np
-import cv2 as cv
 
 def MagFase( GrX, GrY ):
+    # Entradas vacias: devolvemos tupla vacia en vez de dejar que np.max
+    # truene con su mensaje interno (contrato R5.1 del spec mag-fase)
+    if GrX.size == 0 or GrY.size == 0:
+        return np.empty(0), np.empty(0)
+
     #MGr=np.sqrt(GrX*GrX+GrY*GrY)
     MGr=np.hypot(GrX,GrY)
     MGr_max = np.max(np.abs(MGr))

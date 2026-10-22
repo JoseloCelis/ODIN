@@ -11,6 +11,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Deuda de Otsu duplicado saldada: helpers privados `_preparar_histograma` y `_umbral_otsu`; verificada por equivalencia numérica contra HEAD (33 casos, idénticos).
 - Quick wins hechos: `.gitignore` (fusión con el previo: Python + env + VS Code) y eliminación de la función legada `MtoOtsu()` (307 → 194 líneas, cero llamadores verificados).
 - Etapa ① `kernelSeparable` completada spec-first: spec en `.kiro/specs/kernel-separable/` (R1-R6 estilo ODD) y fixes D1 (off-by-one de `ConvR`/`ConvC`: se perdía el tap extremo del kernel), D2 (guard de sigma tras dimensionar arrays) y D3 (`DGY[:,640]` hardcodeado). Verificado: 200 casos vs referencia NumPy (1e-12) y vs `cv2.sepFilter2D` (6.9e-17 imagen completa).
+- Etapa ② `MagFase` completada: spec de caracterización en `.kiro/specs/mag-fase/` (R1-R5) — la matemática estaba correcta; el spec fija el contrato (magnitud `hypot` normalizada a [0,1], ángulo en grados `(-180,180]` con `mod360` aguas abajo). Limpieza aplicada: sin `import cv2` muerto y guarda de arrays vacíos → tupla vacía.
 
 ## Decisiones (y por qué)
 
@@ -28,6 +29,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 
 ## Próximos pasos
 
-- Spec-driven de la etapa ② `MagFase` (magnitud y dirección del gradiente) — usando el patrón ya probado: spec → fix → batería numérica.
-- Orden acordado: quick wins ✅ → `kernelSeparable` ✅ → `MagFase` → slice de arranque de `.kiro` → refactor `src/odin/` al final (con specs/tests como red de seguridad).
+- Decisión pendiente: continuar el spec-driven con la etapa ③ `NonMaxSup` (LinearInterpolation / DobleThreshold) o saltar al slice de arranque de `.kiro` (R1/R2/R6 recortados).
+- Orden acordado: quick wins ✅ → `kernelSeparable` ✅ → `MagFase` ✅ → siguiente: `NonMaxSup` o slice de arranque → refactor `src/odin/` al final (con specs/tests como red de seguridad).
 - Deuda anotada de la etapa ① (fuera de alcance del fix): D4 sigma flotante truena, D5 convolución en Python puro (~57M iteraciones para 1280×720), D6 `ConvR.py`/`ConvC.py` sueltos son duplicados muertos.
