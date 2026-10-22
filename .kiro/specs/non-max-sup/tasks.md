@@ -8,15 +8,16 @@
 - [x] Batería de caracterización: delta, cuchilla ancha, meseta 3×3, espejo
   80°/100°, partición de umbrales.
 
-## Tarea 2: Fixes (pendiente de usuario)
+## Tarea 2: Fixes
 
-- [ ] D2: tie-breaking consistente (`>=` en los 4 sectores) + reejecución de B'.
-- [ ] D1: selección de vecinos por cuadrante (signo de Gx/Gy) + simetría de C'.
-- [ ] D3: decisión sobre el parámetro muerto `angle` de `DobleThreshold`.
-- [ ] D4: limpieza de código muerto (propio commit).
+- [x] D2: tie-breaking consistente (`>=` en los 4 sectores) + reejecución de B' (9/9 ambos).
+- [x] D1: selección de vecinos por eje mod 180° (cuadrante-correcta) + simetría de C' (exacta).
+- [x] D3: parámetro muerto `angle` eliminado de `DobleThreshold`; `main.py` actualizado.
+- [x] D4: revisión y descarte — `NMS_Parabolic`, `NMS_Gaussian`, `Interpolation_old`,
+  bloques comentados y `NMS_Migrado.py` (cero referencias verificadas).
 
 ## Tarea 3: Commit y memoria
 
-- [ ] Commit del spec.
-- [ ] Commit de fixes.
-- [ ] Actualizar `MEMORY.md`.
+- [x] Commit del spec.
+- [x] Commit de fixes (+ referencia escalar 100 casos + integración 1→2→3).
+- [x] Actualizar `MEMORY.md`.

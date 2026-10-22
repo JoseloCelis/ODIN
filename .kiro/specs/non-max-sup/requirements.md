@@ -75,8 +75,9 @@ sesgo diagonal.
 
 1. WHEN dos campos de gradiente son espejos geométricos entre sí (p.ej.
    perfiles simétricos con ángulos θ y 180−θ), THEN las máscaras de salida
-   SHALL ser espejo entre sí. **(Divergencia D1: NO cumple — verificado:
-   2 celdas de 81 asimétricas en el caso 80°/100°.)**
+   SHALL ser espejo entre sí. **(Resuelto: el esquema de comparación sobre el
+   eje mod 180° con selección de vecinos por sector es simétrico por
+   construcción — verificado: espejo 80°/100° exacto.)**
 
 ### Requirement 4: Tie-breaking consistente entre sectores
 
@@ -88,8 +89,8 @@ orientación.
 
 1. WHEN un píxel empata con el valor interpolado de sus vecinos, THEN el
    criterio (`>=` o `>`) SHALL ser idéntico en los 4 sectores.
-   **(Divergencia D2: NO cumple — sector 0 usa `>=` y conserva 9/9 celdas de
-   una meseta 3×3; los sectores 45/90/135 usan `> y conservan 0/9.)**
+   **(Resuelto: `>=` en los 4 sectores — meseta 3×3 → 9/9 en gradiente 0 y
+   en gradiente 90.)**
 
 ### Requirement 5: Umbralizado doble
 
@@ -105,6 +106,7 @@ adyacentes a fuertes.
 2. WHEN `thresh > 1`, THEN SHALL tratarse como `1.0` (corte superior).
 3. THE umbral inferior SHALL ser `thresh²` (decisión de diseño vigente; el
    código original usaba `0.4·thresh`, comentado en el fuente).
-4. (Deuda de firma) El parámetro `angle` de `DobleThreshold` SHALL considerarse
+4. (Deuda de firma, resuelta) El parámetro `angle` de `DobleThreshold` era
    obsoleto: la función no lo utiliza desde que el NMS se separó en
-   `LinearInterpolation`. **(Divergencia D3.)**
+   `LinearInterpolation`. **(Resuelto: parámetro eliminado de la firma y
+   llamador `main.py` actualizado.)**

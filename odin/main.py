@@ -422,7 +422,7 @@ class MainWindow(Adw.ApplicationWindow):
             MG, Tetha = MagnitudGradiente.MagFase( Gx, Gy )
             GNMaxS = NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)
             uOtsu, _uRosin =Otsu.umbralRosinYOtsu(GNMaxS, histo=True)
-            HighE, LowE = NonMaxSup.DobleThreshold(GNMaxS, Tetha, uOtsu)
+            HighE, LowE = NonMaxSup.DobleThreshold(GNMaxS, uOtsu)
             DetectedEdges = DoubleTh.EdgeTrack_Hyst(HighE, LowE)
             print(f"Total de bordes detectados (Px): {np.sum(DetectedEdges == 1)}")
             

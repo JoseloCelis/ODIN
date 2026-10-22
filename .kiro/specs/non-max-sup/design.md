@@ -63,3 +63,26 @@ Batería ejecutada (referencia en la sesión): A1/A4 (picos y adelgazamiento),
 B' (meseta 3×3 por sector), C' (simetría de espejo 80°/100°), D (partición de
 umbrales). Tras cualquier fix, reejecutarla; los cambios de D1 deben conservar
 A1/A4 y lograr la simetría exacta de C'.
+
+## 5. Resolución (commits de fix)
+
+- **D1 + D2 resueltos con una sola reescritura del núcleo**: la comparación se
+  hace sobre el **eje del gradiente (mod 180°)** interpolando entre los dos
+  vecinos discretos que lo estrangulan en cada extremo (fracción angular
+  `(φ mod 45)/45`). Los vecinos se eligen por sector, no por cuadrante →
+  simetría exacta; `>=` en todos los sectores → tie-breaking consistente.
+  Nota: `Gx`/`Gy` quedan en la firma de `LinearInterpolation` reservados por
+  compatibilidad; el cálculo usa solo `angle`.
+- **D3 resuelto**: firma `DobleThreshold(M, thresh)`; llamador actualizado en
+  `main.py`.
+- **D4 resuelto**: eliminados `NMS_Parabolic`, `NMS_Gaussian`,
+  `Interpolation_old`, los bloques comentados de `DobleThreshold` y el archivo
+  `NMS_Migrado.py` (cero referencias verificadas con grep antes de borrar;
+  git retiene el historial).
+- **Verificación del fix**: batería completa en verde + **referencia escalar
+  independiente** (loops escritos desde la fórmula del spec) igualada de forma
+  exacta en 100 casos aleatorios + integración etapas 1→2→3 con 268 bordes
+  fuertes detectados en un rectángulo sintético.
+- **Impacto numérico**: el output del pipeline cambia para ángulos no
+  alineados a ejes (pesos angulares en vez de tan; vecinos corregidos en
+  cuadrantes 2-4). Es un cambio buscado — era el defecto D1.
