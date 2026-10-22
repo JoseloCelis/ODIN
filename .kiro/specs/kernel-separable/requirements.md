@@ -76,10 +76,14 @@ convolución 2D con costo O(n·σ) en lugar de O(n²·σ²).
    `gk` a lo largo de las columnas (eje Y), en ese orden.
 2. THE `DGY` SHALL obtenerse aplicando `gk` a lo largo de las filas y `dgk` a lo
    largo de las columnas, en ese orden.
-3. WHEN se compara contra `cv2.sepFilter2D(E, dgk, gk)` con `BORDER_CONSTANT`
-   (zero-padding), THE resultado interior de `DGX`/`DGY` SHALL coincidir dentro
-   de tolerancia `1e-9` (la franja de borde se excluye por diferencias de
-   manejo de bordes entre implementaciones).
+3. (Convención de signo, verificada con evidencia) ODIN calcula la **convolución
+   discreta estándar** `Σ f[j]·k[i−j]` — la misma convención del `conv2` de
+   MATLAB del que proviene el código. OpenCV (`sepFilter2D`/`filter2D`) calcula
+   **correlación** (sin voltear el kernel); como `dgk` es antisimétrica, ambos
+   difieren exactamente por el signo en DGX/DGY. La comparación válida contra
+   OpenCV es `sepFilter2D` con correlación sobre `−dgk` y `BORDER_CONSTANT`
+   (zero-padding, idéntico al de ODIN): SHALL coincidir en la **imagen completa**
+   (bordes incluidos) con tolerancia `1e-12`.
 
 ### Requirement 4: Soporte completo del kernel en cada píxel de salida
 

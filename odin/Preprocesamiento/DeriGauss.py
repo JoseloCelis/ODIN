@@ -16,6 +16,11 @@ print("DeriGauss.py =", __package__, ",",  __name__)
 def DerivGauss(E,sigma,wk,wConv,wr):
     nr, nc = E.shape[:2]
     
+    # Validar sigma ANTES de dimensionar gk/dgk con n = 3*sigma
+    # (con sigma negativo, np.zeros(n*2+1) lanzaria ValueError antes del guard)
+    if sigma<=0:
+        return np.zeros_like(E), np.zeros_like(E)
+
     """if nargin < 5
         wr=round(nr/2);
         wc=round(nc/2);
@@ -38,8 +43,6 @@ def DerivGauss(E,sigma,wk,wConv,wr):
     gk=np.zeros((n*2)+1)
     dgk=np.zeros((n*2)+1)
     #dgk=[0]*((n*2)+1)
-    if sigma<=0:
-        return np.zeros_like(E), np.zeros_like(E)
     k=0
     l=0
     s=0
@@ -110,11 +113,15 @@ def dibujar_en_hilo_principal(gk, dgk, wk, wConv, wr, DGX, DGY):
         plt.show(block=False)
 
     if (wConv):
+        # Acotar cortes al tamaño real de la imagen
+        # (la columna 640 estaba hardcodeada: IndexError con <641 columnas)
+        wr_valido = min(max(wr, 0), nr - 1)
+        wc = min(640, nc - 1)
         gradientes, ay = plt.subplots(1, 2, figsize=(12, 6))
         ay[0].set_title("Derivada Gradiente en X")
-        ay[0].plot(DGX[wr,:])
+        ay[0].plot(DGX[wr_valido,:])
         ay[1].set_title("Derivada Gradiente en Y")
-        ay[1].plot(DGY[:,640])
+        ay[1].plot(DGY[:,wc])
         plt.show(block=False)
     
     return False

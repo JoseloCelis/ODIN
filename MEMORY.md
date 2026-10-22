@@ -10,6 +10,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Cambios de Kiro revisados, corregidos (regresión `umbralOtsu`/dibujado y división por cero de Rosin) y commiteados.
 - Deuda de Otsu duplicado saldada: helpers privados `_preparar_histograma` y `_umbral_otsu`; verificada por equivalencia numérica contra HEAD (33 casos, idénticos).
 - Quick wins hechos: `.gitignore` (fusión con el previo: Python + env + VS Code) y eliminación de la función legada `MtoOtsu()` (307 → 194 líneas, cero llamadores verificados).
+- Etapa ① `kernelSeparable` completada spec-first: spec en `.kiro/specs/kernel-separable/` (R1-R6 estilo ODD) y fixes D1 (off-by-one de `ConvR`/`ConvC`: se perdía el tap extremo del kernel), D2 (guard de sigma tras dimensionar arrays) y D3 (`DGY[:,640]` hardcodeado). Verificado: 200 casos vs referencia NumPy (1e-12) y vs `cv2.sepFilter2D` (6.9e-17 imagen completa).
 
 ## Decisiones (y por qué)
 
@@ -27,5 +28,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 
 ## Próximos pasos
 
-- Formalizar el spec de `kernelSeparable` (etapa ①) con el off-by-one de `ConvR`/`ConvC`, o continuar la fase 2 con `MagFase` (etapa ②).
-- Orden acordado: quick wins ✅ → spec-driven (`kernelSeparable` → `MagFase`) → slice de arranque de `.kiro` → refactor `src/odin/` al final (con specs/tests como red de seguridad).
+- Spec-driven de la etapa ② `MagFase` (magnitud y dirección del gradiente) — usando el patrón ya probado: spec → fix → batería numérica.
+- Orden acordado: quick wins ✅ → `kernelSeparable` ✅ → `MagFase` → slice de arranque de `.kiro` → refactor `src/odin/` al final (con specs/tests como red de seguridad).
+- Deuda anotada de la etapa ① (fuera de alcance del fix): D4 sigma flotante truena, D5 convolución en Python puro (~57M iteraciones para 1280×720), D6 `ConvR.py`/`ConvC.py` sueltos son duplicados muertos.

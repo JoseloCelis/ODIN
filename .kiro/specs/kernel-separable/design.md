@@ -74,3 +74,22 @@ numéricas** contra referencias independientes:
 4. **AC 6.1/6.2** — visualización con imagen angosta (p.ej. 100×80) sin
    `IndexError`.
 5. Humo de importación del paquete `odin.Preprocesamiento`.
+
+### 3.1 Corrección del AC 3.3 tras la primera ejecución (lección registrada)
+
+La primera ejecución del cross-check contra OpenCV **falsificó el AC tal como
+estaba escrito**: dio diferencias de ~0.14 en el interior. El árbitro con un
+delta (impulso unitario) demostró que:
+
+- La respuesta de ODIN **sí** coincide con la teoría de la convolución 2D
+  separable (mi "teoría" inicial olvidó el factor `gk[centro]≈0.133` del passe Y
+  en Δy=0 — el error estaba en la expectativa, no en el código).
+- OpenCV calcula **correlación**; ODIN calcula **convolución** (la convención
+  del `conv2` de MATLAB original). Con kernel antisimétrico (`dgk`) ambas
+  difieren **exactamente por el signo**.
+
+AC 3.3 corregido: comparar contra `sepFilter2D` con correlación sobre `−dgk`;
+resultado tras el fix D1: `max|diff| = 6.9e-17 / 5.6e-17` (imagen completa,
+bordes incluidos — el zero-padding de `BORDER_CONSTANT` coincide con el de
+ODIN). Impacto medido del fix D1: la versión previa tenía `0.0015` de error
+interior frente a la misma referencia.

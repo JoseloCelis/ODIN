@@ -19,10 +19,12 @@ def ConvR(f,gk,nk,n,ir):
     g=np.zeros((1,n))
     for i in range (0, n):
         s = 0
+        # Soporte inclusivo: j en [i-nk, i+nk] (range() en Python es exclusivo,
+        # por eso j1 lleva el +1; en MATLAB j0:j1 era inclusivo)
         j0 = i - nk 
-        if j0 < 1:
+        if j0 < 0:
             j0 = 0
-        j1 = i + nk
+        j1 = i + nk + 1
         if j1 > n: 
             j1 = n
         for j in range(j0, j1):
@@ -34,10 +36,11 @@ def ConvC(f,gk,nk,n,ic):
     g=np.zeros((1,n))
     for i in range (0, n):
         s = 0
+        # Soporte inclusivo: j en [i-nk, i+nk] (ver nota en ConvR)
         j0 = i - nk
-        if j0 < 1:
+        if j0 < 0:
             j0 = 0
-        j1 = i + nk; 
+        j1 = i + nk + 1
         if j1 > n: 
             j1 = n
         for j in range(j0, j1):
