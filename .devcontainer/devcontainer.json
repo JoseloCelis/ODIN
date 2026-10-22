@@ -10,7 +10,7 @@
     "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
     "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
     "PULSE_SERVER": "${localEnv:PULSE_SERVER}",
-    "LD_LIBRARY_PATH": "/usr/lib/wsl/lib",
+    // Grafica NVIDIA  "LD_LIBRARY_PATH": "/usr/lib/wsl/lib",
     "GDK_BACKEND": "wayland,x11",
     "GTK_THEME": "Adwaita:dark",
     "GTK_A11Y": "none",

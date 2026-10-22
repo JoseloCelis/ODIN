@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "🐍 Debug GPU (Híbrido Automatico)",
+      "name": "🐍 Debug Vulkan (Híbrido Automatico)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/odin/main.py",
@@ -12,9 +12,9 @@
       "env":{
         "PYTHONPATH": "${workspaceFolder}",
         "GTK_A11Y": "none",
-        "DISPLAY": "${env:DISPLAY}",
-        //"DISPLAY": ":0",
-        "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}",
+        "GSK_RENDERER": "vulkan",
+        "GDK_BACKEND": "wayland",
+        "WAYLAND_DISPLAY": "wayland-0",
         "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
         //"LD_LIBRARY_PATH": "${localEnv:LD_LIBRARY_PATH}",
         //"GSK_RENDERER": "opengl",
@@ -51,11 +51,9 @@
         "PYTHONPATH": "${workspaceFolder}",
         "GTK_A11Y": "none",
         "LIBGL_ALWAYS_SOFTWARE": "1",
-        "GSK_RENDERER": "cairo",
-        //"GDK_BACKEND": "X11",
-        "DISPLAY": "${env:DISPLAY}",
-        //"DISPLAY": ":0",
-        //"WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+          "GSK_RENDERER": "cairo",
+          "GDK_BACKEND": "wayland",
+          "WAYLAND_DISPLAY": "wayland-0",
         "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
         //"GTK_THEME": "Adwaita:dark", 
         //"GDK_CORE_DEVICE_EVENTS": "1",

@@ -5,18 +5,44 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk,Adw,Gio,GLib,Gdk
+import os
+import sys
+import threading
 from pathlib import Path
 
-import sys,os
-import threading
 import numpy as np
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 #from src.utils import loadImage
 #from src.Preprocesamiento import kernelSeparable
 #from odin import handle, kernelSeparable
-from utils import handle
-from Preprocesamiento import kernelSeparable, MagnitudGradiente, Otsu, NonMaxSup, DoubleTh, aproxHough, circleFilter, LSC
+# Imports duales según cómo se ejecute (ver AGENTS.md):
+# - ejecutado como paquete (python3 -m odin.main) → imports relativos
+# - ejecutado como script (python3 odin/main.py)  → sys.path[0] es odin/, imports planos
+if __package__:
+    from .Preprocesamiento import (
+        LSC,
+        DoubleTh,
+        MagnitudGradiente,
+        NonMaxSup,
+        Otsu,
+        aproxHough,
+        circleFilter,
+        kernelSeparable,
+    )
+    from .utils import handle
+else:
+    from Preprocesamiento import (
+        LSC,
+        DoubleTh,
+        MagnitudGradiente,
+        NonMaxSup,
+        Otsu,
+        aproxHough,
+        circleFilter,
+        kernelSeparable,
+    )
+    from utils import handle
 
 display = Gdk.Display.get_default()
 
@@ -395,8 +421,8 @@ class MainWindow(Adw.ApplicationWindow):
             Gx,Gy = kernelSeparable.DerivGauss(self.current_image,self.sigma,1,1,360)
             MG, Tetha = MagnitudGradiente.MagFase( Gx, Gy )
             GNMaxS = NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)
-            umbral=Otsu.umbralOtsu(GNMaxS, histo=True);
-            HighE, LowE = NonMaxSup.DobleThreshold(GNMaxS, Tetha, umbral)
+            uOtsu, _uRosin =Otsu.umbralRosinYOtsu(GNMaxS, histo=True)
+            HighE, LowE = NonMaxSup.DobleThreshold(GNMaxS, Tetha, uOtsu)
             DetectedEdges = DoubleTh.EdgeTrack_Hyst(HighE, LowE)
             print(f"Total de bordes detectados (Px): {np.sum(DetectedEdges == 1)}")
             
@@ -574,9 +600,11 @@ class ODINAdwaita(Adw.Application):
         self.win = MainWindow(application=self)        
         self.win.present()"""
 
-# Instanciar y ejecutar la aplicación
-app = ODINAdwaita(application_id="com.detectorDistancias.Odin")
-exit_status = app.run(sys.argv)
-sys.exit(exit_status)
+# Instanciar y ejecutar la aplicación solo al ejecutar el archivo directamente,
+# para que `import odin.main` no lance la GUI.
+if __name__ == "__main__":
+    app = ODINAdwaita(application_id="com.detectorDistancias.Odin")
+    exit_status = app.run(sys.argv)
+    sys.exit(exit_status)
 
 

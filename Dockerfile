@@ -67,4 +67,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 #COPY . /workspaces/code
 
-CMD [ "python3", "main.py"]
+# El código fuente NO se copia a la imagen (solo requirements.txt): llega con el mount del
+# devcontainer en /workspaces/ODIN. Por eso el entrypoint real es odin/main.py, no main.py.
+CMD [ "python3", "odin/main.py" ]

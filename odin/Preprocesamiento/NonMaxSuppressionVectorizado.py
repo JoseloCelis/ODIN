@@ -314,7 +314,7 @@ def DobleThreshold(M, angle, thresh):
         thresh = 1.0
         
     uthresh = thresh
-    Newlthresh = thresh * 0.4
+    #lthresh = thresh * 0.4
     lthresh = thresh * thresh
     
     
