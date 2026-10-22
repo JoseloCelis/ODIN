@@ -7,49 +7,81 @@ from gi.repository import GLib
 #hist.legend()
 
 
+def _preparar_histograma(IG):
+    """Filtra los píxeles > 0 y calcula el histograma con 256 bins fijos.
+
+    Devuelve (counts, edges, xcenters), o (None, None, None) si no hay píxeles válidos.
+    """
+    # Filtrar solo los píxeles mayores a 0 (eliminando el fondo negro si aplica)
+    píxeles_validos = IG[IG > 0]
+    
+    if píxeles_validos.size == 0:
+        return None, None, None
+
+    # Bins fijos para asegurar consistencia indexada
+    counts, edges = np.histogram(píxeles_validos, bins=256)
+    wbin = (edges[1] - edges[0]) / 2
+    xcenters = edges[:-1] + wbin
+    return counts, edges, xcenters
+
+
+def _umbral_otsu(counts, xcenters):
+    """Otsu vectorizado: devuelve el umbral que maximiza la varianza interclase.
+
+    Parameters:
+    counts (numpy.ndarray): Conteos del histograma.
+    xcenters (numpy.ndarray): Centros de bin del histograma.
+
+    Returns:
+    float: El valor del umbral óptimo.
+    """
+    L = len(counts)
+    N = np.sum(counts)
+    p = counts / N  # Probabilidades de cada bin
+    
+    intensidades = np.arange(1, L + 1)
+    uT = np.dot(intensidades, p)  # Media total de la imagen
+    
+    # Vectorización del cálculo de Otsu (sin bucles for)
+    w0 = np.cumsum(p)        # Peso acumulado de la clase 0 (background)
+    w1 = 1.0 - w0            # Peso acumulado de la clase 1 (foreground)
+    
+    # Evitar divisiones por cero en los extremos del histograma
+    # Si el peso es 0 o 1, la varianza interclase será 0 de todas formas.
+    safe_mask = (w0 > 0) & (w1 > 0)
+    
+    u = np.cumsum(intensidades * p)  # Media acumulada
+    
+    u0 = np.zeros_like(w0)
+    u1 = np.zeros_like(w1)
+    
+    u0[safe_mask] = u[safe_mask] / w0[safe_mask]
+    u1[safe_mask] = (uT - u[safe_mask]) / w1[safe_mask]
+    
+    # Varianza interclase para todos los niveles simultáneamente
+    vB = (w0 * w1) * ((u1 - u0) ** 2)
+    
+    # Encontrar el valor máximo de la varianza interclase
+    idx_max = np.argmax(vB)
+    return xcenters[idx_max]
+
+
 def umbralRosinYOtsu(IG, histo=False):
     """
     Calcula el umbral utilizando Otsu y Rosin, y muestra el histograma
     con escala logarítmica si histo=True.
     """
-    # 1. Filtrar píxeles mayores a 0
-    píxeles_validos = IG[IG > 0]
+    # 1. Histograma de píxeles activos
+    counts, edges, xcenters = _preparar_histograma(IG)
     
-    if píxeles_validos.size == 0:
+    if counts is None:
         return 0.0, 0.0
 
-    # 2. Calcular el histograma con bins fijos para asegurar consistencia indexada
-    counts, edges = np.histogram(píxeles_validos, bins=256)
-    wbin = (edges[1] - edges[0]) / 2
-    xcenters = edges[:-1] + wbin
+    # 2. Algoritmo 1: Otsu
+    umbral_otsu = _umbral_otsu(counts, xcenters)
     
-    # ==========================================
-    # ALGORITMO 1: OTSU (Tu implementación original)
-    # ==========================================
+    # 3. Algoritmo 2: criterio de Rosin
     L = len(counts)
-    N = np.sum(counts)
-    p = counts / N  
-    
-    intensidades = np.arange(1, L + 1)
-    uT = np.dot(intensidades, p)  
-    
-    w0 = np.cumsum(p)        
-    w1 = 1.0 - w0            
-    safe_mask = (w0 > 0) & (w1 > 0)
-    
-    u = np.cumsum(intensidades * p)  
-    u0 = np.zeros_like(w0)
-    u1 = np.zeros_like(w1)
-    u0[safe_mask] = u[safe_mask] / w0[safe_mask]
-    u1[safe_mask] = (uT - u[safe_mask]) / w1[safe_mask]
-    
-    vB = (w0 * w1) * ((u1 - u0) ** 2)
-    idx_max_otsu = np.argmax(vB)
-    umbral_otsu = xcenters[idx_max_otsu]
-    
-    # ==========================================
-    # ALGORITMO 2: CRITERIO DE ROSIN (Nuevo)
-    # ==========================================
     # Encontrar el pico más alto (P1)
     idx_pico = np.argmax(counts)
     x1, y1 = xcenters[idx_pico], counts[idx_pico]
@@ -102,49 +134,14 @@ def umbralOtsu(IG, histo=False):
     Returns:
     float: El valor del umbral óptimo.
     """
-    # 1. Filtrar solo los píxeles mayores a 0 (eliminando el fondo negro si aplica)
-    píxeles_validos = IG[IG > 0]
+    # 1. Histograma de píxeles activos
+    counts, edges, xcenters = _preparar_histograma(IG)
     
-    if píxeles_validos.size == 0:
+    if counts is None:
         return 0.0
 
-    # 2. Calcular el histograma automáticamente con el método de Freedman-Diaconis ('auto')
-    # o puedes fijar 'bins=256' si manejas imágenes estándar de 8 bits.
-    counts, edges = np.histogram(píxeles_validos, bins=256)
-    wbin = (edges[1] - edges[0]) / 2
-    xcenters = edges[:-1] + wbin
-    
-    
-    # 4. Inicializar variables para el algoritmo de Otsu
-    L = len(counts)
-    N = np.sum(counts)
-    p = counts / N  # Probabilidades de cada bin
-    
-    intensidades = np.arange(1, L + 1)
-    uT = np.dot(intensidades, p)  # Media total de la imagen
-    
-    # 5. Vectorización del cálculo de Otsu (sin bucles for)
-    w0 = np.cumsum(p)        # Peso acumulado de la clase 0 (background)
-    w1 = 1.0 - w0            # Peso acumulado de la clase 1 (foreground)
-    
-    # Evitar divisiones por cero en los extremos del histograma
-    # Si el peso es 0 o 1, la varianza interclase será 0 de todas formas.
-    safe_mask = (w0 > 0) & (w1 > 0)
-    
-    u = np.cumsum(intensidades * p)  # Media acumulada
-    
-    u0 = np.zeros_like(w0)
-    u1 = np.zeros_like(w1)
-    
-    u0[safe_mask] = u[safe_mask] / w0[safe_mask]
-    u1[safe_mask] = (uT - u[safe_mask]) / w1[safe_mask]
-    
-    # Varianza interclase para todos los niveles simultáneamente
-    vB = (w0 * w1) * ((u1 - u0) ** 2)
-    
-    # 6. Encontrar el valor máximo de la varianza interclase
-    idx_max = np.argmax(vB)
-    umbral = xcenters[idx_max]
+    # 2. Otsu vectorizado
+    umbral = _umbral_otsu(counts, xcenters)
     
     # 3. Mostrar histograma si se solicita (sin umbral Rosin: None)
     GLib.idle_add(dibujar_en_hilo_principal, xcenters, counts, edges, umbral, None, histo)

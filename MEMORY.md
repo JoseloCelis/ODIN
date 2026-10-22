@@ -8,6 +8,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Specs de arranque en `.kiro/specs/odin-startup-structure/` (requirements/design/tasks) — NO implementados aún.
 - CodeGraph indexado (19 archivos). Spec implícito S1-S6 extraído para la etapa ① `kernelSeparable`.
 - Cambios de Kiro revisados, corregidos (regresión `umbralOtsu`/dibujado y división por cero de Rosin) y commiteados.
+- Deuda de Otsu duplicado saldada: helpers privados `_preparar_histograma` y `_umbral_otsu`; verificada por equivalencia numérica contra HEAD (33 casos, idénticos).
 
 ## Decisiones (y por qué)
 
@@ -26,5 +27,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 ## Próximos pasos
 
 - Formalizar el spec de `kernelSeparable` (etapa ①) o continuar la fase 2 con `MagFase` (etapa ②).
-- Deduplicar el Otsu vectorizado (ahora copiado en `umbralOtsu` y `umbralRosinYOtsu`) — deuda menor.
+- Eliminar la función legada `MtoOtsu(IG, histo=0)` del final del archivo: Otsu con bucle `for`, nadie la usa, y calcula los centros de bin con `edges + wbin` (diferente al resto del archivo).
 - Agregar `.gitignore` para `__pycache__/` y core dumps.
