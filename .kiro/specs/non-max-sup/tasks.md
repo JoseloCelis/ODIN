@@ -13,8 +13,11 @@
 - [x] D2: tie-breaking consistente (`>=` en los 4 sectores) + reejecución de B' (9/9 ambos).
 - [x] D1: selección de vecinos por eje mod 180° (cuadrante-correcta) + simetría de C' (exacta).
 - [x] D3: parámetro muerto `angle` eliminado de `DobleThreshold`; `main.py` actualizado.
-- [x] D4: revisión y descarte — `NMS_Parabolic`, `NMS_Gaussian`, `Interpolation_old`,
-  bloques comentados y `NMS_Migrado.py` (cero referencias verificadas).
+- [x] D4: revisión con verificación de utilidad (corregido tras decisión del
+  usuario — sin referencias ≠ sin utilidad) — `NMS_Parabolic` y
+  `NMS_Gaussian` **recuperados** (subpíxel exacto, simetría 20/20);
+  `Interpolation_old` y `NMS_Migrado.py` descartados **tras verificar** que
+  fallan simetría 20/20 (el primero es la D1 superada; el segundo suma 0/0).
 
 ## Tarea 3: Commit y memoria
 

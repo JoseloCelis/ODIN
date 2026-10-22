@@ -75,10 +75,22 @@ A1/A4 y lograr la simetría exacta de C'.
   compatibilidad; el cálculo usa solo `angle`.
 - **D3 resuelto**: firma `DobleThreshold(M, thresh)`; llamador actualizado en
   `main.py`.
-- **D4 resuelto**: eliminados `NMS_Parabolic`, `NMS_Gaussian`,
-  `Interpolation_old`, los bloques comentados de `DobleThreshold` y el archivo
-  `NMS_Migrado.py` (cero referencias verificadas con grep antes de borrar;
-  git retiene el historial).
+- **D4 resuelto con revisión de utilidad (corregido tras decisión del usuario)**:
+  "sin referencias" no es lo mismo que "sin utilidad" — verificar la ausencia
+  de llamadores solo respondía "¿se usa?", no "¿sirve?". Veredicto final tras
+  batería de utilidad:
+  - **Recuperados** `NMS_Parabolic` y `NMS_Gaussian`: variantes de NMS con
+    estimación **subpíxel del valor del pico** (ajuste parabólico). En el
+    perfil cuadrático de prueba (vertex en x0=2.3): error `0.000000` y
+    `0.001138` vs `0.008100` del discreto. Simetría 20/20 y adelgazamiento
+    correctos. Caveat documentado en sus docstrings: el valor del pico puede
+    exceder `max(MG)` — aptos para medición geométrica (etapas 7-9), no como
+    entrada de Otsu/DobleThreshold.
+  - **Se mantienen eliminados** `Interpolation_old` (falla simetría 20/20: es
+    la misma ceguera de cuadrante D1, superada por el `LinearInterpolation`
+    reescrito) y `NMS_Migrado.py` (falla simetría 20/20, aviso `0/0` al
+    dividir entre `MG[i,j]=0`, bucles por píxel lentos). Verificados ambos
+    antes de confirmar el descarte; git retiene el historial.
 - **Verificación del fix**: batería completa en verde + **referencia escalar
   independiente** (loops escritos desde la fórmula del spec) igualada de forma
   exacta en 100 casos aleatorios + integración etapas 1→2→3 con 268 bordes
