@@ -18,6 +18,19 @@ def _preparar_histograma(IG):
     if píxeles_validos.size == 0:
         return None, None, None
 
+    # Caso degenerado: todos los valores activos son iguales. np.histogram
+    # expandiria el rango a +/-0.5 alrededor del valor y el centro del bin
+    # dejaria de ser el valor real (para valores chicos el resultado podia
+    # ser negativo). Devolvemos un histograma de un solo bin centrado
+    # exactamente en ese valor (spec otsu-rosin, R5/D1).
+    vmin, vmax = píxeles_validos.min(), píxeles_validos.max()
+    if vmin == vmax:
+        valor = float(vmin)
+        ancho = max(abs(valor) * 1e-6, 1e-9)  # ancho arbitrario: solo importa el centro
+        return (np.array([píxeles_validos.size]),
+                np.array([valor - ancho, valor + ancho]),
+                np.array([valor]))
+
     # Bins fijos para asegurar consistencia indexada
     counts, edges = np.histogram(píxeles_validos, bins=256)
     wbin = (edges[1] - edges[0]) / 2
@@ -38,7 +51,16 @@ def _umbral_otsu(counts, xcenters):
     L = len(counts)
     N = np.sum(counts)
     p = counts / N  # Probabilidades de cada bin
-    
+
+    # Caso degenerado: un solo bin no vacio (todos los pixeles activos iguales).
+    # np.histogram expande un rango cero a +/-0.5, deja un unico bin ocupado y
+    # vB queda en cero en todo el arreglo: np.argmax devolveria el indice 0,
+    # es decir xcenters[0] = valor - 0.5 (potencialmente negativo). Devolvemos
+    # el centro del bin ocupado, que es el valor real (spec otsu-rosin, R5/D1).
+    bins_ocupados = np.flatnonzero(counts > 0)
+    if bins_ocupados.size <= 1:
+        return float(xcenters[bins_ocupados[0]]) if bins_ocupados.size == 1 else 0.0
+
     intensidades = np.arange(1, L + 1)
     uT = np.dot(intensidades, p)  # Media total de la imagen
     

@@ -110,11 +110,12 @@ arbitrario del borde artificial del histograma.
 #### Acceptance Criteria
 
 1. WHEN todos los píxeles activos tienen el mismo valor (un solo bin no
-   vacío), THEN el umbral SHALL ser ese valor (el centro del bin ocupado).
-   **(Divergencia D1: NO cumple — `np.histogram` expande el rango ±0.5 y se
-   devuelve `xcenters[0] = valor − 0.5 + ½bin`: para un valor 0.05 el umbral
-   resultante es −0.448, negativo.)**
+   vacío), THEN el umbral SHALL ser exactamente ese valor. **(Resuelto:
+   `_preparar_histograma` devuelve un histograma de un solo bin centrado en el
+   valor real; verificado 1e-6, 0.001, 0.005, 0.05, 0.5, 0.7, 1.0 y 3.7 → el
+   umbral es idéntico al valor.)**
 2. THE umbral devuelto SHALL ser siempre ≥ 0 cuando la entrada es ≥ 0.
+   **(Resuelto; verificado con valores diminutos: 1e-12 y 1e-6 incluidos.)**
 
 ### Requirement 6: Función pura respecto de la UI (deuda)
 

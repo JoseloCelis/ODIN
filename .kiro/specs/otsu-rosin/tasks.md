@@ -8,15 +8,16 @@
 - [x] Batería previa: referencia Otsu independiente, prueba de meseta, escala,
   degenerados, geometría de Rosin.
 
-## Tarea 2: Fixes (pendiente de usuario)
+## Tarea 2: Fixes
 
-- [ ] D1: guarda de un solo bin no vacío → devolver el centro de ese bin.
-- [ ] D1: verificar que el umbral sea ≥ 0 con entrada ≥ 0.
-- [ ] D3: decisión — mantener como deuda o desacoplar `GLib` ahora.
-- [ ] D4: decisión — conservar `umbralOtsu` (recomendado).
+- [x] D1: guarda de un solo bin — `_preparar_histograma` devuelve un histograma
+  de un bin centrado en el valor exacto (+ guarda defensiva en `_umbral_otsu`).
+- [x] D1: umbral ≥ 0 con entrada ≥ 0 (verificado hasta 1e-12).
+- [x] D3: se mantiene como deuda para el refactor `src/odin/`.
+- [x] D4: `umbralOtsu` se conserva (API pública legítima).
 
 ## Tarea 3: Commit y memoria
 
-- [ ] Commit del spec.
-- [ ] Commit de fixes.
-- [ ] Actualizar `MEMORY.md`.
+- [x] Commit del spec.
+- [x] Commit del fix D1 (batería completa reejecutada).
+- [x] Actualizar `MEMORY.md`.

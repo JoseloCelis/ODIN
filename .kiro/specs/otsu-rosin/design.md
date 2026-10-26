@@ -57,10 +57,14 @@ usa solo para dibujar. El respaldo cuando la recta es indefinida ya existe.
 
 ## 3. Divergencias registradas
 
-- **D1 (defecto real, degenerado)**: un solo bin no vacío → devuelve
-  `v − 0.5 + ½bin`, que puede ser negativo. Fix propuesto: si hay un único bin
-  no vacío, devolver su centro. Es una guarda de 3 líneas en
-  `_umbral_otsu`/`umbralRosinYOtsu` (cubrir también el caso rosin/otsu iguales).
+- **D1 (defecto real, degenerado) — RESUELTO**: un solo bin no vacío devolvía
+  `v − 0.5 + ½bin`, que podía ser negativo. Resolución final: la guarda vive en
+  `_preparar_histograma`, que ante valores activos todos iguales devuelve un
+  histograma de **un solo bin centrado exactamente en ese valor**.
+  Nota de proceso: el primer intento devolvía el centro del bin del histograma
+  artificial y falló para valores diminutos (0.001 → −0.000953); el bin no es
+  el valor. Se deja además una guarda defensiva en `_umbral_otsu` para
+  cualquier caso futuro de un solo bin ocupado.
 - **D2 (contrato, no defecto)**: meseta de Otsu documentada en R3.
 - **D3 (deuda arquitectónica)**: `GLib.idle_add` incondicional en
   `umbralRosinYOtsu` y `umbralOtsu`; el módulo importa `gi`. Deuda ya anotada
@@ -73,12 +77,11 @@ usa solo para dibujar. El respaldo cuando la recta es indefinida ya existe.
 - **D5 (menor)**: Rosin usa distancia absoluta e incluye el bin del pico en la
   zona de búsqueda. Sin efecto práctico porque su valor es solo diagnóstico.
 
-## 4. Decisiones pendientes (usuario)
+## 4. Decisiones (resueltas por el usuario)
 
-1. Aplicar el fix de D1 (guarda de un solo bin) — recomendado, bajo riesgo.
-2. Dejar D3 como deuda documentada (recomendado) o adelantar el desacople de
-   `GLib` en esta etapa.
-3. Conservar `umbralOtsu` (recomendado) o retirarla por no tener llamadores.
+1. Fix de D1 — **aplicado** (ver §3).
+2. D3 — queda como deuda documentada para el refactor `src/odin/`.
+3. `umbralOtsu` — **se conserva** como API pública.
 
 ## 5. Verificación
 
