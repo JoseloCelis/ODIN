@@ -6,9 +6,13 @@
   (GTK4 + libadwaita vía PyGObject) que detecta bordes a nivel subpíxel y mide características
   geométricas: anchos de líneas, centros y radios de círculos en imágenes BMP/TIFF/JPEG.
   Python 3.12, numpy / scipy / opencv / matplotlib.
-- Sin empaquetado (`pyproject.toml` / `setup.py`), **sin tests, sin lint/format/typecheck, sin CI**.
-  La única verificación disponible es que la app arranque y el pipeline corra sobre una imagen.
-  El `postCreateCommand` del devcontainer es la prueba de humo de facto:
+- Sin empaquetado (`pyproject.toml` / `setup.py`), sin lint/format/typecheck ni CI.
+  Sí hay **suite de tests** (pytest) en `tests/`: 44 casos que cubren las etapas 1-5 y el pipeline
+  completo, con referencias independientes en `tests/utilidades.py` (convolución con `np.convolve`,
+  OpenCV con `BORDER_CONSTANT`, NMS escalar, Otsu por barrido sobre valores reales). Se ejecuta desde
+  la raíz con `python3 -m pytest tests -v` (~3-4 s); requiere `python3-pytest` por apt en el host y
+  llega por `requirements.txt` en el devcontainer.
+  La prueba de humo de que la GUI arranca sigue siendo el `postCreateCommand` del devcontainer:
   `python3 -c "import gi; gi.require_version('Gtk','4.0'); gi.require_version('Adw','1'); ..."`.
 
 ## Cómo ejecutar
