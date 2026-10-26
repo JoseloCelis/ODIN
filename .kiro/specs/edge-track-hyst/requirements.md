@@ -102,10 +102,14 @@ salida vacía, no una excepción.
 2. THE módulo SHALL NOT llamar `sys.setrecursionlimit` en el camino de
    producción (hoy lo hace `DThEdgeTrack`, que no se usa).
 
-### Requirement 8: Diagnóstico por consola (decisión pendiente)
+### Requirement 8: Diagnóstico por consola
+
+**User Story:** Como lector de la consola, quiero una sola línea de resumen del
+pipeline, no ocho líneas de diagnóstico por cada procesamiento.
 
 #### Acceptance Criteria
 
-1. THE función imprime en cada llamada el máximo de las máscaras, el conteo
-   de fuertes, las islas conectadas y el total. Es comportamiento actual;
-   su retiro o condicionamiento requiere decisión del usuario.
+1. THE función SHALL NOT escribir en consola. Era el único módulo del pipeline
+   con prints por llamada; el modelo queda libre de salida, como el resto.
+2. THE orquestador (`main.py`) SHALL reportar el resumen de la etapa en una
+   sola línea: fuertes, débiles y píxeles conservados tras la histéresis.

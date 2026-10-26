@@ -23,13 +23,6 @@ def EdgeTrack_Hyst(strong, weaks):
         salida = np.zeros(strong.shape, dtype=np.uint8)
         salida[strong > 0] = 255
         return salida
-    
-    print("--- DIAGNÓSTICO DE HISTÉRESIS (OPENCV) ---")
-    print(f"Máximo en fuertes: {np.max(strong)}")
-    print(f"Máximo en debiles: {np.max(weaks)}")
-    print(f"Píxeles verdaderos en strong_mask: {np.sum(strong > 0)}")
-    print(f"Píxeles verdaderos en weak_mask: {np.sum(weaks > 0)}")
-    
     # 1. Crear máscaras lógicas globales y asegurar formato uint8 para OpenCV
     strong_mask = strong > 0
     weak_mask = weaks > 0
@@ -39,8 +32,9 @@ def EdgeTrack_Hyst(strong, weaks):
     # Inicializar la imagen de salida vacía
     output = np.zeros_like(strong, dtype=np.uint8)
     
-    # 2. Dilatación de bordes fuertes (Simula el vecindario)
-    # Nota: cv2.dilate requiere uint8. El kernel de 3x3 simula conectividad de 8 vecinos.
+    # 2. Dilatación de bordes fuertes (simula el vecindario)
+    # Nota: cv2.dilate requiere uint8. El kernel de 7x7 alcanza distancia
+    # Chebyshev <= 3, el mismo radio que usaba la versión recursiva.
     dilation_kernel = np.ones((7, 7), dtype=np.uint8)
     strong_dilated = cv2.dilate(strong_mask.astype(np.uint8), dilation_kernel).astype(bool)
     
@@ -71,9 +65,5 @@ def EdgeTrack_Hyst(strong, weaks):
         # np.isin funciona perfectamente con la matriz de 32 bits generada por OpenCV
         connected_weak_mask = np.isin(weaks_labeled, connected_ids)
         output[connected_weak_mask] = 255
-        
-    print(f"Bordes fuertes recuperados: {np.sum(strong_mask)}")
-    print(f"Islas débiles conectadas encontradas: {connected_ids.size} de {num_features}")
-    print(f"Total de píxeles blancos en la salida: {np.sum(output == 255)}")
-        
+
     return output

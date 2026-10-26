@@ -92,15 +92,20 @@ arreglo vacío; `np.max` no tiene identidad para tamaño cero.
   §2.3: superada y inutilizable a escala.
 - **D4 (cosmético en `main.py`) — RESUELTO**: `np.sum(DetectedEdges == 1)`
   imprimía siempre 0 porque la salida es 0/255; ahora cuenta `> 0`.
-- **D5 (diagnóstico)**: cuatro `print` por llamada. Requiere decisión
-  (R8): mantenerlos, condicionarlos a un flag o quitarlos. **Pendiente.**
+- **D5 (diagnóstico) — RESUELTO**: los 8 `print` por llamada salieron del
+  modelo. Era el único módulo con salida por llamada (verificado: el resto
+  solo imprime al importarse, y esos prints son intencionales). El resumen
+  vive ahora en `main.py`, en una línea: fuertes, débiles y total tras la
+  histéresis. De paso se corrigió el comentario obsoleto que hablaba de un
+  kernel 3×3 cuando el código usa 7×7 (radio Chebyshev ≤ 3, el del spec).
 
-## 4. Decisiones pendientes (usuario)
+## 4. Decisiones (usuario)
 
 1. ~~Aplicar D1 (guarda de entrada vacía)~~ — hecho, con test en rojo primero.
 2. ~~Eliminar el código muerto recursivo (D3)~~ — hecho.
 3. ~~Corregir el diagnóstico de `main.py` (D4)~~ — hecho.
-4. Mantener o condicionar los `print` (D5) — **sigue pendiente**.
+4. ~~Mantener o condicionar los `print` (D5)~~ — hecho: fuera del modelo,
+   resumen de una línea en el orquestador.
 
 ## 5. Verificación
 

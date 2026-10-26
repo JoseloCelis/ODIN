@@ -424,7 +424,8 @@ class MainWindow(Adw.ApplicationWindow):
             uOtsu, _uRosin =Otsu.umbralRosinYOtsu(GNMaxS, histo=True)
             HighE, LowE = NonMaxSup.DobleThreshold(GNMaxS, uOtsu)
             DetectedEdges = DoubleTh.EdgeTrack_Hyst(HighE, LowE)
-            print(f"Total de bordes detectados (Px): {np.sum(DetectedEdges > 0)}")
+            print(f"Bordes: {np.sum(HighE > 0)} fuertes, {np.sum(LowE > 0)} débiles, "
+                  f"{np.sum(DetectedEdges > 0)} tras histéresis")
             
             resultadosProcesamiento["gx"] = handle.matriz_a_pixbuf(Gx)
             resultadosProcesamiento["gy"] = handle.matriz_a_pixbuf(Gy)

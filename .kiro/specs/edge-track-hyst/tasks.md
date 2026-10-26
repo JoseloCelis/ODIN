@@ -23,7 +23,9 @@
   (152 → 79 líneas), tras verificar en §2.2/§2.3 del design que el código
   muerto está superado y revienta a 300×300.
 - [x] D4: `main.py` imprime `np.sum(DetectedEdges > 0)`.
-- [ ] D5: decisión sobre los cuatro `print` de diagnóstico por llamada.
+- [x] D5: los 8 `print` por llamada salieron del modelo; en `main.py` queda
+  una línea con fuertes, débiles y total. Comentario obsoleto del kernel
+  corregido (3×3 → 7×7).
 
 ## Tarea 4: Cierre — hecha
 
