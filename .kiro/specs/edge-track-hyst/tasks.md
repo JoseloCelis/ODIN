@@ -8,20 +8,25 @@
 - [x] Batería previa: radio Chebyshev, comparación vectorizada vs recursiva,
   degenerados, `RecursionError` en 300×300, contrato de salida.
 
-## Tarea 2: Tests (TDD)
+## Tarea 2: Tests (TDD) — hecha
 
-- [ ] `tests/test_etapa6_edge_track_hyst.py` con la caracterización de
-  `EdgeTrack_Hyst` (R1-R5).
-- [ ] Test de entrada vacía **en rojo** (R6.1) antes de tocar el código.
+- [x] `tests/test_etapa6_edge_track_hyst.py` con la caracterización de
+  `EdgeTrack_Hyst` (R1-R5): 17 casos.
+- [x] Test de entrada vacía **en rojo** (R6.1) antes de tocar el código
+  (falló con `ValueError: zero-size array to reduction operation maximum`).
 
-## Tarea 3: Fixes (pendiente de OK del usuario)
+## Tarea 3: Fixes — hechos
 
-- [ ] D1: entrada vacía sin excepción → test en verde.
-- [ ] D3: eliminar `DThEdgeTrack` + `FindConnectedWeakEdges` (+ `import sys`).
-- [ ] D4: `main.py` imprime `np.sum(DetectedEdges > 0)`.
-- [ ] D5: decisión sobre los `print` de diagnóstico.
+- [x] D1: guarda temprana en `EdgeTrack_Hyst` (`strong.size == 0` → salida
+  vacía; `weaks.size == 0` → solo fuertes) → test en verde.
+- [x] D3: eliminados `DThEdgeTrack` + `FindConnectedWeakEdges` + `import sys`
+  (152 → 79 líneas), tras verificar en §2.2/§2.3 del design que el código
+  muerto está superado y revienta a 300×300.
+- [x] D4: `main.py` imprime `np.sum(DetectedEdges > 0)`.
+- [ ] D5: decisión sobre los cuatro `print` de diagnóstico por llamada.
 
-## Tarea 4: Cierre
+## Tarea 4: Cierre — hecha
 
-- [ ] Suite completa verde (`python3 -m pytest tests -v`).
-- [ ] Commit y `MEMORY.md`.
+- [x] Suite completa verde: `python3 -m pytest tests -q` → **62 passed**.
+- [x] Import smoke (`python3 -c "import odin.main"`).
+- [x] `MEMORY.md` actualizado y commit.

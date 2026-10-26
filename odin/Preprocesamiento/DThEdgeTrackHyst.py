@@ -1,6 +1,5 @@
 import numpy as np
-import cv2 
-import sys
+import cv2
 
 #from scipy.ndimage import label, generate_binary_structure, binary_dilation
 
@@ -10,6 +9,20 @@ def EdgeTrack_Hyst(strong, weaks):
     de forma vectorizada (sin recursión).
     
     """
+    strong = np.asarray(strong)
+    weaks = np.asarray(weaks)
+
+    # Entrada sin píxeles: OpenCV rechaza imágenes vacías y np.max no tiene
+    # identidad para tamaño cero. Se devuelve la salida vacía con la forma de
+    # `strong` (spec edge-track-hyst, R6/D1).
+    if strong.size == 0:
+        return np.zeros(strong.shape, dtype=np.uint8)
+
+    # Sin débiles no hay nada que propagar: sobreviven solo los fuertes.
+    if weaks.size == 0:
+        salida = np.zeros(strong.shape, dtype=np.uint8)
+        salida[strong > 0] = 255
+        return salida
     
     print("--- DIAGNÓSTICO DE HISTÉRESIS (OPENCV) ---")
     print(f"Máximo en fuertes: {np.max(strong)}")
@@ -64,89 +77,3 @@ def EdgeTrack_Hyst(strong, weaks):
     print(f"Total de píxeles blancos en la salida: {np.sum(output == 255)}")
         
     return output
-
-
-def DThEdgeTrack(MG, threshold):
-    """
-    Double Threshold Edge Tracking con histéresis.
-    Traducción directa del código MATLAB sin optimizaciones.
-    
-    Parameters:
-        MG: Matriz de magnitudes después de supresión no máxima
-        threshold: Umbral superior (entre 0 y 1)
-    
-    Returns:
-        MG: Matriz binaria de bordes detectados
-    """
-    row, col = MG.shape
-    uthresh = threshold
-    lthresh = threshold * threshold
-    
-    # Inicializar arrays de seguimiento
-    strongEdgesRow = np.zeros(row * col, dtype=int)
-    strongEdgesCol = np.zeros(row * col, dtype=int)
-    weakEdgesRow = np.zeros(row * col, dtype=int)
-    weakEdgesCol = np.zeros(row * col, dtype=int)
-    strongIndex = 0  # Python usa índice 0
-    weakIndex = 0    # Python usa índice 0
-    
-    # Primera pasada: clasificar píxeles
-    for i in range(1, row - 1):  # Equivalente a 2:row-1 en MATLAB
-        for j in range(1, col - 1):  # Equivalente a 2:col-1 en MATLAB
-            if MG[i, j] > uthresh:  # Borde fuerte
-                MG[i, j] = 1
-                strongEdgesRow[strongIndex] = i
-                strongEdgesCol[strongIndex] = j
-                strongIndex = strongIndex + 1
-            elif MG[i, j] < lthresh:  # No es borde
-                MG[i, j] = 0
-            else:  # Borde débil
-                weakEdgesRow[weakIndex] = i
-                weakEdgesCol[weakIndex] = j
-                weakIndex = weakIndex + 1
-    
-    # Crear arrays de bordes (solo la parte usada)
-    sEdges = np.column_stack((strongEdgesRow[:strongIndex], 
-                               strongEdgesCol[:strongIndex]))
-    wEdges = np.column_stack((weakEdgesRow[:weakIndex], 
-                               weakEdgesCol[:weakIndex]))
-    
-    # Aumentar límite de recursión (equivalente a set(0,'RecursionLimit',10000))
-    sys.setrecursionlimit(10000)
-    
-    # Segunda pasada: seguimiento de bordes por histéresis
-    for i in range(strongIndex):
-        MG = FindConnectedWeakEdges(MG, strongEdgesRow[i], strongEdgesCol[i])
-    
-    # Tercera pasada: limpiar bordes débiles no conectados
-    for i in range(weakIndex):
-        if MG[weakEdgesRow[i], weakEdgesCol[i]] != 1:
-            MG[weakEdgesRow[i], weakEdgesCol[i]] = 0
-    
-    return MG
-
-
-def FindConnectedWeakEdges(Gmag, row, col):
-    """
-    Función recursiva que encuentra bordes débiles conectados a bordes fuertes.
-    
-    Parameters:
-        Gmag: Matriz de magnitudes
-        row: Fila del píxel actual
-        col: Columna del píxel actual
-    
-    Returns:
-        Gmag: Matriz actualizada
-    """
-    for i in range(-3, 4):  # Equivalente a -3:1:3 en MATLAB
-        for j in range(-3, 4):  # Equivalente a -3:1:3 en MATLAB
-            # Verificar límites
-            if (row + i > 0) and (col + j > 0) and \
-               (row + i < Gmag.shape[0]) and (col + j < Gmag.shape[1]):
-                # Si es borde débil (entre 0 y 1)
-                if (Gmag[row + i, col + j] > 0) and (Gmag[row + i, col + j] < 1):
-                    Gmag[row + i, col + j] = 1
-                    # Llamada recursiva
-                    Gmag = FindConnectedWeakEdges(Gmag, row + i, col + j)
-    
-    return Gmag

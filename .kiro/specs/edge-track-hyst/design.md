@@ -64,7 +64,7 @@ La recursiva no sobrevive a una imagen de 300×300. Además
 | fuerte vacío, débil lleno | 0 blancos ✓ |
 | fuerte 1 px, débil vacío | 1 blanco ✓ |
 | ambos vacíos | 0 blancos ✓ |
-| arreglo `(0, 0)` | **ValueError** (D1) |
+| arreglo `(0, 0)` | **ValueError** (D1) → **hoy devuelve salida vacía** |
 | `1×1` | ok |
 
 Causa de D1: los `print` de diagnóstico calculan `np.max(strong)` sobre un
@@ -76,27 +76,31 @@ arreglo vacío; `np.max` no tiene identidad para tamaño cero.
 
 ## 3. Divergencias registradas
 
-- **D1 (defecto real)**: entrada vacía → `ValueError` por `np.max`. Fix:
-  `np.max(..., initial=0.0)` en los diagnósticos (o guarda temprana).
+- **D1 (defecto real) — RESUELTO**: entrada vacía → `ValueError` por `np.max`.
+  Causa: los `print` de diagnóstico calculan `np.max(strong)` sobre un arreglo
+  vacío y `np.max` no tiene identidad para tamaño cero (además OpenCV rechaza
+  imágenes vacías). Fix aplicado: guarda temprana en `EdgeTrack_Hyst`
+  (`strong.size == 0` → salida vacía con su forma; `weaks.size == 0` → solo
+  fuertes). Test en rojo primero, verde después.
 - **D2 (semántica, no defecto)**: la vectorizada no une islas separadas por
   huecos ≤ 3 px; la recursiva sí. Se conserva el comportamiento vectorizado
   (es el de producción y coincide con la histéresis clásica 8-conexa).
-- **D3 (código muerto)**: `DThEdgeTrack` + `FindConnectedWeakEdges`, cero
-  llamadores, `RecursionError` en 300×300, `setrecursionlimit` global.
-  Recomendación: **eliminar** (previo OK del usuario: la regla es verificar
-  utilidad antes de borrar, y aquí la verificación muestra que está
-  superada y es inutilizable a escala). Con ella se va el `import sys`.
-- **D4 (cosmético en `main.py`)**: `np.sum(DetectedEdges == 1)` siempre
-  imprime 0 porque la salida es 0/255. Fix de una línea (`> 0`).
+- **D3 (código muerto) — RESUELTO**: `DThEdgeTrack` + `FindConnectedWeakEdges`
+  eliminados (cero llamadores, `RecursionError` en 300×300,
+  `setrecursionlimit` global), junto con `import sys`. Archivo 152 → 79 líneas.
+  La verificación de utilidad exigida por la regla del proyecto está en §2.2 y
+  §2.3: superada y inutilizable a escala.
+- **D4 (cosmético en `main.py`) — RESUELTO**: `np.sum(DetectedEdges == 1)`
+  imprimía siempre 0 porque la salida es 0/255; ahora cuenta `> 0`.
 - **D5 (diagnóstico)**: cuatro `print` por llamada. Requiere decisión
-  (R8): mantenerlos, condicionarlos a un flag o quitarlos.
+  (R8): mantenerlos, condicionarlos a un flag o quitarlos. **Pendiente.**
 
 ## 4. Decisiones pendientes (usuario)
 
-1. Aplicar D1 (guarda de entrada vacía) — test en rojo primero.
-2. Eliminar el código muerto recursivo (D3) — recomendado.
-3. Corregir el diagnóstico de `main.py` (D4) — recomendado.
-4. Mantener o condicionar los `print` (D5).
+1. ~~Aplicar D1 (guarda de entrada vacía)~~ — hecho, con test en rojo primero.
+2. ~~Eliminar el código muerto recursivo (D3)~~ — hecho.
+3. ~~Corregir el diagnóstico de `main.py` (D4)~~ — hecho.
+4. Mantener o condicionar los `print` (D5) — **sigue pendiente**.
 
 ## 5. Verificación
 
