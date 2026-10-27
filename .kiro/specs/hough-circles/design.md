@@ -109,35 +109,82 @@ necesita detección explícita (R5).
 
 La convolución domina el tiempo; el barrido es marginal.
 
-## 3. Diseño propuesto
+### 2.7 Defecto R9: el llamador recibía todos los centros
 
-### 3.1 Función de barrido (capa modelo)
+`main.py` hacía `aproxCenter = (xRecortada, yRecortada)` y lo pasaba a
+`find_circle`, que hace `xd, yd = centro`. Con `n = 1` los arreglos de un
+elemento se transmiten por broadcasting y **funciona por casualidad**. Con
+`n > 1` y un número distinto de puntos de borde, rompe:
 
-```python
-def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20):
-    """Devuelve (radio, pico, relacion_ambiguedad)."""
+```
+ValueError: operands could not be broadcast together with shapes (968,) (2,)
 ```
 
-- Recorre `np.arange(r_min, r_max + 1, paso)`.
-- Para cada radio obtiene `acc.max()` (no necesita los picos, solo el máximo).
-- `relacion_ambiguedad = segundo_pico / primer_pico` con los dos mayores picos
-  de radios **distintos**.
+Medido con dos círculos sintéticos: `n = 2`, 968 puntos → `ValueError`. En el
+recorte real de `img100`, Hough devolvía **54 picos** con `r = 126.5`, así que
+el caso que funcionaba era el improbable. `main.py` captura la excepción y
+muestra "Error Matemático", de modo que el usuario ve un fallo genérico y no
+la causa.
+
+Además, el orden de `np.nonzero` es por filas, **no** por votos: quedarse con
+`[0]` sería elegir el pico más arriba en la imagen. Por eso la selección es por
+`argmax` del acumulador.
+
+### 2.8 Verificación de punta a punta sobre `img100`
+
+Recorte de 1114 × 1112 (r0 = 556.0), cadena exacta del orquestador:
+
+| Dato | Valor |
+|---|---|
+| Disco real | centro (555.6, 556.2), r = 428.31 → diámetro 856.61 |
+| Banda de búsqueda | [333.6, 556.0] |
+| `estimar_radio` | **427.6** en 5.6 s, pico 206, ambigüedad **0.35** |
+| Picos de Hough con ese radio | **1**, centro (556, 556), 206 votos |
+| Anillo de `find_circle` | 3153 puntos |
+| Ajuste final | centro (555.81, 556.43), **r = 427.85**, diámetro 855.70 |
+
+Errores: radio **0.46 px**, diámetro **0.91 px**, centro **0.29 px**.
+Antes, con `diametro = 253`: r = 403.95, 24.4 px de error de centro y 24.4 px
+de radio. `pv` pasó de 0.995 (ajuste a un arco) a 2.034.
+
+## 3. Diseño
+
+### 3.1 API implementada (capa modelo)
+
+```python
+UMBRAL_AMBIGUEDAD = 0.8
+SEPARACION_AMBIGUEDAD_PX = 6.0
+
+def mejor_centro(x0, y0, acumulador):        # -> (x, y, votos) | None
+def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
+                  separacion_px=SEPARACION_AMBIGUEDAD_PX):
+                                             # -> (radio, pico, ambiguedad)
+```
+
+- Recorre `np.arange(r_min, r_max + paso/2, paso)`.
+- Para cada radio toma `acc.max()`.
+- `ambiguedad = segundo / primero`, donde `segundo` ignora los radios a menos
+  de `separacion_px` del ganador (si no, todo círculo perfecto sería ambiguo:
+  medido 0.95 de relación con `r=35 + r=45` frente a 0.26-0.37 de un círculo
+  único).
+- Sin bordes o sin votos → `(0.0, 0, 0.0)`, sin excepción.
 - Sin dependencias de UI: cumple la regla del modelo.
 
-Umbral de ambigüedad propuesto: **0.8**. En img100 la relación es 107/206 = 0.52
-(no ambigua); un empate técnico (≥ 0.8) se reporta.
-
-### 3.2 Flujo del orquestador
+### 3.2 Flujo del orquestador (implementado, sin R6)
 
 ```
 recorte -> etapas 1-6 -> bordes
    r0 = min(alto, ancho)/2
-   si el usuario declaró diámetro: r = diametro_usuario/2        (omite barrido)
-   si no:                          (r, pico, amb) = estimar_radio(bordes, 0.6*r0, r0)
-   Hough con r -> find_circle(radio=r) -> LSC
+   (r, pico, amb) = estimar_radio(bordes, 0.6*r0, r0)
+   si r == 0 -> ValueError (el recorte no contiene un círculo)
+   Hough con r -> mejor_centro -> find_circle(radio=r, centro) -> LSC
+   si amb >= UMBRAL_AMBIGUEDAD -> aviso en consola
 ```
 
-### 3.3 Campo de diámetro (capa vista)
+El campo de diámetro con precarga (R6) sigue pendiente: hoy el valor detectado
+se informa por consola, no se puede sobrescribir desde la interfaz.
+
+### 3.3 Campo de diámetro (capa vista) — DEUDA (R6)
 
 - Un `Adw.EntryRow` (o `Gtk.SpinButton`) rotulado por el valor detectado.
 - Estado separado: `valor_detectado` (lo pone el barrido) y
@@ -150,21 +197,31 @@ recorte -> etapas 1-6 -> bordes
 ### 3.4 Fuera de alcance (etapas siguientes)
 
 - Círculos concéntricos (top-2 de radios) — requiere decisión de producto.
-- Estimación del radio sin recorte previo.
-- Borrado del código muerto (R8): se decide tras verificar utilidad, como en la
-  etapa ⑥.
+  Mientras no exista, un círculo grande tapa a uno mucho más chico sin que se
+  reporte ambigüedad (§2.5 de R5).
+- Estimación del radio sin recorte previo: la banda `[0.6·r0, r0]` asume que el
+  recorte contiene el círculo completo y no mucho más. Medido: con un recorte
+  holgado (r0 = 2.2·r) el radio verdadero queda **fuera** de la banda y el
+  barrido devuelve basura.
+- Borrado del código muerto (R8): verificado sin llamadores; se decide aparte.
 
-## 4. Verificación prevista
 
-`tests/test_etapa7_hough_circles.py`:
+## 4. Verificación ejecutada
 
-- Barrido sobre círculos sintéticos de radio conocido (r = 20, 45, 80): error
-  ≤ 1 px.
-- Radio fuera de la banda → `ValueError`.
-- Sin bordes → `n = 0`, sin excepción.
-- `imagen binaria` con dos círculos de radios distintos → el barrido devuelve
-  el de mayor pico y lo reporta como ambiguo si corresponde.
-- Integración ⑥→⑦→⑧→⑨ sobre un círculo sintético de radio conocido: error del
-  radio final ≤ 0.5 px.
-- Caso de regresión del defecto: recorte de `img100` no se commitea (15 MB); la
-  evidencia queda en este documento.
+`tests/test_etapa7_hough_circles.py` — **22 casos**:
+
+| Requisito | Test |
+|---|---|
+| R1 | centro de un círculo sintético, forma del acumulador, `dist<10`, `thres<0.5`, sin bordes, imagen de tamaño cero |
+| R9 | dos círculos → `n=2`; `mejor_centro` elige por votos; sin picos → `None`; flujo con un solo centro no rompe |
+| R3 / R4 | radios conocidos 20/45/80 (error ≤ 1 px), banda invertida, radio no positivo, paso no positivo, sin bordes, ambigüedad alta y baja |
+| R2 | `main.py` no contiene radio constante y llama a `estimar_radio` |
+| R7 | cadena ①→⑥→⑦→⑧→⑨ con contraste normal e invertido (error ≤ 0.5 px) |
+
+Escrito en rojo primero: **16 fallos / 6 pasados**; los 6 que pasaron son la
+caracterización de R1, o sea que los tests describen el contrato real y no uno
+inventado. Suite completa: **84 passed**.
+
+El recorte de `img100` no se commitea (15 MB); la evidencia numérica de punta a
+punta queda en §2.8.
+

@@ -1,9 +1,15 @@
 import numpy as np
 from scipy.ndimage import maximum_filter
-import math
 
-import numpy as np
-from scipy.ndimage import maximum_filter
+# Umbral de ambigüedad del barrido de radios (spec hough-circles, R5): si el
+# segundo candidato supera esta fracción del primero, la detección se reporta
+# como ambigua en lugar de presentarse como certera.
+UMBRAL_AMBIGUEDAD = 0.8
+
+# Separación mínima, en píxeles, para considerar que dos radios son candidatos
+# distintos y no el mismo pico repartido entre radios vecinos.
+SEPARACION_AMBIGUEDAD_PX = 6.0
+
 
 def hough_circles_vectorizado(im_binary, r, thres=0.5, dist=20):
     """
@@ -29,6 +35,13 @@ def hough_circles_vectorizado(im_binary, r, thres=0.5, dist=20):
 
     # Asegurarnos de que sea una matriz booleana
     im_binary = np.asarray(im_binary, dtype=bool)
+
+    # Entrada vacía: np.max no tiene identidad para tamaño cero (spec
+    # hough-circles, R1.4). Se devuelve la salida vacía, como en la etapa 6.
+    if im_binary.size == 0:
+        vacio = np.empty(0, dtype=int)
+        return vacio, vacio, 0, np.zeros(im_binary.shape, dtype=int)
+
     num_row, num_col = im_binary.shape
 
     # 1. Encontrar los índices (y, x) de los píxeles que son bordes
@@ -69,6 +82,79 @@ def hough_circles_vectorizado(im_binary, r, thres=0.5, dist=20):
     n = len(y0_detected)
 
     return x0_detected, y0_detected, n, accumulator
+
+
+def mejor_centro(x0, y0, acumulador):
+    """Devuelve `(x, y, votos)` del pico con más votos, o `None` sin picos.
+
+    `hough_circles_vectorizado` devuelve TODOS los picos, en orden de barrido
+    de la imagen (no de votos). El llamador debe quedarse con uno solo: pasar
+    el arreglo completo a `find_circle` rompe el broadcasting (spec
+    hough-circles, R9).
+    """
+    x0 = np.asarray(x0)
+    y0 = np.asarray(y0)
+
+    if x0.size == 0 or y0.size == 0:
+        return None
+
+    votos = np.asarray(acumulador)[y0, x0]
+    mejor = int(np.argmax(votos))
+
+    return int(x0[mejor]), int(y0[mejor]), int(votos[mejor])
+
+
+def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
+                  separacion_px=SEPARACION_AMBIGUEDAD_PX):
+    """Estima el radio dominante barriendo la banda `[r_min, r_max]`.
+
+    Devuelve `(radio, pico, ambiguedad)`:
+
+    - `radio`: el radio cuyo pico del acumulador es mayor (0.0 si no hay bordes).
+    - `pico`: votos de ese radio.
+    - `ambiguedad`: relación entre el segundo candidato y el primero. Los
+      radios vecinos (a menos de `separacion_px`) no cuentan como candidatos
+      distintos: son el mismo pico repartido por la discretización.
+
+    La banda la deriva el llamador del recorte: `r0 = min(alto, ancho) / 2`
+    y `[0.6 * r0, r0]` (spec hough-circles, R4).
+
+    Limitación conocida: el pico bruto crece con el radio (más puntos de
+    borde), así que un círculo grande domina a uno mucho más chico y la
+    ambigüedad no se reporta. Ver `design.md` §3.4.
+    """
+    r_min = float(r_min)
+    r_max = float(r_max)
+    paso = float(paso)
+
+    if not np.isfinite([r_min, r_max, paso]).all():
+        raise ValueError("estimar_radio:: los límites y el paso deben ser finitos")
+    if r_min <= 0:
+        raise ValueError("estimar_radio:: r_min debe ser mayor que 0")
+    if r_min > r_max:
+        raise ValueError("estimar_radio:: r_min no puede superar a r_max")
+    if paso <= 0:
+        raise ValueError("estimar_radio:: el paso debe ser mayor que 0")
+
+    im_binary = np.asarray(im_binary)
+    if im_binary.size == 0 or not np.any(im_binary > 0):
+        return 0.0, 0, 0.0
+
+    radios = np.arange(r_min, r_max + paso * 0.5, paso)
+    picos = np.array([
+        int(hough_circles_vectorizado(im_binary, float(radio), thres, dist)[3].max())
+        for radio in radios
+    ])
+
+    mejor = int(np.argmax(picos))
+    if picos[mejor] <= 0:
+        return 0.0, 0, 0.0
+
+    pasos_separacion = max(1, int(round(separacion_px / paso)))
+    otros = [p for j, p in enumerate(picos) if abs(j - mejor) >= pasos_separacion]
+    segundo = max(otros) if otros else 0
+
+    return float(radios[mejor]), int(picos[mejor]), float(segundo / picos[mejor])
 
 def houghCircles(Imbinary, r, thres=None, dist=None):
     """

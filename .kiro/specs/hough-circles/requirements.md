@@ -86,6 +86,14 @@ editar el código.
    diseño.
 2. WHEN la detección es ambigua, THEN la interfaz SHALL mostrarlo antes de
    aceptar el valor, en lugar de presentar el diámetro como certero.
+3. Los radios vecinos (a menos de `SEPARACION_AMBIGUEDAD_PX`) SHALL NOT contar
+   como candidatos distintos: son el mismo pico repartido por la
+   discretización. Sin esta exclusión, todo círculo perfecto se reportaría
+   como ambiguo.
+4. Limitación declarada: el pico bruto crece con el radio, así que un círculo
+   grande domina a uno mucho más chico y la ambigüedad no se reporta. Medido:
+   `r=35 + r=45` concéntricos → relación 0.951 (ambigua); `r=30 + r=60` →
+   0.366 (no reportada). Resolverlo exige top-k de radios, fuera de alcance.
 
 ### Requirement 6: Campo de diámetro en la interfaz
 
@@ -127,3 +135,22 @@ oscuro como agujeros oscuros sobre fondo claro.
    (`main.py:448`); `houghCircles` es una traducción de MATLAB con bucles
    Python por punto y por ángulo, sin llamadores; `houghpeaks` e
    `imregionalmax` solo son usadas por ella.
+
+### Requirement 9: El llamador elige UN centro
+
+**User Story:** Como etapa ⑧ (`find_circle`), quiero recibir **un** centro, no
+la lista completa de picos.
+
+#### Acceptance Criteria
+
+1. THE orquestador SHALL elegir un único centro entre los picos de R1, usando
+   el **mayor número de votos** del acumulador.
+2. THE función de selección SHALL devolver `None` cuando no hay picos, para que
+   el orquestador pueda abortar con un mensaje en vez de seguir con basura.
+3. THE elección SHALL NOT depender del orden de `np.nonzero`, que recorre la
+   imagen por filas y no está ordenado por votos.
+4. Evidencia del defecto (medido): `main.py` pasaba el tuple de **arreglos**
+   completo a `find_circle`. Con `n = 1` funcionaba solo por broadcasting; con
+   `n > 1` lanzaba `ValueError: operands could not be broadcast together with
+   shapes (968,) (2,)`. En el recorte real de `img100` Hough devolvía 54 picos,
+   así que el caso `n = 1` era una casualidad.

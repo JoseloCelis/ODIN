@@ -444,10 +444,29 @@ class MainWindow(Adw.ApplicationWindow):
             self.vistas_procesadas["bordes fuertes"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordesfuertes"]))
             self.vistas_procesadas["bordes"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordes"]))            
         
-            diametro=253    
-            xRecortada, yRecortada, n, accumulador = aproxHough.hough_circles_vectorizado(DetectedEdges, diametro/2, 0.8)  
-            aproxCenter = (xRecortada, yRecortada)
-            puntosFiltrados = circleFilter.find_circle(DetectedEdges, diametro/2, aproxCenter)
+            # Etapa 7: el radio no es una constante (spec hough-circles, R2).
+            # Se deriva del recorte (R4) y el barrido elige entre candidatos
+            # (R3). El campo de diámetro en la UI queda como deuda (R6).
+            alto, ancho = DetectedEdges.shape[:2]
+            r0 = min(alto, ancho) / 2
+            radio, pico, ambiguedad = aproxHough.estimar_radio(
+                DetectedEdges, 0.6 * r0, r0)
+            if radio <= 0:
+                raise ValueError("No se pudo estimar el radio del circulo en el recorte.")
+
+            xRecortada, yRecortada, n, accumulador = aproxHough.hough_circles_vectorizado(
+                DetectedEdges, radio, 0.8)
+            centro = aproxHough.mejor_centro(xRecortada, yRecortada, accumulador)
+            if centro is None:
+                raise ValueError("La transformada de Hough no encontro centros.")
+
+            aviso = " (revisar: hay otro candidato parecido)" if (
+                ambiguedad >= aproxHough.UMBRAL_AMBIGUEDAD) else ""
+            print(f"Radio estimado: {radio:.1f} px (diametro {2 * radio:.1f}), "
+                  f"pico {pico}, ambiguedad {ambiguedad:.2f}{aviso}")
+
+            puntosFiltrados = circleFilter.find_circle(
+                DetectedEdges, radio, (centro[0], centro[1]))
             x, y, r, pv = LSC.Circulo_simple(puntosFiltrados)
             x = self.xRecorte+x
             y = self.yRecorte+y
