@@ -33,9 +33,9 @@ def EdgeTrack_Hyst(strong, weaks):
     output = np.zeros_like(strong, dtype=np.uint8)
     
     # 2. Dilatación de bordes fuertes (simula el vecindario)
-    # Nota: cv2.dilate requiere uint8. El kernel de 7x7 alcanza distancia
-    # Chebyshev <= 3, el mismo radio que usaba la versión recursiva.
-    dilation_kernel = np.ones((7, 7), dtype=np.uint8)
+    # Nota: cv2.dilate requiere uint8. El kernel de 5x5 alcanza distancia
+    # Chebyshev <= 2 (spec edge-track-hyst, R3).
+    dilation_kernel = np.ones((5, 5), dtype=np.uint8)
     strong_dilated = cv2.dilate(strong_mask.astype(np.uint8), dilation_kernel).astype(bool)
     
     # 3. Análisis de componentes conexas con OpenCV en 32 BITS (Evita el crash de bits)

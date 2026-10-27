@@ -6,7 +6,7 @@
 
 | Símbolo | Algoritmo | Llamadores | Estado |
 |---|---|---|---|
-| `EdgeTrack_Hyst(strong, weaks)` | OpenCV: dilate 7×7 + connectedComponents(8) | `main.py:426` | **en producción** |
+| `EdgeTrack_Hyst(strong, weaks)` | OpenCV: dilate 5×5 + connectedComponents(8) | `main.py:426` | **en producción** |
 | `DThEdgeTrack(MG, threshold)` | MATLAB: 3 pasadas + recursión | **0** | código muerto |
 | `FindConnectedWeakEdges(Gmag, row, col)` | recursiva, ventana 7×7 | 1 (la anterior) | código muerto |
 
@@ -20,18 +20,24 @@ print(f"Total de bordes detectados (Px): {np.sum(DetectedEdges == 1)}")
 
 ## 2. Evidencia ejecutada
 
-### 2.1 Radio de alcance (máscaras reales de `DobleThreshold`, débil = 0.30)
+### 2.1 Radio de alcance (contrato vigente: kernel 5×5)
 
 | Distancia | Horizontal | Diagonal |
 |---|---|---|
-| 1 | conservado | — |
+| 1 | conservado | conservado |
 | 2 | conservado | conservado |
-| 3 | conservado | conservado |
-| 4 | **descartado** | **descartado** |
+| 3 | **descartado** | **descartado** |
+| 4 | descartado | — |
 | 5 | descartado | — |
 
-→ coincide exactamente con la dilatación 7×7 (Chebyshev ≤ 3), que a su vez
-preserva el radio ±3 de la versión MATLAB.
+→ coincide exactamente con la dilatación 5×5 (Chebyshev ≤ 2).
+
+**Historial**: el contrato original era 7×7 (Chebyshev ≤ 3), heredado del radio
+±3 de la versión MATLAB, y conservaba también `d=3`. Se redujo a 5×5 por
+decisión del usuario (§4.5). Medición de respaldo: sobre `img100.bmp` real,
+3×3, 5×5 y 7×7 producen los mismos 10 028 bordes (0 px de diferencia); en
+sintéticas con ruido, 5×5 es indistinguible de 3×3 mientras 7×7 agrega entre
+45 y 380 píxeles espurios con σ ≥ 0.10.
 
 ### 2.2 Vectorizada vs recursiva
 
@@ -97,7 +103,7 @@ arreglo vacío; `np.max` no tiene identidad para tamaño cero.
   solo imprime al importarse, y esos prints son intencionales). El resumen
   vive ahora en `main.py`, en una línea: fuertes, débiles y total tras la
   histéresis. De paso se corrigió el comentario obsoleto que hablaba de un
-  kernel 3×3 cuando el código usa 7×7 (radio Chebyshev ≤ 3, el del spec).
+  kernel 3×3 cuando el código usa 5×5 (radio Chebyshev ≤ 2, el del spec).
 
 ## 4. Decisiones (usuario)
 
@@ -106,10 +112,14 @@ arreglo vacío; `np.max` no tiene identidad para tamaño cero.
 3. ~~Corregir el diagnóstico de `main.py` (D4)~~ — hecho.
 4. ~~Mantener o condicionar los `print` (D5)~~ — hecho: fuera del modelo,
    resumen de una línea en el orquestador.
+5. **Reducir la dilatación de 7×7 a 5×5** — hecho. El usuario juzgó exagerado
+   el 7×7. Cambia el contrato (Chebyshev ≤ 3 → ≤ 2), así que se enmienda R3,
+   se actualizan los tests y después el código. Medido como inocuo en la
+   imagen real y beneficioso bajo ruido (§2.1).
 
 ## 5. Verificación
 
-`tests/test_etapa6_edge_track_hyst.py`: radio Chebyshev (3 sí / 4 no, en eje y
+`tests/test_etapa6_edge_track_hyst.py`: radio Chebyshev (2 sí / 3 no, en eje y
 diagonal), isla continua completa, isla lejana descartada, hueco ≤3 no une
 islas, sin fuertes → vacío, sin débiles → solo fuertes, `uint8 {0,255}`,
 argumentos no modificados, entrada vacía sin excepción.

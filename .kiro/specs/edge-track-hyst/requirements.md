@@ -18,7 +18,7 @@ en código muerto; el riesgo real es otro (ver R6).
 
 - **Fuerte**: píxel con `strong > 0` (la máscara viene de `DobleThreshold`).
 - **Débil**: píxel con `weaks > 0`.
-- **Distancia Chebyshev**: `max(|Δfila|, |Δcol|)`; radio 3 = ventana 7×7.
+- **Distancia Chebyshev**: `max(|Δfila|, |Δcol|)`; radio 2 = ventana 5×5.
 - **Isla débil**: componente conexa de la máscara débil (8-vecinos).
 
 ---
@@ -53,10 +53,18 @@ núcleo del borde y su cola débil.
 
 #### Acceptance Criteria
 
-1. A weak pixel SHALL conservarse si está a **distancia Chebyshev ≤ 3** de un
-   fuerte (dilatación con kernel 7×7).
-2. Evidencia vinculante: horizontal `d=1,2,3` conservado, `d=4,5` descartado;
-   diagonal `d=2,3` conservado, `d=4` descartado.
+1. A weak pixel SHALL conservarse si está a **distancia Chebyshev ≤ 2** de un
+   fuerte (dilatación con kernel 5×5).
+2. Evidencia vinculante: horizontal `d=1,2` conservado, `d=3,4,5` descartado;
+   diagonal `d=1,2` conservado, `d=3` descartado.
+3. **Enmienda de contrato (decisión del usuario)**: el valor anterior era
+   Chebyshev ≤ 3 (kernel 7×7). Se reduce a 5×5 porque el 7×7 se juzgó
+   exagerado para el hueco real entre núcleo y cola del borde. Medición que
+   respalda el cambio: sobre `img100.bmp` real, 3×3, 5×5 y 7×7 producen los
+   mismos 10 028 bordes (0 px de diferencia), y en imágenes sintéticas con
+   ruido, 5×5 es indistinguible de 3×3 mientras 7×7 agrega entre 45 y 380
+   píxeles espurios con σ ≥ 0.10. El 5×5 conserva el comportamiento útil y
+   recorta el alcance innecesario.
 
 ### Requirement 4: Isla débil se conserva completa o se descarta completa
 

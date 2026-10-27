@@ -25,10 +25,17 @@
 - [x] D4: `main.py` imprime `np.sum(DetectedEdges > 0)`.
 - [x] D5: los 8 `print` por llamada salieron del modelo; en `main.py` queda
   una línea con fuertes, débiles y total. Comentario obsoleto del kernel
-  corregido (3×3 → 7×7).
+  corregido (3×3 → 5×5).
 
 ## Tarea 4: Cierre — hecha
 
 - [x] Suite completa verde: `python3 -m pytest tests -q` → **62 passed**.
 - [x] Import smoke (`python3 -c "import odin.main"`).
 - [x] `MEMORY.md` actualizado y commit.
+
+## Tarea 5: Enmienda de contrato 7×7 → 5×5 — hecha
+
+- [x] R3 enmendado (Chebyshev ≤ 3 → ≤ 2) con la justificación medida.
+- [x] Tests de radio actualizados **antes** de tocar el kernel (2 sí / 3 no).
+- [x] `np.ones((7, 7))` → `np.ones((5, 5))` en `DThEdgeTrackHyst.py`.
+- [x] Suite completa verde tras el cambio.

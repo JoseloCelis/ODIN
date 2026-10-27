@@ -3,8 +3,8 @@
 Caracterización del comportamiento en producción (spec edge-track-hyst):
 - Recibe MÁSCARAS (cualquier valor > 0 significa "presente").
 - Los fuertes se conservan siempre; sin fuertes la salida es vacía.
-- Un débil se conserva si está a distancia Chebyshev <= 3 de un fuerte
-  (dilatación 7x7, heredada del radio ±3 de la versión MATLAB).
+- Un débil se conserva si está a distancia Chebyshev <= 2 de un fuerte
+  (dilatación 5x5).
 - Una isla débil 8-conexa se conserva entera si toca esa zona; entera si no.
 - Islas separadas por huecos no se unen (contrato R5: la recursiva sí las
   unía, pero no es la implementación en producción).
@@ -34,7 +34,7 @@ def _salida_de(magnitudes):
 
 
 @pytest.mark.parametrize("distancia, conservado", [
-    (1, True), (2, True), (3, True), (4, False), (5, False),
+    (1, True), (2, True), (3, False), (4, False), (5, False),
 ])
 def test_radio_chebyshev_en_el_eje(distancia, conservado):
     mg = np.zeros((41, 41))
@@ -46,7 +46,7 @@ def test_radio_chebyshev_en_el_eje(distancia, conservado):
     assert bool(salida[20, 20 + distancia] > 0) is conservado
 
 
-@pytest.mark.parametrize("distancia, conservado", [(2, True), (3, True), (4, False)])
+@pytest.mark.parametrize("distancia, conservado", [(1, True), (2, True), (3, False)])
 def test_radio_chebyshev_en_la_diagonal(distancia, conservado):
     mg = np.zeros((41, 41))
     mg[20, 20] = FUERTE
@@ -60,7 +60,7 @@ def test_radio_chebyshev_en_la_diagonal(distancia, conservado):
 def test_isla_continua_se_conserva_completa():
     mg = np.zeros((41, 41))
     mg[20, 20] = FUERTE
-    mg[20, 23:35] = DEBIL  # 12 débiles contiguos, el último a 14 px del fuerte
+    mg[20, 22:34] = DEBIL  # 12 débiles contiguos, el último a 13 px del fuerte
 
     _, _, salida = _salida_de(mg)
 
@@ -82,13 +82,13 @@ def test_isla_fuera_de_alcance_se_descarta():
 def test_un_hueco_de_hasta_tres_pixeles_no_une_islas():
     mg = np.zeros((41, 41))
     mg[20, 20] = FUERTE
-    mg[20, 23] = DEBIL   # a 3 px del fuerte: se conserva
-    mg[20, 26] = DEBIL   # a 3 px del anterior, a 6 px del fuerte: se descarta
+    mg[20, 22] = DEBIL   # a 2 px del fuerte: se conserva
+    mg[20, 25] = DEBIL   # a 3 px del anterior, a 5 px del fuerte: se descarta
 
     _, _, salida = _salida_de(mg)
 
-    assert salida[20, 23] == 255
-    assert salida[20, 26] == 0
+    assert salida[20, 22] == 255
+    assert salida[20, 25] == 0
 
 
 def test_conserva_todos_los_fuertes():
