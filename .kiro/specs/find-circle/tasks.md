@@ -20,7 +20,8 @@
 - [x] Selección insuficiente (R4): 0, 1 y 2 puntos; ajuste subdeterminado con
       `pv = 0`; tres puntos casi colineales.
 - [x] Regresión de un solo centro (R5).
-- [x] Caracterización de la rama `re == 0` (R6).
+- [x] El modo sin radio quedó explícito (R6): `find_circle` exige el radio y
+      `segmento_mas_largo` conserva el agrupamiento, probado aislado.
 
 ## Tarea 3: Implementación — hecha
 
@@ -42,5 +43,9 @@
 
 ## Tarea 5: Cierre
 
-- [ ] `MEMORY.md` y commit.
-- [ ] Decisión pendiente de autorización: eliminar la rama `re == 0` (R6).
+- [x] `MEMORY.md` y commit.
+- [x] R6: el modo sin radio es explícito. Se descartó eliminarlo por ahora
+      (capacidad y trazabilidad con el MATLAB original); queda pendiente de
+      borrado si tras la refactorización sigue sin llamadores.
+- [x] Corrección: la afirmación de que `< 6` y `<= 6` eran umbrales distintos
+      era falsa; ambos ejes usan `np.where(l > 6)`, así que son equivalentes.

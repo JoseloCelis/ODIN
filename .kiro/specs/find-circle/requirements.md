@@ -144,15 +144,34 @@ inventado.
    completos lanzaba `ValueError: operands could not be broadcast together with
    shapes (968,) (2,)`.
 
-### Requirement 6: Rama `re == 0` (segmento continuo más largo)
+### Requirement 6: El modo sin radio es explícito
+
+**User Story:** Como mantenedor, quiero que un llamador que olvide el radio
+reciba un error, no otro algoritmo.
 
 #### Acceptance Criteria
 
-1. THE proyecto SHALL verificar el uso de la rama `re == 0` antes de decidir su
-   destino.
-2. Evidencia: `main.py:586` es el único llamador de producción y siempre pasa
-   `radio > 0`; la rama solo se alcanza con el valor por defecto.
-3. Deuda declarada: la rama compara huecos con umbrales **distintos en cada
-   eje** (`< 6` en X, `<= 6` en Y), así que un hueco de exactamente 6 píxeles
-   corta el segmento en X y no en Y. No se modifica ni se elimina en esta etapa
-   sin autorización explícita (regla del proyecto).
+1. THE `find_circle` SHALL exigir un radio de búsqueda positivo: `re=None` y
+   `re <= 0` SHALL lanzar `ValueError` con un mensaje que indique el uso de
+   `segmento_mas_largo`.
+2. THE agrupamiento por saltos SHALL vivir en `segmento_mas_largo(puntos)`,
+   separado de `find_circle`, para poder probarlo sin pasar por la firma de
+   búsqueda.
+3. Evidencia del riesgo que se elimina: `main.py:586` es el único llamador de
+   producción y siempre pasa `radio > 0`, así que la rama solo se alcanzaba con
+   el **valor por defecto** (`re=0.0` + `if re:`). Un llamador que olvidara el
+   radio habría recibido, sin aviso, puntos agrupados por saltos en vez del
+   anillo.
+4. THE `segmento_mas_largo` SHALL preservar exactamente el resultado de la rama
+   original: verificado contra la versión commiteada en `b350deb` sobre 300
+   conjuntos aleatorios con el mismo orden de entrada — **0 diferencias**.
+5. Deuda corregida: la afirmación anterior de que `< 6` (X) y `<= 6` (Y) eran
+   umbrales distintos era **falsa**. Como en ambos ejes el test es
+   `np.where(l > 6)`, las dos normalizaciones son equivalentes y un hueco de
+   exactamente 6 px **no** corta en ninguno: fuzz sobre 300 conjuntos, 0
+   diferencias, y el caso de huecos de 6 px conserva los 4 puntos.
+6. Limitación declarada de `segmento_mas_largo`: no usa ningún centro y agrupa
+   por saltos en la coordenada ordenada, no por conectividad espacial; con
+   círculos concéntricos se queda con la banda que los contiene a los dos. El
+   umbral de 6 px tampoco escala con la resolución de la imagen.
+

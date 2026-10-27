@@ -275,14 +275,63 @@ def test_find_circle_espera_un_par_de_escalares():
 
 
 # ---------------------------------------------------------------------------
-# R6 — rama re == 0 (sin llamadores en producción)
+# R6 — el modo sin radio es explícito y vive en su propia función
 # ---------------------------------------------------------------------------
 
-def test_la_rama_sin_radio_sigue_devolviendo_puntos():
-    """Caracterización: se conserva aunque ninguna ruta de producción la use."""
+def test_find_circle_exige_el_radio():
+    """Sin radio no hay anillo: antes se activaba otro algoritmo en silencio."""
     bordes = _anillo(200, 100, 100, 40)
 
-    puntos = FC.find_circle(bordes, 0, (100, 100))
+    with pytest.raises(ValueError, match="radio"):
+        FC.find_circle(bordes, None, (100, 100))
 
-    assert len(puntos) > 0
-    assert puntos.shape[1] == 2
+
+def test_find_circle_rechaza_radio_cero():
+    bordes = _anillo(200, 100, 100, 40)
+
+    with pytest.raises(ValueError, match="segmento_mas_largo"):
+        FC.find_circle(bordes, 0, (100, 100))
+
+
+def test_find_circle_rechaza_radio_negativo():
+    bordes = _anillo(200, 100, 100, 40)
+
+    with pytest.raises(ValueError, match="segmento_mas_largo"):
+        FC.find_circle(bordes, -30.0, (100, 100))
+
+
+def test_segmento_mas_largo_se_queda_con_el_grupo_mas_numeroso():
+    puntos = np.array([
+        [0, 0], [1, 0], [2, 0],
+        [100, 9], [101, 10], [102, 11], [103, 12],
+    ], dtype=float)
+
+    grupo = FC.segmento_mas_largo(puntos)
+
+    assert grupo.shape == (4, 2)
+    assert np.all(grupo[:, 0] >= 100)
+
+
+def test_un_hueco_de_exactamente_seis_px_no_corta():
+    """Corrección medida: el test interno es '> 6', así que 6 no separa.
+
+    La asimetría `< 6` (eje X) vs `<= 6` (eje Y) del código original es
+    cosmética: ambas normalizan a 1 antes del mismo `> 6`.
+    """
+    puntos = np.array([[0, 0], [6, 0], [12, 0], [18, 0]], dtype=float)
+
+    assert len(FC.segmento_mas_largo(puntos)) == 4
+
+
+def test_segmento_mas_largo_conserva_las_coordenadas_xy():
+    puntos = np.array([[500, 10], [501, 10], [502, 10]], dtype=float)
+
+    grupo = FC.segmento_mas_largo(puntos)
+
+    assert np.all(grupo[:, 0] > 400)   # la columna 0 es X
+    assert np.all(grupo[:, 1] < 100)
+
+
+def test_segmento_mas_largo_con_arreglo_vacio():
+    assert FC.segmento_mas_largo(np.empty((0, 2))).shape == (0, 2)
+

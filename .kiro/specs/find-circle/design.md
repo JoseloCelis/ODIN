@@ -8,7 +8,7 @@
 |---|---|---|---|
 | `find_circle(detected_edges, re, centro)` | filtra los bordes del anillo | `main.py:586` | **en producción** |
 | rama `re > 0` | anillo `[re - 10, re + 10]` | el llamador único | en producción |
-| rama `re == 0` | segmento continuo más largo | **0** | sin llamadores (R6) |
+| `segmento_mas_largo(puntos)` | agrupamiento por saltos de 6 px | **0** | extraído de la rama `re == 0`, probado aislado (R6) |
 
 `main.py` pasa `re = radio` (siempre > 0, estimado en ⑦ o declarado en el campo
 de diámetro) y el centro elegido por `mejor_centro`. La salida va directo a
@@ -95,19 +95,23 @@ HUECO_MAX_DEG = 60.0
 MINIMO_PUNTOS = 3
 
 def tolerancia_anillo(re):                    # -> float
-def find_circle(detected_edges, re=0.0, centro=(0, 0), tolerancia=None)
+def find_circle(detected_edges, re=None, centro=(0, 0), tolerancia=None)
                                               # -> ndarray (N, 2)
 def cobertura_angular(puntos, centro, bins=72)  # -> (cobertura, hueco_max_deg)
 def validar_anillo(puntos, centro, minimo_puntos=MINIMO_PUNTOS,
                    cobertura_min=UMBRAL_COBERTURA, hueco_max=HUECO_MAX_DEG)
                                               # -> (bool, motivo)
+def segmento_mas_largo(puntos)                # -> ndarray (M, 2)
 ```
 
 - `tolerancia_anillo(re) = min(TOLERANCIA_MAX_PX, FRACCION_TOLERANCIA_RADIO * re)`
   y nunca deja el límite inferior en negativo.
-- `find_circle` conserva la firma actual; `tolerancia=None` pide el valor
-  automático de R2 y un valor explícito permite pruebas y escenarios con ruido
-  de radio conocido.
+- `find_circle` **exige** el radio (R6): `re=None` y `re <= 0` lanzan
+  `ValueError`. `tolerancia=None` pide el valor automático de R2 y un valor
+  explícito permite pruebas y escenarios con ruido de radio conocido.
+- `segmento_mas_largo` es el antiguo modo "sin radio", extraído para que no se
+  active por omisión; conserva el resultado de la rama original (R6.4).
+
 - `cobertura_angular` reparte los ángulos en `bins` sectores y devuelve la
   fracción ocupada y el mayor hueco circular. Costo O(N) sobre los puntos
   seleccionados (3153 en el caso real: despreciable).
@@ -150,14 +154,15 @@ la etapa ⑧ no depende de la etapa ⑨.
 - Ajuste robusto en ⑨ (rechazo de puntos atípicos, RANSAC, mínimos cuadrados
   totales): el `pv` actual no distingue un ajuste bueno de uno malo, y eso
   pertenece a la etapa ⑨.
-- Eliminación de la rama `re == 0` (R6): sin llamadores, pero la regla del
-  proyecto exige autorización explícita.
+- Eliminación de `segmento_mas_largo` (R6): sin llamadores, pero se conserva
+  como capacidad y por trazabilidad con el MATLAB original. Si tras la
+  refactorización nadie la usa, ahí sí se puede borrar.
 - Recuperación automática tras un rechazo (reintentar con otro radio): hoy el
   usuario corrige el diámetro en el campo de la etapa ⑦.
 
 ## 4. Verificación ejecutada
 
-`tests/test_etapa8_find_circle.py` — **27 casos**:
+`tests/test_etapa8_find_circle.py` — **33 casos**:
 
 | Requisito | Test |
 |---|---|
@@ -166,12 +171,18 @@ la etapa ⑧ no depende de la etapa ⑨.
 | R3 | cobertura 100 % / hueco 0° en un anillo completo; anillo de basura por debajo del umbral; sin puntos → (0.0, 360.0); arco rechazado por cobertura; arco de 290° rechazado por hueco |
 | R4 | 0, 1 y 2 puntos rechazados con motivo; ajuste subdeterminado con `pv = 0`; tres puntos casi colineales (r = 282864) rechazados por cobertura |
 | R5 | centro con arreglos → `ValueError` explícito |
-| R6 | la rama `re == 0` sigue devolviendo puntos (caracterización) |
+| R6 | `find_circle` sin radio / con radio 0 / con radio negativo → `ValueError`; `segmento_mas_largo` elige el grupo más numeroso, no corta con un hueco de 6 px, conserva (x, y) y devuelve (0,2) con entrada vacía |
+
 
 Escrito en rojo primero: **19 fallos / 5 pasados**; los 5 que pasaron son la
 caracterización del comportamiento actual (forma del arreglo vacío, selección
 vacía, orden, rama `re == 0` y el `ValueError` de numpy con arreglos), y los 19
 restantes describen el comportamiento nuevo.
+
+Después se corrigió R6: la caracterización de la rama `re == 0` se reemplazó por
+siete casos del modo explícito, y la equivalencia de `segmento_mas_largo` con la
+rama original se comprobó contra el archivo commiteado en `b350deb` (300
+conjuntos aleatorios, 0 diferencias).
 
 Verificación sobre el recorte holgado real de `img100` (bordes cacheados):
 
