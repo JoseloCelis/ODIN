@@ -35,3 +35,6 @@ pip-delete-this-directory.txt
 # Editores / IDEs
 .idea/
 *.swp
+
+# Dataset de imágenes de micrometría (3.0 GB, no se versiona)
+odin/data/
