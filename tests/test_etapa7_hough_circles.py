@@ -261,3 +261,152 @@ def test_cadena_completa_con_y_sin_contraste_invertido(disco_claro):
     _, _, r_ajustado, _ = LSC.Circulo_simple(puntos)
 
     assert abs(r_ajustado - r_real) <= 0.5
+
+
+# ---------------------------------------------------------------------------
+# R10 — barrido de dos escalas, para recortes holgados
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("r_real, factor", [(40, 6.0), (60, 4.0), (25, 8.0)])
+def test_estimar_radio_dominante_admite_recorte_holgado(r_real, factor):
+    """r/r0 llega a 0.25: el círculo ocupa un cuarto del lado del recorte."""
+    lado = int(round(factor * r_real))
+    bordes = _anillo(lado, lado / 2.0, lado / 2.0, r_real)
+
+    radio, pico, _ = H.estimar_radio_dominante(bordes, lado / 2.0)
+
+    assert abs(radio - r_real) <= 1.5
+    assert pico > 0
+
+
+def test_estimar_radio_dominante_no_se_engancha_con_manchas_tipo_texto():
+    lado = 300
+    c = lado / 2.0
+    bordes = _anillo(lado, c, c, 60)
+    rng = np.random.default_rng(3)
+    for _ in range(6):
+        px, py = rng.integers(20, 280, 2)
+        bordes[py - 6:py + 6, px - 4:px + 4] = 1
+
+    radio, _, _ = H.estimar_radio_dominante(bordes, c)
+
+    assert abs(radio - 60) <= 1.5
+
+
+def test_estimar_radio_dominante_sin_bordes_devuelve_ceros():
+    vacio = np.zeros((200, 200), dtype=np.uint8)
+
+    assert H.estimar_radio_dominante(vacio, 100.0) == (0.0, 0, 0.0)
+
+
+def test_estimar_radio_dominante_r0_no_positivo_lanza_error():
+    bordes = _anillo(100, 50, 50, 40)
+
+    with pytest.raises(ValueError):
+        H.estimar_radio_dominante(bordes, 0.0)
+
+
+def test_estimar_radio_dominante_reporta_ambiguedad_entre_estructuras():
+    lado = 216
+    c = lado / 2.0
+    bordes = (_anillo(lado, c, c, 35) | _anillo(lado, c, c, 45)).astype(np.uint8)
+
+    _, _, ambiguedad = H.estimar_radio_dominante(bordes, c)
+
+    assert ambiguedad >= H.UMBRAL_AMBIGUEDAD
+
+
+# ---------------------------------------------------------------------------
+# R6 — campo de diámetro: lo detectado y lo escrito por el usuario
+# ---------------------------------------------------------------------------
+
+def test_el_estado_del_diametro_arranca_vacio():
+    from odin.main import EstadoDiametro
+
+    estado = EstadoDiametro()
+
+    assert not estado.es_manual
+    assert estado.diametro_para_procesar() is None
+    assert estado.valor_visible() == 0.0
+
+
+def test_el_valor_detectado_no_cuenta_como_decision_del_usuario():
+    from odin.main import EstadoDiametro
+
+    estado = EstadoDiametro()
+    estado.registrar_detectado(855.7)
+
+    assert not estado.es_manual
+    assert estado.diametro_para_procesar() is None
+    assert estado.valor_visible() == 855.7
+
+
+def test_el_valor_del_usuario_gana_sobre_el_detectado():
+    from odin.main import EstadoDiametro
+
+    estado = EstadoDiametro()
+    estado.registrar_detectado(855.7)
+    estado.declarar_usuario(500.0)
+
+    assert estado.es_manual
+    assert estado.diametro_para_procesar() == 500.0
+    assert estado.valor_visible() == 500.0
+
+
+def test_volver_a_auto_descarta_el_valor_manual():
+    from odin.main import EstadoDiametro
+
+    estado = EstadoDiametro()
+    estado.registrar_detectado(855.7)
+    estado.declarar_usuario(500.0)
+
+    estado.volver_a_auto()
+
+    assert not estado.es_manual
+    assert estado.valor_visible() == 855.7
+
+
+def test_un_diametro_cero_o_negativo_vuelve_a_automatico():
+    from odin.main import EstadoDiametro
+
+    estado = EstadoDiametro()
+    estado.declarar_usuario(500.0)
+    estado.declarar_usuario(0.0)
+
+    assert not estado.es_manual
+
+
+def test_el_estado_avisa_cuando_la_deteccion_es_ambigua():
+    from odin.main import EstadoDiametro
+
+    ambiguo = EstadoDiametro()
+    ambiguo.registrar_detectado(855.7, ambiguo=True)
+    seguro = EstadoDiametro()
+    seguro.registrar_detectado(855.7, ambiguo=False)
+
+    assert "revisar" in ambiguo.texto_estado()
+    assert "revisar" not in seguro.texto_estado()
+
+
+def test_resolver_radio_omite_el_barrido_con_diametro_del_usuario():
+    from odin.main import resolver_radio
+
+    bordes = _anillo(240, 120, 120, 40)
+
+    radio, pico, ambiguedad, origen = resolver_radio(1234.0, bordes, 120.0)
+
+    assert origen == "usuario"
+    assert radio == 617.0
+    assert (pico, ambiguedad) == (0, 0.0)
+
+
+def test_resolver_radio_barre_cuando_no_hay_diametro_del_usuario():
+    from odin.main import resolver_radio
+
+    bordes = _anillo(240, 120, 120, 40)
+
+    radio, pico, _, origen = resolver_radio(None, bordes, 120.0)
+
+    assert origen == "automatico"
+    assert abs(radio - 40) <= 1.5
+    assert pico > 0

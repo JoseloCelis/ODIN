@@ -52,6 +52,72 @@ if display:
 else:
     print(" No se pudo inicializar ninguna pantalla gráfica")
 
+
+class EstadoDiametro:
+    """Estado del campo de diámetro: lo detectado por el barrido vs lo que
+    declaró el usuario.
+
+    Mantener los dos valores separados evita el error sutil de R6.3: si el
+    valor que precarga el barrido se tomara como un valor escrito a mano, la
+    siguiente ejecución se volvería manual sin que nadie lo pidiera.
+    """
+
+    def __init__(self):
+        self.detectado = None
+        self.usuario = None
+        self.ambiguo = False
+
+    def registrar_detectado(self, diametro, ambiguo=False):
+        """Guarda lo que estimó el barrido. No cuenta como decisión del usuario."""
+        self.detectado = float(diametro)
+        self.ambiguo = bool(ambiguo)
+
+    def declarar_usuario(self, diametro):
+        """Marca un valor escrito a mano. `None` o <= 0 vuelve a automático."""
+        if diametro is None or float(diametro) <= 0:
+            self.usuario = None
+        else:
+            self.usuario = float(diametro)
+        return self.usuario
+
+    def volver_a_auto(self):
+        self.usuario = None
+
+    @property
+    def es_manual(self):
+        return self.usuario is not None
+
+    def diametro_para_procesar(self):
+        return self.usuario
+
+    def valor_visible(self):
+        if self.es_manual:
+            return self.usuario
+        return self.detectado if self.detectado is not None else 0.0
+
+    def texto_estado(self):
+        if self.es_manual:
+            return f"Manual: {self.usuario:.1f} px (se omite la estimación)"
+        if self.detectado is None:
+            return "Se estima al procesar"
+        aviso = " · revisar: hay otro candidato parecido" if self.ambiguo else ""
+        return f"Detectado: {self.detectado:.1f} px{aviso}"
+
+
+def resolver_radio(diametro_usuario, bordes, r0):
+    """Devuelve `(radio, pico, ambiguedad, origen)`.
+
+    Un diámetro declarado por el usuario se usa tal cual y **omite** el
+    barrido (spec hough-circles, R6.2). Sin diámetro, se estima con el barrido
+    de dos escalas (R3, R10).
+    """
+    if diametro_usuario is not None and float(diametro_usuario) > 0:
+        return float(diametro_usuario) / 2.0, 0, 0.0, "usuario"
+
+    radio, pico, ambiguedad = aproxHough.estimar_radio_dominante(bordes, r0)
+    return radio, pico, ambiguedad, "automatico"
+
+
 class MainWindow(Adw.ApplicationWindow):
 
     def __init__(self, *args, **kwargs):
@@ -60,6 +126,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Variables de control
         self.ruta_imagen = None
         self.image_loaded = None
+        self.estado_diametro = EstadoDiametro()
+        self._actualizando_diametro = False
         
         # Configuración de la ventana principal
         self.set_title("ODIN")
@@ -180,6 +248,24 @@ class MainWindow(Adw.ApplicationWindow):
         self.row_sigma.set_title("Sigma (σ)")
         grupo_parametros.add(self.row_sigma)
 
+        # Diámetro (etapa 7, R6): el barrido lo precarga y el usuario puede
+        # corregirlo. Un valor escrito a mano gana y omite la estimación; uno
+        # precargado no se marca como manual.
+        adj_diametro = Gtk.Adjustment.new(0.0, 0.0, 20000.0, 1.0, 100.0, 0.0)
+        self.row_diametro = Adw.SpinRow.new(adjustment=adj_diametro, climb_rate=1.0, digits=1)
+        self.row_diametro.set_title("Diámetro (px)")
+        self.row_diametro.set_subtitle(self.estado_diametro.texto_estado())
+
+        self.btn_diametro_auto = Gtk.Button.new_with_label("Auto")
+        self.btn_diametro_auto.add_css_class("flat")
+        self.btn_diametro_auto.set_valign(Gtk.Align.CENTER)
+        self.btn_diametro_auto.set_tooltip_text("Volver a estimar el diámetro automáticamente")
+        self.btn_diametro_auto.connect("clicked", self._volver_a_diametro_auto)
+        self.row_diametro.add_suffix(self.btn_diametro_auto)
+
+        adj_diametro.connect('value_changed', self._diametro_cambiado)
+        grupo_parametros.add(self.row_diametro)
+
         """adj_umb_bajo = Gtk.Adjustment.new(50.0, 0.0, 255.0, 1.0, 10.0, 0.0)
         self.row_umbral_bajo = Adw.SpinRow.new(adjustment=adj_umb_bajo, climb_rate=1.0, digits=0)
         self.row_umbral_bajo.set_title("Umbral Mínimo (Histéresis)")
@@ -292,6 +378,33 @@ class MainWindow(Adw.ApplicationWindow):
     def slider_changed(self, spinRow):
             print(spinRow.get_value())    
             self.sigma = int(spinRow.get_value())
+
+    def _diametro_cambiado(self, ajuste):
+        """El usuario tocó el campo: su valor pasa a mandar sobre el barrido."""
+        if self._actualizando_diametro:
+            return
+        self.estado_diametro.declarar_usuario(ajuste.get_value())
+        self.row_diametro.set_subtitle(self.estado_diametro.texto_estado())
+
+    def _volver_a_diametro_auto(self, _boton):
+        """Descarta el valor manual y vuelve a estimar en la próxima corrida."""
+        self.estado_diametro.volver_a_auto()
+        self._escribir_campo_diametro(self.estado_diametro.valor_visible())
+        self.row_diametro.set_subtitle(self.estado_diametro.texto_estado())
+
+    def _escribir_campo_diametro(self, valor):
+        """Escribe el campo sin que cuente como cambio del usuario (R6.3)."""
+        self._actualizando_diametro = True
+        self.row_diametro.get_adjustment().set_value(valor)
+        self._actualizando_diametro = False
+
+    def _mostrar_diametro_detectado(self, diametro, ambiguo):
+        """Corre en el hilo principal, vía GLib.idle_add."""
+        self.estado_diametro.registrar_detectado(diametro, ambiguo)
+        if not self.estado_diametro.es_manual:
+            self._escribir_campo_diametro(self.estado_diametro.valor_visible())
+        self.row_diametro.set_subtitle(self.estado_diametro.texto_estado())
+        return False
 
     def _registrar_acciones(self):
         """Inicializa y registra las acciones lógicas de la ventana."""
@@ -445,14 +558,19 @@ class MainWindow(Adw.ApplicationWindow):
             self.vistas_procesadas["bordes"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordes"]))            
         
             # Etapa 7: el radio no es una constante (spec hough-circles, R2).
-            # Se deriva del recorte (R4) y el barrido elige entre candidatos
-            # (R3). El campo de diámetro en la UI queda como deuda (R6).
+            # Si el usuario declaró un diámetro, gana y omite el barrido (R6).
+            # Si no, se estima en dos escalas para admitir recortes holgados
+            # (R10). El resultado se refleja en el campo del panel izquierdo.
             alto, ancho = DetectedEdges.shape[:2]
             r0 = min(alto, ancho) / 2
-            radio, pico, ambiguedad = aproxHough.estimar_radio(
-                DetectedEdges, 0.6 * r0, r0)
+            radio, pico, ambiguedad, origen = resolver_radio(
+                self.estado_diametro.diametro_para_procesar(), DetectedEdges, r0)
             if radio <= 0:
                 raise ValueError("No se pudo estimar el radio del circulo en el recorte.")
+
+            if origen == "automatico":
+                GLib.idle_add(self._mostrar_diametro_detectado, 2 * radio,
+                              ambiguedad >= aproxHough.UMBRAL_AMBIGUEDAD)
 
             xRecortada, yRecortada, n, accumulador = aproxHough.hough_circles_vectorizado(
                 DetectedEdges, radio, 0.8)
@@ -462,7 +580,7 @@ class MainWindow(Adw.ApplicationWindow):
 
             aviso = " (revisar: hay otro candidato parecido)" if (
                 ambiguedad >= aproxHough.UMBRAL_AMBIGUEDAD) else ""
-            print(f"Radio estimado: {radio:.1f} px (diametro {2 * radio:.1f}), "
+            print(f"Radio {radio:.1f} px (diametro {2 * radio:.1f}) [{origen}], "
                   f"pico {pico}, ambiguedad {ambiguedad:.2f}{aviso}")
 
             puntosFiltrados = circleFilter.find_circle(

@@ -156,6 +156,76 @@ def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
 
     return float(radios[mejor]), int(picos[mejor]), float(segundo / picos[mejor])
 
+
+def estimar_radio_dominante(im_binary, r0, fraccion_min=0.08, paso_grueso_rel=0.02,
+                            candidatos=2, paso_fino=None, thres=0.99, dist=20):
+    """Estima el radio dominante de un recorte, holgado o ajustado.
+
+    Barrido en dos escalas (spec hough-circles, R10):
+
+    1. **Grueso**: recorre `[fraccion_min * r0, r0]` con un paso proporcional a
+       `r0`, así el costo no crece con el tamaño de la imagen.
+    2. **Fino**: refina los `candidatos` máximos gruesos mejor separados, con
+       un paso absoluto pequeño.
+
+    Refinar varios candidatos es lo que hace robusta la decisión: en el
+    recorte holgado de `img100`, el barrido grueso daba 68 votos al disco y 58
+    al texto (1.17:1), mientras que al refinar quedan 211 contra 80 (2.6:1).
+
+    Devuelve `(radio, pico, ambiguedad)` con el mismo contrato que
+    `estimar_radio`. La ambigüedad se calcula entre estructuras ya refinadas y
+    separadas, no entre radios vecinos.
+    """
+    r0 = float(r0)
+    if not np.isfinite(r0) or r0 <= 0:
+        raise ValueError("estimar_radio_dominante:: r0 debe ser mayor que 0")
+
+    r_max = r0
+    r_min = max(4.0, fraccion_min * r0)
+    if r_min >= r_max:
+        r_min = max(1.0, r_max / 2.0)
+
+    paso_grueso = max(4.0, paso_grueso_rel * r0)
+    if paso_fino is None:
+        paso_fino = max(1.0, min(4.0, paso_grueso / 5.0))
+
+    radios = np.arange(r_min, r_max + paso_grueso * 0.5, paso_grueso)
+    picos = np.array([
+        int(hough_circles_vectorizado(im_binary, float(radio), thres, dist)[3].max())
+        for radio in radios
+    ])
+
+    if picos.size == 0 or picos.max() <= 0:
+        return 0.0, 0, 0.0
+
+    # Candidatos gruesos: los picos más altos, separados al menos dos pasos
+    # para no refinar tres veces la misma estructura.
+    candidatos_idx = []
+    for j in np.argsort(-picos):
+        if all(abs(radios[j] - radios[e]) >= 2 * paso_grueso for e in candidatos_idx):
+            candidatos_idx.append(int(j))
+        if len(candidatos_idx) >= max(1, int(candidatos)):
+            break
+
+    refinados = []
+    for j in candidatos_idx:
+        bajo = max(r_min, radios[j] - paso_grueso)
+        alto = min(r_max, radios[j] + paso_grueso)
+        refinados.append(estimar_radio(im_binary, bajo, alto, paso_fino, thres, dist))
+
+    refinados.sort(key=lambda salida: -salida[1])
+
+    # Dos candidatos pueden converger al mismo radio: cuentan como uno solo.
+    unicos = []
+    for radio, pico, _ in refinados:
+        if all(abs(radio - otro) >= 2 * paso_fino for otro, _ in unicos):
+            unicos.append((radio, pico))
+
+    radio, pico = unicos[0]
+    segundo = unicos[1][1] if len(unicos) > 1 else 0
+
+    return float(radio), int(pico), float(segundo / pico)
+
 def houghCircles(Imbinary, r, thres=None, dist=None):
     """
     Detecta círculos usando la transformada de Hough.

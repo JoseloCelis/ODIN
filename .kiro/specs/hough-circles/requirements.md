@@ -69,13 +69,18 @@ editar el código.
 #### Acceptance Criteria
 
 1. THE orquestador SHALL derivar `r0 = min(alto, ancho) / 2` del recorte y
-   buscar en `[0.6·r0, 1.0·r0]`.
+   usar `r0` como **cota superior** del radio buscado; la banda efectiva es la
+   de R10, no una fracción fija de `r0`.
 2. Justificación medida: en el recorte con 15% de margen, `r0 = 556.0` y el
-   radio real es 428.3 (r0 sobreestima 30%); el valor real cae dentro de la
-   banda.
+   radio real es 428.3 (r0 sobreestima un 30%); en un recorte holgado medido,
+   `r0 = 1000.0` y el radio real es el mismo 428.3 (sobreestima un 133%).
 3. WHEN el recorte no contiene el círculo completo, THEN el resultado SHALL
    poder marcarse como no confiable (R5) en lugar de devolver un valor
    silenciosamente erróneo.
+4. La banda fija `[0.6·r0, r0]` queda **descartada**: con un recorte holgado
+   (`r/r0 = 0.428`) el radio real cae fuera y el barrido devuelve basura. Se
+   sustituye por el barrido de dos escalas de R10, y el porqué medido está en
+   R10.2.
 
 ### Requirement 5: Reporte de ambigüedad
 
@@ -108,6 +113,13 @@ editar el código.
    siguiente ejecución en manual.
 4. THE campo SHALL existir también cuando el barrido no se haya ejecutado
    todavía (por ejemplo, antes de cargar una imagen).
+5. Evidencia de implementación (humo de ventana real, backend Wayland):
+   - el campo es un `Adw.SpinRow` "Diámetro (px)" en el grupo "Parámetros del
+     Algoritmo", junto a σ, con un botón "Auto" como sufijo;
+   - escribir 500 deja el estado en **manual** y el valor detectado (855.7) no
+     lo pisa;
+   - pulsar "Auto" devuelve el campo a 855.7 y el estado a **automático** (no
+     manual), que es justo lo protegido por R6.3.
 
 ### Requirement 7: Contraste invertido
 
@@ -154,3 +166,31 @@ la lista completa de picos.
    `n > 1` lanzaba `ValueError: operands could not be broadcast together with
    shapes (968,) (2,)`. En el recorte real de `img100` Hough devolvía 54 picos,
    así que el caso `n = 1` era una casualidad.
+
+### Requirement 10: Barrido de dos escalas para recortes holgados
+
+**User Story:** Como usuario, quiero recortar con margen alrededor del círculo
+y que el radio se siga encontrando, sin tener que ajustar el recorte al borde.
+
+#### Acceptance Criteria
+
+1. THE barrido automático SHALL recorrer `[0.08·r0, r0]` con un paso
+   proporcional a `r0` (grueso) y refinar después los candidatos gruesos mejor
+   separados con un paso absoluto pequeño (fino).
+2. THE refinamiento SHALL evaluar al menos **dos** candidatos gruesos
+   separados, porque decidir a resolución gruesa es frágil: en el recorte
+   holgado de `img100` el margen grueso era **1.17:1** (68 votos al disco
+   frente a 58 al texto) y al refinar queda **2.6:1** (211 frente a 80).
+3. THE ambigüedad SHALL calcularse entre estructuras ya refinadas y distintas,
+   no entre radios vecinos de la rejilla gruesa.
+4. Evidencia (recorte de 2288 × 2000 que incluye el disco **y** el texto,
+   `r/r0 = 0.428`, 10 028 bordes): radio **428.0** frente a 428.31 real (error
+   **0.31 px**), ambigüedad 0.38, **10.9 s**. Cadena completa: diámetro 855.70
+   frente a 856.61 real, centro a 0.29 px. Con la banda anterior
+   `[0.6·r0, r0]` el círculo quedaba fuera y el barrido no lo encontraba.
+5. Limitación declarada: el diámetro del círculo SHALL ser al menos el **8%**
+   del lado menor del recorte para caer dentro de la banda. Por debajo, no se
+   encuentra; el campo de diámetro (R6) permite declararlo a mano.
+6. WHEN `r0` no es finito o no es positivo, THEN SHALL lanzar `ValueError`.
+7. WHEN no hay bordes o ningún radio obtiene votos, THEN SHALL devolver
+   `(0.0, 0, 0.0)` sin excepción, igual que R3.

@@ -147,6 +147,46 @@ Errores: radio **0.46 px**, diámetro **0.91 px**, centro **0.29 px**.
 Antes, con `diametro = 253`: r = 403.95, 24.4 px de error de centro y 24.4 px
 de radio. `pv` pasó de 0.995 (ajuste a un arco) a 2.034.
 
+### 2.9 Recorte holgado (R10)
+
+El usuario pidió poder recortar **con margen**, no ajustado al círculo. Se midió
+el peor caso razonable: recorte de 2288 × 2000 que contiene el disco **y** el
+texto "100μ".
+
+| Dato | Valor |
+|---|---|
+| `r0 = min(lado)/2` | 1000.0 |
+| Radio real | 428.31 → `r/r0 = 0.428` |
+| Banda vieja `[0.6·r0, r0]` | `[600, 1000]` → **el círculo real queda fuera** |
+| Bordes en el recorte | 10 028 |
+| Barrido grueso `[80, 1000]` paso 20 | 47 radios, 8.3 s; gana r=420 con **68** votos; el texto da 58 |
+
+El margen grueso (1.17:1) es demasiado fino para decidir. Refinando los
+candidatos gruesos separados:
+
+| Candidato grueso | Pico grueso | Radio refinado | Pico refinado | Qué es |
+|---|---|---|---|---|
+| 420.0 | 68 | **428.0** | **211** | disco |
+| 80.0 | 58 | 88.0 | 80 | ruido del texto |
+| 120.0 | 57 | 122.0 | 63 | glifo |
+| 160.0 | 53 | 150.0 | 59 | glifo |
+
+Refinar convierte la decisión en **2.6:1**. Cadena completa con el recorte
+holgado: radio 428.0 → ajuste 427.85, diámetro **855.70** (real 856.61), centro
+a **0.29 px**; el barrido tarda **10.9 s**. Con la banda vieja el mismo recorte
+no encuentra el círculo.
+
+Sintéticos con recorte holgado (error de radio medido):
+
+| `r` real | lado | `r/r0` | Banda vieja | Dos escalas |
+|---|---|---|---|---|
+| 40 | 240 | 0.33 | 72.0 (**32.0 px**) | 39.6 (0.4 px) |
+| 60 | 240 | 0.50 | 72.0 (12.0 px) | 59.6 (0.4 px) |
+| 25 | 200 | 0.25 | 60.0 (**35.0 px**) | 25.0 (0.0 px) |
+
+Esa tabla es la prueba de que los tests de R10 no son vacuos: el enfoque
+anterior falla en los mismos casos en que el nuevo acierta.
+
 ## 3. Diseño
 
 ### 3.1 API implementada (capa modelo)
@@ -159,56 +199,75 @@ def mejor_centro(x0, y0, acumulador):        # -> (x, y, votos) | None
 def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
                   separacion_px=SEPARACION_AMBIGUEDAD_PX):
                                              # -> (radio, pico, ambiguedad)
+def estimar_radio_dominante(im_binary, r0, fraccion_min=0.08,
+                            paso_grueso_rel=0.02, candidatos=2, paso_fino=None,
+                            thres=0.99, dist=20)
+                                             # -> (radio, pico, ambiguedad)
 ```
 
-- Recorre `np.arange(r_min, r_max + paso/2, paso)`.
-- Para cada radio toma `acc.max()`.
-- `ambiguedad = segundo / primero`, donde `segundo` ignora los radios a menos
-  de `separacion_px` del ganador (si no, todo círculo perfecto sería ambiguo:
-  medido 0.95 de relación con `r=35 + r=45` frente a 0.26-0.37 de un círculo
-  único).
-- Sin bordes o sin votos → `(0.0, 0, 0.0)`, sin excepción.
+- `estimar_radio` es la primitiva: recorre `np.arange(r_min, r_max + paso/2,
+  paso)` y para cada radio toma `acc.max()`.
+  - `ambiguedad = segundo / primero`, donde `segundo` ignora los radios a menos
+    de `separacion_px` del ganador (si no, todo círculo perfecto sería ambiguo:
+    medido 0.95 de relación con `r=35 + r=45` frente a 0.26-0.37 de un círculo
+    único).
+  - Sin bordes o sin votos → `(0.0, 0, 0.0)`, sin excepción.
+- `estimar_radio_dominante` es el barrido de dos escalas (R10):
+  1. grueso sobre `[0.08·r0, r0]` con `paso = max(4, 0.02·r0)`;
+  2. toma los `candidatos` picos más altos separados al menos dos pasos
+     gruesos, para no refinar tres veces la misma estructura;
+  3. refina cada uno con `estimar_radio` sobre `±paso_grueso`, con
+     `paso_fino = max(1, min(4, paso_grueso/5))`;
+  4. deduplica los refinados que convergen al mismo radio y calcula la
+     ambigüedad entre estructuras distintas.
 - Sin dependencias de UI: cumple la regla del modelo.
 
-### 3.2 Flujo del orquestador (implementado, sin R6)
+### 3.2 Flujo del orquestador (implementado)
 
 ```
 recorte -> etapas 1-6 -> bordes
    r0 = min(alto, ancho)/2
-   (r, pico, amb) = estimar_radio(bordes, 0.6*r0, r0)
-   si r == 0 -> ValueError (el recorte no contiene un círculo)
-   Hough con r -> mejor_centro -> find_circle(radio=r, centro) -> LSC
-   si amb >= UMBRAL_AMBIGUEDAD -> aviso en consola
+   (radio, pico, amb, origen) = resolver_radio(estado.diametro_para_procesar(),
+                                              bordes, r0)
+       diámetro del usuario -> radio = diámetro/2, origen "usuario" (sin barrido)
+       sin diámetro         -> estimar_radio_dominante(bordes, r0)        (R10)
+   si radio == 0 -> ValueError (el recorte no contiene un círculo)
+   si origen == "automatico" -> GLib.idle_add(mostrar diámetro y aviso)
+   Hough con radio -> mejor_centro -> find_circle(radio, centro) -> LSC
 ```
 
-El campo de diámetro con precarga (R6) sigue pendiente: hoy el valor detectado
-se informa por consola, no se puede sobrescribir desde la interfaz.
+`resolver_radio` es una función pura del módulo (no toca GTK), así que la
+precedencia "el manual gana y omite el barrido" (R6.2) se prueba headless.
 
-### 3.3 Campo de diámetro (capa vista) — DEUDA (R6)
+### 3.3 Campo de diámetro (capa vista) — implementado (R6)
 
-- Un `Adw.EntryRow` (o `Gtk.SpinButton`) rotulado por el valor detectado.
-- Estado separado: `valor_detectado` (lo pone el barrido) y
-  `valor_usuario` (lo escribe el usuario). El campo muestra
-  `valor_usuario` si existe; si no, `valor_detectado`.
-- Un cambio de texto marca `valor_usuario`; así un precargado nunca se confunde
-  con una decisión manual (R6.3).
-- Si el barrido es ambiguo, se muestra un aviso junto al campo.
+- `Adw.SpinRow` "Diámetro (px)" en el grupo "Parámetros del Algoritmo", junto a
+  σ, con un `Gtk.Button` "Auto" plano como sufijo.
+- Estado en la clase `EstadoDiametro` (`main.py`, Python puro): `detectado`,
+  `usuario`, `ambiguo`, con `registrar_detectado`, `declarar_usuario`,
+  `volver_a_auto`, `valor_visible` y `texto_estado`. Mantener los dos valores
+  separados es lo que evita que un precargado se confunda con una decisión
+  manual (R6.3).
+- El subtítulo informa el origen: "Se estima al procesar", "Detectado: N px" o
+  "Manual: N px (se omite la estimación)", más "· revisar: hay otro candidato
+  parecido" cuando la detección es ambigua (R5.2).
+- La escritura programática del campo pasa por el guard
+  `_actualizando_diametro`, para que precargar el detectado no dispare
+  `declarar_usuario`.
 
 ### 3.4 Fuera de alcance (etapas siguientes)
 
 - Círculos concéntricos (top-2 de radios) — requiere decisión de producto.
   Mientras no exista, un círculo grande tapa a uno mucho más chico sin que se
   reporte ambigüedad (§2.5 de R5).
-- Estimación del radio sin recorte previo: la banda `[0.6·r0, r0]` asume que el
-  recorte contiene el círculo completo y no mucho más. Medido: con un recorte
-  holgado (r0 = 2.2·r) el radio verdadero queda **fuera** de la banda y el
-  barrido devuelve basura.
+- Círculos menores que el 8% del lado menor del recorte (R10.5): quedan fuera de
+  la banda; se declaran a mano con el campo de diámetro.
 - Borrado del código muerto (R8): verificado sin llamadores; se decide aparte.
 
 
 ## 4. Verificación ejecutada
 
-`tests/test_etapa7_hough_circles.py` — **22 casos**:
+`tests/test_etapa7_hough_circles.py` — **37 casos**:
 
 | Requisito | Test |
 |---|---|
@@ -217,11 +276,18 @@ se informa por consola, no se puede sobrescribir desde la interfaz.
 | R3 / R4 | radios conocidos 20/45/80 (error ≤ 1 px), banda invertida, radio no positivo, paso no positivo, sin bordes, ambigüedad alta y baja |
 | R2 | `main.py` no contiene radio constante y llama a `estimar_radio` |
 | R7 | cadena ①→⑥→⑦→⑧→⑨ con contraste normal e invertido (error ≤ 0.5 px) |
+| R10 | recorte holgado con `r/r0` = 0.25 / 0.33 / 0.50 (error ≤ 1.5 px), manchas tipo texto, sin bordes, `r0` inválido, ambigüedad entre estructuras |
+| R6 | `EstadoDiametro` (el detectado no es manual, el manual gana, "Auto" limpia, cero vuelve a automático, aviso de ambigüedad) y `resolver_radio` (con diámetro omite el barrido) |
 
 Escrito en rojo primero: **16 fallos / 6 pasados**; los 6 que pasaron son la
 caracterización de R1, o sea que los tests describen el contrato real y no uno
-inventado. Suite completa: **84 passed**.
+inventado. Los casos de R6 y R10 se validaron además comprobando que el enfoque
+anterior falla en los mismos escenarios (§2.9). Suite completa: **99 passed**.
+
+La ventana se verificó con un humo real sobre Wayland: construir `MainWindow`,
+escribir 500 en el campo, precargar el detectado, pulsar "Auto" y comprobar el
+estado en cada paso (R6.5).
 
 El recorte de `img100` no se commitea (15 MB); la evidencia numérica de punta a
-punta queda en §2.8.
+punta queda en §2.8 y §2.9.
 
