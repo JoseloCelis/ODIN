@@ -585,14 +585,25 @@ class MainWindow(Adw.ApplicationWindow):
 
             puntosFiltrados = circleFilter.find_circle(
                 DetectedEdges, radio, (centro[0], centro[1]))
+
+            # Etapa 8: la selección tiene que RODEAR el círculo. Sin esto, un
+            # radio equivocado devuelve puntos de otra estructura y el ajuste
+            # inventa un círculo que no existe (spec find-circle, R3/R4).
+            anillo_ok, motivo = circleFilter.validar_anillo(
+                puntosFiltrados, (centro[0], centro[1]))
+            if not anillo_ok:
+                raise ValueError(f"No se puede medir el circulo: {motivo}.")
+
             x, y, r, pv = LSC.Circulo_simple(puntosFiltrados)
             x = self.xRecorte+x
             y = self.yRecorte+y
             GLib.idle_add(self.finalizar_proceso_exitoso)
 
         except Exception as e:
-            # Si algo truena en la matemática, capturamos el error y avisamos de forma segura
-            GLib.idle_add(self.mostrar_alerta, "Error Matemático", str(e), True)
+            # Si algo falla, avisamos con el motivo real (spec find-circle, R4.3):
+            # la etapa 8 explica si el anillo quedó vacío, si cubre poco o si
+            # hay menos puntos que los necesarios para ajustar.
+            GLib.idle_add(self.mostrar_alerta, "No se pudo procesar la imagen", str(e), True)
             GLib.idle_add(self.btn_procesar.set_sensitive, True)
 
     def finalizar_proceso_exitoso(self):
