@@ -237,15 +237,12 @@ def test_validar_anillo_rechaza_menos_de_tres_puntos(n):
 
 
 @pytest.mark.parametrize("n", [1, 2])
-def test_el_ajuste_con_menos_de_tres_puntos_devuelve_un_circulo_con_pv_cero(n):
-    """Caracterización: el ajuste está subdeterminado y devuelve un círculo con
-    pv = 0, indistinguible de un ajuste perfecto. Por eso R4 frena antes."""
+def test_el_ortodoxo_con_menos_de_tres_puntos_lanza_valueerror(n):
+    """Con el nuevo contrato, Circulo_simple lanza ValueError para N < 3."""
     puntos = np.array([[10.0, 10.0], [20.0, 20.0]])[:n]
 
-    _, _, r, pv = LSC.Circulo_simple(puntos)
-
-    assert r > 0
-    assert pv == pytest.approx(0.0)
+    with pytest.raises(ValueError, match="insuficientes puntos"):
+        LSC.Circulo_simple(puntos)
 
 
 def test_tres_puntos_casi_colineales_producen_un_circulo_absurdo_con_pv_cero():
