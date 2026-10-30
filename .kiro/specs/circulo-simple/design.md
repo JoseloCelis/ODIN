@@ -1,149 +1,100 @@
 # Design Document — circuloSimple (etapa ⑨)
 
-## 1. Estado actual del módulo
+## 1. Estado del módulo
 
-`Circulo_simple(puntos0)` — función de mínimos cuadrados vectorizada, **con validación de entrada**. Antes carecía de checks y devolvía resultados silenciosos para < 3 puntos o entradas inválidas; ahora lanza `ValueError` descriptivo.
+`Circulo_simple(puntos0)` ajusta un círculo por mínimos cuadrados algebraicos (Kåsa): resuelve `A @ [x_c, y_c, s] = x² + y²` con `A = [2x, 2y, -1]` y devuelve `(x_c, y_c, r, pv)` con `r = sqrt(x_c² + y_c² - s)`.
 
-| Símbolo | Rol | Llamadores | Estado |
-|---|---|---|---|
-| `Circulo_simple(puntos0)` | ajuste de círculo Kåsa/Taubin con validación | `main.py:588`, `tests/test_etapa8_find_circle.py`, `tests/test_etapa9_circulo_simple.py` | **en producción**, con validación |
+| Símbolo | Rol | Llamadores |
+|---|---|---|
+| `Circulo_simple(puntos0)` | ajuste de círculo con validación y guard de colinealidad | `main.py:597`, `tests/test_etapa7_hough_circles.py`, `tests/test_etapa8_find_circle.py`, `tests/test_etapa9_circulo_simple.py` |
 
-**Evidencia ejecutada (tras el contrato R1):** las tablas anteriormenteshowing `r = 7.08` con 1 punto, `r = 7.07` con 2 puntos colineales y `r = 282864` con 3 casi colineales y `pv = 0.000000` ya no ocurren: la función lanza `ValueError` antes de llegar al lstsq. El orquestador (`main.py`) captura la excepción y muestra el diálogo "No se pudo procesar la imagen" con la causa en lugar de "Error Matemático".
+**Historial del contrato.** Antes de la etapa ⑨ no había validación: con 1 punto devolvía `r = 7.08`, con 2 puntos `r = 7.07`, y con 3 casi colineales `r = 282864` con centro a 200 000 px y `pv = 0.000000`. Ninguno de esos números se distinguía de un ajuste perfecto, porque `pv` colapsa a 0 en ambos casos.
 
-## 2. Decisión de contrato
+## 2. Contrato
 
-`Circulo_simple` lanza `ValueError` con mensajes descriptivos para entradas degeneradas. El orquestador (`main.py`) ya tiene el patrón `except Exception as e → GLib.idle_add(self.mostrar_alerta, "No se pudo procesar la imagen", str(e), True)`. Esta decisión cumple tres cosas:
-
-1. **El usuario recibe un mensaje legible** en lugar de un círculo con radio absurdo (ej. 282 864 px).
-2. **El orquestador no tiene que adivinar** si el resultado es válido o basura.
-3. **La responsabilidad está en la capa de modelo**, que es donde corresponde validar la entrada matemática.
-
-### Mensajes de excepción implementados
+### Mensajes de excepción
 
 | Caso | Excepción | Mensaje |
 |---|---|---|
-| `puntos0` no es `ndarray` | `TypeError` | `"circuloSimple: se esperaba un numpy.ndarray de forma (N, 2)"` |
-| Shape distinta a `(N, 2)` | `ValueError` | `"circuloSimple: el arreglo debe tener forma (N, 2) con coordenadas (x, y); recibido shape {shape}"` |
-| $N = 0$ | `ValueError` | `"circuloSimple: el anillo quedó vacío; revise la detección de bordes o el radio"` |
-| $N = 1$ | `ValueError` | `"circuloSimple: insuficientes puntos para ajuste; se necesitan al menos 3"` |
-| $N = 2$ | `ValueError` | `"circuloSimple: dos puntos definen una línea, no un círculo único; se necesitan al menos 3"` |
-| Radicando negativo ($x_c^2 + y_c^2 - s \le 0$) | `ValueError` | `"circuloSimple: resultado matemático inválido; los puntos no definen un círculo real"` |
+| `puntos0` no es `ndarray` | `TypeError` | `circuloSimple: se esperaba un numpy.ndarray de forma (N, 2)` |
+| Shape distinta a `(N, 2)` | `ValueError` | `circuloSimple: el arreglo debe tener forma (N, 2) con coordenadas (x, y); recibido shape {shape}` |
+| `N = 0` | `ValueError` | `circuloSimple: el anillo quedó vacío; revise la detección de bordes o el radio` |
+| `N = 1` | `ValueError` | `circuloSimple: insuficientes puntos para ajuste; se necesitan al menos 3` |
+| `N = 2` | `ValueError` | `circuloSimple: dos puntos definen una línea, no un círculo único; se necesitan al menos 3` |
+| Todos los puntos coinciden | `ValueError` | `circuloSimple: todos los puntos coinciden; no hay círculo determinable` |
+| Puntos colineales | `ValueError` | `circuloSimple: los puntos son colineales; no hay círculo único determinable` |
+| Radicando ≤ 0 | `ValueError` | `circuloSimple: resultado matemático inválido; los puntos no definen un círculo real` |
 
-### API firmada (después del contrato)
+### Salida
 
-```python
-def Circulo_simple(puntos0) -> tuple[float, float, float, float]:
-    """
-    Ajusta un círculo a un conjunto de puntos usando mínimos cuadrados.
-    
-    Parameters:
-        puntos0 (numpy.ndarray): Matriz de N x 2 con las coordenadas (X, Y) de los puntos.
-        
-    Returns:
-        x (float): Coordenada X del centro.
-        y (float): Coordenada Y del centro.
-        r (float): Radio del círculo. Siempre positivo cuando el ajuste converge.
-        pv (float): Métrica de error pico a valle (max(res) - min(res)).
-    
-    Raises:
-        TypeError: si puntos0 no es ndarray.
-        ValueError: si la forma es inválida, N < 3, colinealidad o radicando negativo.
-    """
-```
+`(float, float, float, float)` → `x_c`, `y_c`, `r`, `pv`. Se ajusta sobre las **coordenadas originales**, igual que antes del guard, para no alterar el resultado numérico histórico.
 
-## 3. Nueva implementación
+## 3. Guard de colinealidad
 
-La implementación actualiza la función existente con validación al inicio y checks geométricos adicionales. El núcleo matemático (lstsq + sqrt + pv) se conserva, pero **el contrato cambió**: `Circulo_simple` ya no devuelve `r > 0, pv ≈ 0` para $N < 3$, sino que lanza `ValueError` descriptivo. Los tests unitarios fueron actualizados en consecuencia (etapa 8: `test_el_ortodoxo_con_menos_de_tres_puntos_lanza_valueerror`; etapa 9: 10 tests nuevos). Esto obliga al orquestador (`main.py`) a capturar la excepción y mostrar el diálogo informativo, en lugar de interpretar un radio absurdo como "ajuste completado".
+### 3.1 El número de condición crudo no sirve
+
+Medido sobre `A = [2x, 2y, -1]` sin transformar:
+
+- un anillo **válido** de `r = 428` centrado en `(1150, 1000)` da `cond(A) = 6.86e3`;
+- una recta con ruido que produce `r = 1.4e5` puede dar `9.3e3`.
+
+Los rangos se solapan. Cualquier umbral sobre el `cond` crudo rechaza anillos buenos o acepta basura. La causa es que la columna `-1` no escala con `x` e `y`, así que el cond depende del centro y del radio.
+
+### 3.2 Normalización
+
+Se centran los puntos en su centroide y se dividen por su RMS radial (un escalar, no por eje, para no deformar la geometría):
 
 ```python
-import numpy as np
-
-def Circulo_simple(puntos0):
-    """
-    Ajusta un círculo a un conjunto de puntos usando mínimos cuadrados.
-    Versión optimizada y 100% vectorizada, con validación de entrada.
-
-    Parameters:
-        puntos0 (numpy.ndarray): Matriz de N x 2 con las coordenadas (X, Y) de los puntos.
-
-    Returns:
-        x_c (float): Coordenada X del centro.
-        y_c (float): Coordenada Y del centro.
-        r (float): Radio del círculo.
-        pv (float): Métrica de error pico a valle.
-
-    Raises:
-        TypeError: si puntos0 no es ndarray.
-        ValueError: si la forma es inválida, N < 3, colinealidad o radicando negativo.
-    """
-    # --- Validación de tipo ---
-    if not isinstance(puntos0, np.ndarray):
-        raise TypeError(
-            "circuloSimple: se esperaba un numpy.ndarray de forma (N, 2)"
-        )
-
-    # --- Validación de forma ---
-    if puntos0.ndim != 2 or puntos0.shape[1] != 2:
-        raise ValueError(
-            f"circuloSimple: el arreglo debe tener forma (N, 2) con coordenadas (x, y); "
-            f"recibido shape {puntos0.shape}"
-        )
-
-    nr, nc = puntos0.shape
-
-    # Caso: vacío o muy pocos puntos
-    if nr == 0:
-        raise ValueError(
-            "circuloSimple: el anillo quedó vacío; revise la detección de bordes o el radio"
-        )
-    if nr < 3:
-        raise ValueError(
-            "circuloSimple: insuficientes puntos para ajuste; se necesitan al menos 3"
-        )
-
-    # --- Construir la matriz A (N x 3) ---
-    A = np.zeros((nr, 3))
-    A[:, 0] = 2 * puntos0[:, 0]  # columna 1 de MATLAB (X)
-    A[:, 1] = 2 * puntos0[:, 1]  # columna 2 de MATLAB (Y)
-    A[:, 2] = -1
-
-    # --- Vector y (N,) ---
-    y_vec = np.sum(puntos0**2, axis=1)
-
-    # --- Mínimos cuadrados ---
-    sol, _, _, _ = np.linalg.lstsq(A, y_vec, rcond=None)
-    x_c = sol[0]
-    y_c = sol[1]
-    s = sol[2]
-
-    # --- Radio ---
-    radicando = x_c**2 + y_c**2 - s
-    if radicando <= 0:
-        raise ValueError(
-            "circuloSimple: resultado matemático inválido; "
-            "los puntos no definen un círculo real"
-        )
-    r = np.sqrt(radicando)
-
-    # --- Distancias y pv ---
-    distancias = np.sqrt((puntos0[:, 0] - x_c)**2 + (puntos0[:, 1] - y_c)**2)
-    res = np.abs(distancias - r)
-    pv = float(np.max(res) - np.min(res))
-
-    return float(x_c), float(y_c), float(r), float(pv)
+desplazados = puntos0 - puntos0.mean(axis=0)
+escala = np.sqrt(np.mean(np.sum(desplazados**2, axis=1)))
+normalizados = desplazados / escala
+A_norm = np.column_stack(
+    (2.0 * normalizados[:, 0], 2.0 * normalizados[:, 1], -np.ones(nr))
+)
+condicion = np.linalg.cond(A_norm)
 ```
 
-## 4. Límite de colinealidad
+Dividir por la desviación estándar **por eje** se descartó: mide 1.11× de margen entre válidos y rectas (`2.323` contra `2.578`), mientras el escalar da 2.38×.
 
-No se implementa un chequeo explícito de número de condición en esta iteración, porque:
+### 3.3 Umbral y márgenes medidos
 
-- El `lstsq` de NumPy es sorprendentemente estable con datos simples; el caso "3 casi colineales" que antiguamente generaba `r ≈ 282864, pv ≈ 0.000000` depende de que los puntos tengan coordenadas grandes (orden de 10⁴). En el flujo normal del orquestador (imagen de bordes recortada a ~2000×2000), las coordenadas típicas están en el rango 0–2000, y el ajuste con 3 puntos casi colineales aún produce un círculo grande pero no tan extremo.
-- Agregar un umbral de condición numérica aumentaría complejidad sin un beneficio inmediato medido en el flujo real.
-- Si en el futuro alguien quiere ese guard, puede añadirse como `cond = np.linalg.cond(A)` y lanzar `ValueError` cuando `cond > 30` (o el valor que se acuerde).
-- **Importante**: con el contrato actual, 3 puntos colineales hacen que la función lance `ValueError` por radicando ≤ 0 o bien retorne un radio finito con pv ≥ 0, pero **no produce el comportamiento antiguo de r = 282864, pv = 0.0 sin aviso**.
+`UMBRAL_CONDICION_NORMALIZADA = 3.0`
+
+| Geometría | `cond` normalizado |
+|---|---|
+| Anillo real de 3150 puntos (img100, r ≈ 428) | **1.418** |
+| Peor caso válido del contrato (hueco 60°, sigma 2, 216 casos) | **1.701** |
+| Arco de 240° (hueco 120°) | 1.718 |
+| Semicírculo (hueco 180°) | 2.395 |
+| Arco con hueco 240° | 3.672 |
+| Mínimo de 960 rectas (N 3–59, ruido 0 a 10 % del largo) | **4.056** |
+
+El umbral deja 1.76× de margen por debajo del peor válido y 1.35× por encima de la recta más benigna, y todavía deja pasar un semicírculo.
+
+### 3.4 Costo
+
+`np.linalg.cond` sobre una matriz `N×3` (SVD) cuesta **1.00 ms** con 3150 puntos, medido de punta a punta en la función. Es despreciable frente a las etapas ①–⑥ (decenas de segundos).
+
+### 3.5 Verificación con datos reales
+
+Sobre los bordes reales de img100 (recorte 2288×2000, 10 100 bordes):
+
+| Prueba | Resultado |
+|---|---|
+| Anillo real completo | `r = 428.1769`, idéntico al valor previo al guard (diferencia `1.2e-05` px) |
+| Triples horizontales de trazos rectos | **500/500 lanzan `ValueError`** |
+| Triples verticales de trazos rectos | **500/500 lanzan `ValueError`** |
+| Triángulo rectángulo `(0,0) (10,0) (0,10)` | `r = 7.0710678`, sin excepción |
+
+Antes del guard, los mismos triples devolvían círculos de hasta 39 010 px de radio con `pv ≈ 4e-6`, sin excepción.
+
+## 4. Rama defensiva del radicando
+
+`radicando <= 0` se conserva como red de seguridad, pero es **inalcanzable en la práctica**: 0 casos en 200 000 conjuntos aleatorios de 3 a 11 puntos en el rango de coordenadas real. No tiene test propio porque no existe una entrada que lo dispare; se documenta aquí en lugar de escribir un test vacuo.
 
 ## 5. Fuera de alcance
 
-- **RANSAC u ajuste robusto**: pertenece a una etapa futura, no al `Circulo_simple` actual.
-- **Métricas alternativas (RMS, desviación estándar)**: documentadas como posible mejora, pero `pv` se mantiene como valor de retorno para no romper compatibilidad con tests y código existente.
-- **Regularización Tikhonov o similar**: fuera de alcance para esta etapa.
+- **RANSAC / ajuste robusto**: etapa futura.
+- **Cambiar `pv` por RMSE**: `pv` se mantiene en el retorno para no romper `main.py:597`. Medido, RMSE está mejor calibrado (`≈ sigma`) que `pv` (`≈ 3.4 σ` con dispersión 1.43–2.40), pero **ninguna de las dos sirve como guard con N = 3**: 3 puntos se interpolan exactos, 111 de 200 rectas dan `pv == 0` y 110 además `r > 1e4`.
+- **Regularización Tikhonov**: fuera de alcance.
+- **Guard por cantidad de puntos**: un triángulo bien conformado es un ajuste legítimo; el criterio geométrico (cond normalizado) es el correcto, no `N`.

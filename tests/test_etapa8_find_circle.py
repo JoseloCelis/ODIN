@@ -236,28 +236,31 @@ def test_validar_anillo_rechaza_menos_de_tres_puntos(n):
     assert "punto" in motivo
 
 
-@pytest.mark.parametrize("n", [1, 2])
-def test_el_ortodoxo_con_menos_de_tres_puntos_lanza_valueerror(n):
+@pytest.mark.parametrize(
+    "n, mensaje",
+    [(1, "insuficientes puntos"), (2, "dos puntos definen una línea")],
+)
+def test_el_ortodoxo_con_menos_de_tres_puntos_lanza_valueerror(n, mensaje):
     """Con el nuevo contrato, Circulo_simple lanza ValueError para N < 3."""
     puntos = np.array([[10.0, 10.0], [20.0, 20.0]])[:n]
 
-    with pytest.raises(ValueError, match="insuficientes puntos"):
+    with pytest.raises(ValueError, match=mensaje):
         LSC.Circulo_simple(puntos)
 
 
-def test_tres_puntos_casi_colineales_producen_un_circulo_absurdo_con_pv_cero():
-    """Medido: centro en (-200010, 200020), r = 282864, pv = 0.000000.
+def test_tres_puntos_casi_colineales_son_rechazados_por_ambas_capas():
+    """Histórico: centro en (-200010, 200020), r = 282864, pv = 0.000000.
 
-    La cobertura angular lo rechaza sin depender de la etapa ⑨.
+    Desde la etapa ⑨ el guard de colinealidad lo frena antes del ajuste, y la
+    cobertura angular de la etapa ⑧ también lo rechaza por su cuenta.
     """
     puntos = np.array([[0.0, 0.0], [10.0, 10.0], [20.0, 20.001]])
 
-    _, _, r, pv = LSC.Circulo_simple(puntos)
     ok, _ = FC.validar_anillo(puntos, (10.0, 10.0))
 
-    assert r > 1000
-    assert pv == pytest.approx(0.0)
     assert ok is False
+    with pytest.raises(ValueError, match="colineales"):
+        LSC.Circulo_simple(puntos)
 
 
 # ---------------------------------------------------------------------------
