@@ -38,3 +38,10 @@ pip-delete-this-directory.txt
 
 # Dataset de imágenes de micrometría (3.0 GB, no se versiona)
 odin/data/
+
+### Artefactos de herramientas locales
+# Registro de skills autogenerado por gentle-ai
+.atl/
+
+# Configuracion local del hook de revision (Gentleman Guardian Angel)
+.gga
