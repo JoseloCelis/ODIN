@@ -88,6 +88,16 @@ def test_rechaza_umbral_menor_a_medio():
         H.hough_circles_vectorizado(bordes, 20, 0.49)
 
 
+def test_rechaza_radio_no_positivo():
+    bordes = _anillo(80, 40, 40, 20)
+
+    with pytest.raises(ValueError):
+        H.hough_circles_vectorizado(bordes, 0, 0.8)
+
+    with pytest.raises(ValueError):
+        H.hough_circles_vectorizado(bordes, -5, 0.8)
+
+
 def test_sin_bordes_devuelve_cero_picos():
     vacio = np.zeros((50, 50), dtype=np.uint8)
 

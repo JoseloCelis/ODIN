@@ -33,6 +33,9 @@ def hough_circles_vectorizado(im_binary, r, thres=0.5, dist=20):
     if thres < 0.5:
         raise ValueError("HOUGHCIRCLE:: Treshold value must be bigger or equal to 0.5")
 
+    if r <= 0:
+        raise ValueError("HOUGHCIRCLE:: Radius value must be bigger than 0 px")
+
     # Asegurarnos de que sea una matriz booleana
     im_binary = np.asarray(im_binary, dtype=bool)
 
