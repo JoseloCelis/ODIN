@@ -73,6 +73,16 @@ def test_valor_constante_devuelve_ese_valor_exacto(valor):
     assert otsu >= 0.0
 
 
+def test_umbral_otsu_en_casi_constante_con_rango_minimo_no_lanza_excepcion():
+    """R5/D1 (extension): la guarda debe cubrir el caso de rango minimo
+    (casi-constante) que hace fallar a np.histogram con 256 bins."""
+    ig = np.concatenate([np.full(100, 0.5), np.full(100, 0.5 + 1e-16)])
+
+    umbral = OT.umbralOtsu(ig)
+
+    assert np.isfinite(umbral)
+
+
 @pytest.mark.parametrize("entrada", [
     np.zeros((10, 10)),
     np.array([]),

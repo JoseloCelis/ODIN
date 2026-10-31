@@ -31,8 +31,18 @@ def _preparar_histograma(IG):
                 np.array([valor - ancho, valor + ancho]),
                 np.array([valor]))
 
-    # Bins fijos para asegurar consistencia indexada
-    counts, edges = np.histogram(píxeles_validos, bins=256)
+    # Bins fijos para asegurar consistencia indexada. R5/D1: si el rango
+    # activo no admite 256 bins finitos (casi-constante con rango minimo),
+    # se usa un solo bin centrado en el valor en vez de dejar que np.histogram
+    # lance "Too many bins for data range".
+    try:
+        counts, edges = np.histogram(píxeles_validos, bins=256)
+    except ValueError:
+        valor = float(vmin)
+        ancho = max(abs(valor) * 1e-6, 1e-9)
+        return (np.array([píxeles_validos.size]),
+                np.array([valor - ancho, valor + ancho]),
+                np.array([valor]))
     wbin = (edges[1] - edges[0]) / 2
     xcenters = edges[:-1] + wbin
     return counts, edges, xcenters
