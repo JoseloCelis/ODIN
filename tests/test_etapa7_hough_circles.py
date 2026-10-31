@@ -389,11 +389,13 @@ def test_el_estado_avisa_cuando_la_deteccion_es_ambigua():
 
 
 def test_resolver_radio_omite_el_barrido_con_diametro_del_usuario():
+    from odin import aproxHough
     from odin.main import resolver_radio
 
     bordes = _anillo(240, 120, 120, 40)
 
-    radio, pico, ambiguedad, origen = resolver_radio(1234.0, bordes, 120.0)
+    radio, pico, ambiguedad, origen = resolver_radio(1234.0, bordes, 120.0,
+                                                     aproxHough)
 
     assert origen == "usuario"
     assert radio == 617.0
@@ -401,11 +403,12 @@ def test_resolver_radio_omite_el_barrido_con_diametro_del_usuario():
 
 
 def test_resolver_radio_barre_cuando_no_hay_diametro_del_usuario():
+    from odin import aproxHough
     from odin.main import resolver_radio
 
     bordes = _anillo(240, 120, 120, 40)
 
-    radio, pico, _, origen = resolver_radio(None, bordes, 120.0)
+    radio, pico, _, origen = resolver_radio(None, bordes, 120.0, aproxHough)
 
     assert origen == "automatico"
     assert abs(radio - 40) <= 1.5

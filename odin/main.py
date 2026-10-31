@@ -7,50 +7,21 @@ gi.require_version('Adw', '1')
 
 import os
 import sys
+import time
 import threading
 from pathlib import Path
 
 import numpy as np
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-#from src.utils import loadImage
-#from src.Preprocesamiento import kernelSeparable
-#from odin import handle, kernelSeparable
-# Imports duales según cómo se ejecute (ver AGENTS.md):
-# - ejecutado como paquete (python3 -m odin.main) → imports relativos
-# - ejecutado como script (python3 odin/main.py)  → sys.path[0] es odin/, imports planos
+# Imports duales para bootstrap según cómo se ejecute
 if __package__:
-    from .Preprocesamiento import (
-        LSC,
-        DoubleTh,
-        MagnitudGradiente,
-        NonMaxSup,
-        Otsu,
-        aproxHough,
-        circleFilter,
-        kernelSeparable,
-    )
-    from .utils import handle
+    from .bootstrap import run_bootstrap, DisplayValidator, StartupLogger
 else:
-    from Preprocesamiento import (
-        LSC,
-        DoubleTh,
-        MagnitudGradiente,
-        NonMaxSup,
-        Otsu,
-        aproxHough,
-        circleFilter,
-        kernelSeparable,
-    )
-    from utils import handle
+    from bootstrap import run_bootstrap, DisplayValidator
 
-display = Gdk.Display.get_default()
-
-if display:
-    backend_name = type(display).__name__
-    print(f"El backend activo de GDK es: {backend_name}")
-else:
-    print(" No se pudo inicializar ninguna pantalla gráfica")
+# Los módulos de preprocesamiento y utils ahora se cargan vía bootstrap
+# y están disponibles en bootstrap_result.modules.preprocesamiento y .handle
 
 
 class EstadoDiametro:
@@ -104,25 +75,48 @@ class EstadoDiametro:
         return f"Detectado: {self.detectado:.1f} px{aviso}"
 
 
-def resolver_radio(diametro_usuario, bordes, r0):
+def resolver_radio(diametro_usuario, bordes, r0, aprox_hough):
     """Devuelve `(radio, pico, ambiguedad, origen)`.
 
     Un diámetro declarado por el usuario se usa tal cual y **omite** el
-    barrido (spec hough-circles, R6.2). Sin diámetro, se estima con el barrido
-    de dos escalas (R3, R10).
+    barrido (spec hough-circles, R6.2). Sin diámetro, se estima en dos
+    escalas (R3, R10).
+
+    `aprox_hough` es el módulo `houghCircles` (alias `aproxHough`): se pasa
+    como dependencia porque `main.py` no importa `Preprocesamiento` en nivel
+    de módulo (spec odin-startup-structure, el arranque lo carga vía
+    `bootstrap_result.modules.preprocesamiento`).
     """
     if diametro_usuario is not None and float(diametro_usuario) > 0:
         return float(diametro_usuario) / 2.0, 0, 0.0, "usuario"
 
-    radio, pico, ambiguedad = aproxHough.estimar_radio_dominante(bordes, r0)
+    radio, pico, ambiguedad = aprox_hough.estimar_radio_dominante(bordes, r0)
     return radio, pico, ambiguedad, "automatico"
 
 
 class MainWindow(Adw.ApplicationWindow):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, bootstrap_result, logger, **kwargs):
         super().__init__(*args, **kwargs)
-
+        
+        self._bootstrap_result = bootstrap_result
+        self._logger = logger
+        
+        # Obtener módulos cargados vía bootstrap
+        preproc = bootstrap_result.modules.preprocesamiento
+        handle_mod = bootstrap_result.modules.handle
+        
+        # Asignar módulos como atributos para uso posterior
+        self.kernelSeparable = preproc["kernelSeparable"]
+        self.MagnitudGradiente = preproc["MagnitudGradiente"]
+        self.NonMaxSup = preproc["NonMaxSup"]
+        self.Otsu = preproc["Otsu"]
+        self.DoubleTh = preproc["DoubleTh"]
+        self.aproxHough = preproc["aproxHough"]
+        self.circleFilter = preproc["circleFilter"]
+        self.LSC = preproc["LSC"]
+        self.handle = handle_mod
+        
         # Variables de control
         self.ruta_imagen = None
         self.image_loaded = None
@@ -133,6 +127,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_title("ODIN")
         self.set_default_size(1600, 900)
         self.set_size_request(width=1024, height=600)
+        
+        # Timing para WINDOW_INIT
+        self._t0_window = time.monotonic()
         
         # Contenedor principal adaptativo
         toolbar_view = Adw.ToolbarView.new()
@@ -309,14 +306,18 @@ class MainWindow(Adw.ApplicationWindow):
         main_box.append(scroll_visualizador)
         
         try:
-            self.image_container = handle.VisualizadorInteractivo() 
-        except NameError:
+            self.image_container = self.handle.VisualizadorInteractivo()
+        except Exception as e:
             self.image_container = Gtk.Picture()
             self.image_container.set_hexpand(True)
             self.image_container.set_vexpand(True) 
             self.image_container.set_can_shrink(True)
             self.image_container.set_content_fit(Gtk.ContentFit.CONTAIN)
-            print("Aviso: 'VisualizadorInteractivo' no detectado, usando contenedor temporal.")
+            self._logger.log(
+                "WINDOW_INIT",
+                "WARNING",
+                f"VisualizadorInteractivo falló, usando Gtk.Picture como respaldo: {type(e).__name__}: {e}"
+            )
         
         scroll_visualizador.set_child(self.image_container)
         
@@ -445,24 +446,10 @@ class MainWindow(Adw.ApplicationWindow):
         fileDialog = Gtk.FileDialog.new()
         fileDialog.set_title("Selecciona la imagen")
         
-        # Por defecto, apuntamos al montaje del contenedor que mapea tu HOME de Mint
-        home_dir = "/home"
+        # Usar base_path del bootstrap (ya resuelto por EnvironmentProbe)
+        home_dir = str(self._bootstrap_result.env.base_path)
         
-        # Si detectamos que la máquina anfitriona es WSL2, la ruta de Windows cambia ligeramente
-        if "microsoft" in os.uname().release.lower():
-        # Si es WSL2, el contenedor mapea Windows directo en 
-            user = "jolopez"
-            win_home = f"/mnt/c/Users/{user}"
-            win_path = f"{win_home}/OneDrive - Consejo Nacional de Ciencia y Tecnologia-68760199-CENAM"
-            home_dir = win_path
-            #win_path = "/host_home../../mnt/c/Users/jolopez" 
-            if os.path.exists(win_path):
-                home_dir = win_path
-        else:
-            # si es Linux Mint, suamos el mapeo de HOME nativo
-            home_dir = "/home"
-            
-        # Si por alguna razón no existe /home, cae en el home interno del contenedor
+        # Fallback garantizado (ya manejado por EnvironmentProbe, pero por seguridad)
         if not os.path.exists(home_dir):
             home_dir = str(Path.home())
 
@@ -530,23 +517,23 @@ class MainWindow(Adw.ApplicationWindow):
                  #print(f" Mini-alerta de error: {mensaje}")
             #else:
             resultadosProcesamiento = {}
-            resultadosProcesamiento["inicial"] = handle.matriz_a_pixbuf(self.current_image)
-            Gx,Gy = kernelSeparable.DerivGauss(self.current_image,self.sigma,1,1,360)
-            MG, Tetha = MagnitudGradiente.MagFase( Gx, Gy )
-            GNMaxS = NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)
-            uOtsu, _uRosin =Otsu.umbralRosinYOtsu(GNMaxS, histo=True)
-            HighE, LowE = NonMaxSup.DobleThreshold(GNMaxS, uOtsu)
-            DetectedEdges = DoubleTh.EdgeTrack_Hyst(HighE, LowE)
+            resultadosProcesamiento["inicial"] = self.handle.matriz_a_pixbuf(self.current_image)
+            Gx,Gy = self.kernelSeparable.DerivGauss(self.current_image,self.sigma,1,1,360)
+            MG, Tetha = self.MagnitudGradiente.MagFase( Gx, Gy )
+            GNMaxS = self.NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)
+            uOtsu, _uRosin = self.Otsu.umbralRosinYOtsu(GNMaxS, histo=True)
+            HighE, LowE = self.NonMaxSup.DobleThreshold(GNMaxS, uOtsu)
+            DetectedEdges = self.DoubleTh.EdgeTrack_Hyst(HighE, LowE)
             print(f"Bordes: {np.sum(HighE > 0)} fuertes, {np.sum(LowE > 0)} débiles, "
                   f"{np.sum(DetectedEdges > 0)} tras histéresis")
             
-            resultadosProcesamiento["gx"] = handle.matriz_a_pixbuf(Gx)
-            resultadosProcesamiento["gy"] = handle.matriz_a_pixbuf(Gy)
-            resultadosProcesamiento["mag"] = handle.matriz_a_pixbuf(MG)
-            resultadosProcesamiento["maximos"] = handle.matriz_a_pixbuf(GNMaxS)
-            resultadosProcesamiento["bordesdebiles"] = handle.matriz_a_pixbuf(LowE)
-            resultadosProcesamiento["bordesfuertes"] = handle.matriz_a_pixbuf(HighE)
-            resultadosProcesamiento["bordes"] = handle.matriz_a_pixbuf(DetectedEdges)
+            resultadosProcesamiento["gx"] = self.handle.matriz_a_pixbuf(Gx)
+            resultadosProcesamiento["gy"] = self.handle.matriz_a_pixbuf(Gy)
+            resultadosProcesamiento["mag"] = self.handle.matriz_a_pixbuf(MG)
+            resultadosProcesamiento["maximos"] = self.handle.matriz_a_pixbuf(GNMaxS)
+            resultadosProcesamiento["bordesdebiles"] = self.handle.matriz_a_pixbuf(LowE)
+            resultadosProcesamiento["bordesfuertes"] = self.handle.matriz_a_pixbuf(HighE)
+            resultadosProcesamiento["bordes"] = self.handle.matriz_a_pixbuf(DetectedEdges)
             
             self.vistas_procesadas["original"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["inicial"]))
             self.vistas_procesadas["gradiente x"].set_paintable(Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["gx"]))
@@ -564,37 +551,38 @@ class MainWindow(Adw.ApplicationWindow):
             alto, ancho = DetectedEdges.shape[:2]
             r0 = min(alto, ancho) / 2
             radio, pico, ambiguedad, origen = resolver_radio(
-                self.estado_diametro.diametro_para_procesar(), DetectedEdges, r0)
+                self.estado_diametro.diametro_para_procesar(), DetectedEdges,
+                r0, self.aproxHough)
             if radio <= 0:
                 raise ValueError("No se pudo estimar el radio del circulo en el recorte.")
 
             if origen == "automatico":
                 GLib.idle_add(self._mostrar_diametro_detectado, 2 * radio,
-                              ambiguedad >= aproxHough.UMBRAL_AMBIGUEDAD)
+                              ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD)
 
-            xRecortada, yRecortada, n, accumulador = aproxHough.hough_circles_vectorizado(
+            xRecortada, yRecortada, n, accumulador = self.aproxHough.hough_circles_vectorizado(
                 DetectedEdges, radio, 0.8)
-            centro = aproxHough.mejor_centro(xRecortada, yRecortada, accumulador)
+            centro = self.aproxHough.mejor_centro(xRecortada, yRecortada, accumulador)
             if centro is None:
                 raise ValueError("La transformada de Hough no encontro centros.")
 
             aviso = " (revisar: hay otro candidato parecido)" if (
-                ambiguedad >= aproxHough.UMBRAL_AMBIGUEDAD) else ""
+                ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD) else ""
             print(f"Radio {radio:.1f} px (diametro {2 * radio:.1f}) [{origen}], "
                   f"pico {pico}, ambiguedad {ambiguedad:.2f}{aviso}")
 
-            puntosFiltrados = circleFilter.find_circle(
+            puntosFiltrados = self.circleFilter.find_circle(
                 DetectedEdges, radio, (centro[0], centro[1]))
 
             # Etapa 8: la selección tiene que RODEAR el círculo. Sin esto, un
             # radio equivocado devuelve puntos de otra estructura y el ajuste
             # inventa un círculo que no existe (spec find-circle, R3/R4).
-            anillo_ok, motivo = circleFilter.validar_anillo(
+            anillo_ok, motivo = self.circleFilter.validar_anillo(
                 puntosFiltrados, (centro[0], centro[1]))
             if not anillo_ok:
                 raise ValueError(f"No se puede medir el circulo: {motivo}.")
 
-            x, y, r, pv = LSC.Circulo_simple(puntosFiltrados)
+            x, y, r, pv = self.LSC.Circulo_simple(puntosFiltrados)
             x = self.xRecorte+x
             y = self.yRecorte+y
             GLib.idle_add(self.finalizar_proceso_exitoso)
@@ -736,12 +724,28 @@ class MainWindow(Adw.ApplicationWindow):
         
         
 class ODINAdwaita(Adw.Application):
-    def __init__(self, **kwargs):
+    def __init__(self, bootstrap_result=None, logger=None, **kwargs):
         super().__init__(**kwargs)
+        self.bootstrap_result = bootstrap_result
+        self.logger = logger
         self.connect('activate', self.on_activate)
      
     def on_activate(self, app):
-        self.win = MainWindow(application=app)
+        # Validación de display primero (spec: antes de construir MainWindow)
+        validator = DisplayValidator(self.logger or StartupLogger())
+        validator.validate()  # sys.exit(1) si falla
+        
+        self.win = MainWindow(
+            application=app,
+            bootstrap_result=self.bootstrap_result,
+            logger=self.logger,
+        )
+        
+        # Logging de WINDOW_INIT completo
+        if self.logger:
+            duracion_ms = (time.monotonic() - self.win._t0_window) * 1000
+            self.logger.log_phase_complete("WINDOW_INIT", duracion_ms)
+        
         self.win.present()    
         
     """def do_activate(self):
@@ -749,10 +753,21 @@ class ODINAdwaita(Adw.Application):
         self.win = MainWindow(application=self)        
         self.win.present()"""
 
+# Importar StartupLogger para fallback en ODINAdwaita
+try:
+    from .bootstrap import StartupLogger
+except ImportError:
+    from bootstrap import StartupLogger
+
 # Instanciar y ejecutar la aplicación solo al ejecutar el archivo directamente,
 # para que `import odin.main` no lance la GUI.
 if __name__ == "__main__":
-    app = ODINAdwaita(application_id="com.detectorDistancias.Odin")
+    result = run_bootstrap(__package__)
+    app = ODINAdwaita(
+        bootstrap_result=result,
+        logger=result.logger,
+        application_id="com.detectorDistancias.Odin"
+    )
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)
 
