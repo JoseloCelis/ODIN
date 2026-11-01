@@ -5,7 +5,7 @@
 Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo que ya no aporte.
 
 ## Estado actual
-- Suite de tests: 166 casos en pytest (tests/), `python3 -m pytest tests` desde la raíz.
+- Suite de tests: 167 casos en pytest (tests/), `python3 -m pytest tests` desde la raíz.
 - Etapas implementadas y verificadas: ① kernelSeparable, ② MagFase, ③ NonMaxSup, ④ Otsu/Rosin, ⑥ EdgeTrack_Hyst, ⑦ houghCircles (R1-R10), ⑧ findCircle (R1-R6), ⑨ circuloSimple (cerrada, spec commiteado en `857f422`). Etapa ⑤ = DobleThreshold dentro de ④.
 - Falsificación por etapa (barrido e1-e8) completada; bugs reales corregidos: (a) `hough_circles_vectorizado` rechaza `r <= 0` con `ValueError` (commit `11183bf`); (b) `_preparar_histograma` maneja rango mínimo (casi-constante) con fallback a un solo bin (commit `12bd93d`).
 - Barrido completo S1-S4 (pipeline full, sin recortar): VERDE sobre img050.bmp — S1 sin errores, S2 consistencias OK, S3 determinismo, S4 sin NaN (salida en /tmp/opencode/barrido-e9/salida_s1_s4_final.json).
@@ -13,7 +13,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - `.kiro/specs/`: specs de etapas ①-⑨ + arranque (parcial: tasks 12/16, 4 abiertos).
 
 ## Doc-staleness pendiente (barrido ①-⑧)
-- R3.2 (etapa ② MagFase): spec dice ángulo en `(-180, 180]` pero `np.arctan2` puede producir `-180` (MagFase.py:16).
+- (ninguna pendiente; R3.2 resuelta, etapa ④ resuelta)
 
 ## Decisiones (y por qué)
 - Acrónimo oficial: ODIN = *Otsu + Directional + Intensity + Non-Maximum Suppression* (usuario).
