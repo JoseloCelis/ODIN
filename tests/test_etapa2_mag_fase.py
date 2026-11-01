@@ -56,3 +56,15 @@ def test_entrada_vacia_devuelve_arreglos_vacios():
 
     assert mg.size == 0
     assert angulo.size == 0
+
+
+def test_angulo_nunca_es_menos_180():
+    # atan2(-0.0, negativo) devuelve -180 en NumPy; el spec exige (-180, 180],
+    # así que -180 debe mapearse a 180.
+    gx = np.array([[-1.0, -2.0]])
+    gy = np.array([[-0.0, -0.0]])
+
+    _, angulo = MF.MagFase(gx, gy)
+
+    assert not np.any(angulo == -180.0), f"ángulo -180 no permitido: {angulo}"
+    assert np.all(angulo <= 180.0)

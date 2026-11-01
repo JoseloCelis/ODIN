@@ -14,4 +14,7 @@ def MagFase( GrX, GrY ):
         MGr = MGr / MGr_max
     #MGr=MGr/MGr.max()
     angle=np.atan2(GrY,GrX)*180/np.pi
+    # El spec exige (-180, 180]: -180 no puede aparecer. NumPy puede devolverlo
+    # para atan2(-0.0, negativo); se mapea a 180 para cumplir el contrato.
+    angle = np.where(angle == -180.0, 180.0, angle)
     return MGr, angle
