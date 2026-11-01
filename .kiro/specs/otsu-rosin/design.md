@@ -35,9 +35,10 @@ compactos y separados, no un defecto de la implementación.
 | todo ceros | `0.0, 0.0` | ✓ guarda |
 | vacío / solo negativos | `0.0, 0.0` | ✓ guarda |
 | con `NaN` | `0.2996, 0.2035` | ✓ `NaN` filtrado por `IG > 0` |
-| constante 0.5 | `0.0020` | **D1**: un solo bin, rango artificial |
-| constante 0.7 | `0.2020` | **D1** |
-| constante 0.05 | `−0.4480` | **D1**: umbral negativo |
+| constante 0.5 | `0.5` | ✓ D1: un solo bin centrado en el valor |
+| constante 0.7 | `0.7` | ✓ D1: un solo bin centrado en el valor |
+| constante 0.05 | `0.05` | ✓ D1: un solo bin centrado en el valor |
+| casi-constante (rango mínimo) | `0.5` (centro del valor) | ✓ D1: fallback a un solo bin cuando `np.histogram` no admite 256 bins |
 
 Causa exacta de D1: `np.histogram` con `min == max` expande el rango a
 `(v − 0.5, v + 0.5)`; el único bin ocupado es el 128; `vB` es cero en todas las
@@ -57,14 +58,7 @@ usa solo para dibujar. El respaldo cuando la recta es indefinida ya existe.
 
 ## 3. Divergencias registradas
 
-- **D1 (defecto real, degenerado) — RESUELTO**: un solo bin no vacío devolvía
-  `v − 0.5 + ½bin`, que podía ser negativo. Resolución final: la guarda vive en
-  `_preparar_histograma`, que ante valores activos todos iguales devuelve un
-  histograma de **un solo bin centrado exactamente en ese valor**.
-  Nota de proceso: el primer intento devolvía el centro del bin del histograma
-  artificial y falló para valores diminutos (0.001 → −0.000953); el bin no es
-  el valor. Se deja además una guarda defensiva en `_umbral_otsu` para
-  cualquier caso futuro de un solo bin ocupado.
+- **D1 (defecto real, degenerado) — RESUELTO**: dos casos de histogramas con un solo bin no vacío devolvían `v − 0.5 + ½bin`, que podía ser negativo. (a) Valores activos todos iguales (`vmin == vmax`): `np.histogram` expande el rango a `(v − 0.5, v + 0.5)`; (b) Casi-constante con rango mínimo (`vmin != vmax` pero el rango es demasiado chico para 256 bins finitos): `np.histogram` lanza `ValueError: Too many bins for data range`. Resolución final: la guarda vive en `_preparar_histograma`, que en ambos casos devuelve un histograma de **un solo bin centrado exactamente en el valor** (`vmin`). Nota de proceso: el primer intento devolvía el centro del bin del histograma artificial y falló para valores diminutos (0.001 → −0.000953); el bin no es el valor. Se deja además una guarda defensiva en `_umbral_otsu` para cualquier caso futuro de un solo bin ocupado.
 - **D2 (contrato, no defecto)**: meseta de Otsu documentada en R3.
 - **D3 (deuda arquitectónica)**: `GLib.idle_add` incondicional en
   `umbralRosinYOtsu` y `umbralOtsu`; el módulo importa `gi`. Deuda ya anotada
