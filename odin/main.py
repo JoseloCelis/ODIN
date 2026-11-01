@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import threading
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -770,6 +771,24 @@ except ImportError:
 # Instanciar y ejecutar la aplicación solo al ejecutar el archivo directamente,
 # para que `import odin.main` no lance la GUI.
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="ODIN — Detección de bordes y medición geométrica"
+    )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="Verificar arranque e imprimir versión sin abrir la GUI",
+    )
+    args = parser.parse_args()
+
+    if args.version:
+        # Verificar arranque (fases 1-3) e imprimir versión sin abrir la GUI
+        result = run_bootstrap(__package__)
+        validator = DisplayValidator(result.logger)
+        validator.validate()  # Fase 3: DISPLAY_VALID (sys.exit(1) si falla)
+        print("ODIN 1.0")
+        sys.exit(0)
+
     result = run_bootstrap(__package__)
     app = ODINAdwaita(
         bootstrap_result=result,

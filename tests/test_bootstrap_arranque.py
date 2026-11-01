@@ -14,6 +14,7 @@ Cubre el contrato observable del bootstrap sin abrir ventanas:
 """
 
 import io
+import subprocess
 import sys
 from pathlib import Path
 
@@ -248,3 +249,26 @@ def test_run_bootstrap_aborta_con_log_error_si_una_fase_falla(capsys, monkeypatc
     assert "[ODIN] WINDOW_INIT | ERROR | RuntimeError: fallo simulado" in (
         capsys.readouterr().out
     )
+
+
+# ---------------------------------------------------------------------------
+# main.py -- flag --version (Task 15.1 / 15.2)
+# ---------------------------------------------------------------------------
+
+def test_version_flag_verifica_arranque_y_sale_con_codigo_0():
+    """--version ejecuta el bootstrap (fases 1-3), imprime la versión y sale
+    con código 0 sin abrir la GUI. Cubre el arranque en modo SCRIPT."""
+    resultado = subprocess.run(
+        [sys.executable, str(RAIZ / "odin" / "main.py"), "--version"],
+        cwd=RAIZ,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert resultado.returncode == 0, f"stderr: {resultado.stderr}"
+    salida = resultado.stdout
+    assert "[ODIN] ENV_PROBE | INFO |" in salida
+    assert "[ODIN] MODULE_LOAD | INFO |" in salida
+    assert "[ODIN] DISPLAY_VALID | INFO |" in salida
+    assert "ODIN 1.0" in salida
