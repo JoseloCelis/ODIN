@@ -131,6 +131,14 @@ class MainWindow(Adw.ApplicationWindow):
         # Timing para WINDOW_INIT
         self._t0_window = time.monotonic()
         
+        # Orden estricto de construcción de widgets (Req 4.3, Task 12.2):
+        # 1. ToolbarView (contenedor principal adaptativo)
+        # 2. HeaderBar (barra superior con botones y menú)
+        # 3. NavigationSplitView (cuerpo principal dividido)
+        # 4. Sidebar (barra lateral de controles con Adw.PreferencesPage)
+        # 5. VisualizadorInteractivo (área de dibujo con recorte Cairo)
+        # 6. ViewStack (Adw.ViewStack para apilar vistas de resultados)
+        # No reorganizar este orden; se valida por inspección de MainWindow.__init__.
         # Contenedor principal adaptativo
         toolbar_view = Adw.ToolbarView.new()
         self.set_content(toolbar_view)
