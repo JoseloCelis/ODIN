@@ -1,6 +1,6 @@
 # MEMORY.md — ODIN (Otsu + Directional + Intensity + Non-Maximum Suppression)
 
-Última modificación: 2026-11-01
+Última modificación: 2026-11-03
 
 Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo que ya no aporte.
 
