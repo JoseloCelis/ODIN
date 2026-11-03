@@ -12,6 +12,15 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - `.gitignore`: `odin/data/` (3.0 GB) excluido.
 - `.kiro/specs/`: specs de etapas ①-⑨ + arranque (parcial: tasks 12/15 completadas, 14 y 16 abiertas).
 
+## Mediciones Task 14 / Task 16 (sin pantalla)
+- ENV_PROBE (detección entorno): 0.2 ms (umbral < 200 ms) ✅ OK
+- Bootstrap completo: 0.1 ms (umbral < 3000 ms) ✅ OK (en proceso existente)
+- Suite pytest: 168 passed ✅ OK
+- DISPLAY_VALID: requiere pantalla (Wayland/X11) ⏳ bloqueado
+- WINDOW_INIT: requiere MainWindow + pantalla ⏳ bloqueado
+- Task 14 (checkpoint integración GUI): ⏳ pendiente por falta de pantalla
+- Task 16 (checkpoint final): tests y tiempos OK; faltan 11 propiedades de corrección y consulta final al usuario
+
 ## Doc-staleness pendiente (barrido ①-⑧)
 - (ninguna pendiente; R3.2 resuelta, etapa ④ resuelta)
 
