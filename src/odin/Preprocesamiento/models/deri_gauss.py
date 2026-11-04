@@ -22,9 +22,12 @@ def DerivGauss(E, sigma, wk, wConv, wr):
         return np.zeros_like(E), np.zeros_like(E)
 
     #//////////////////////// genera kernel derivada gaussiana
+    # n y nk son el tamaño/radio del kernel; se redondean al entero más
+    # cercano (como MATLAB con sigma flotante) porque np.zeros/Conv2D
+    # exigen enteros, pero sigma se conserva como float en s2/dgk.
     ds = 0
     s2 = 2 * pow(sigma, 2)
-    n = int(3 * sigma)
+    n = round(3 * sigma)
     gk = np.zeros((n * 2) + 1)
     dgk = np.zeros((n * 2) + 1)
     k = 0
@@ -40,7 +43,7 @@ def DerivGauss(E, sigma, wk, wConv, wr):
         dgk[k] = -s2 * i * gk[k]
         k = k + 1
 
-    nk = int(3 * sigma)
+    nk = round(3 * sigma)
 
     DGX = np.zeros((nr, nc))
     DGY = np.zeros((nr, nc))

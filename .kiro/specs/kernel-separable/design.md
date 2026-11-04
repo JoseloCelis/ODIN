@@ -38,8 +38,15 @@ también `wr` a `[0, nr−1]`.
 
 ### Divergencias registradas, fuera de alcance de este fix
 
-- **D4**: `sigma` flotante truena (`range(3*1.4)` → `TypeError`); MATLAB lo
-  permitía. Requiere decisión de producto: `n = round(3σ)` o exigir entero.
+### D4 (RESUELTO) — `sigma` flotante no truena
+
+`range(3*sigma)` con `sigma` flotante lanzaba `TypeError` (MATLAB lo permitía).
+Decisión de producto: `n = round(3*sigma)` y `nk = round(3*sigma)` (redondeo al
+entero más cercano, como MATLAB) antes de dimensionar `gk`/`dgk`, en
+`src/odin/Preprocesamiento/models/deri_gauss.py`. `sigma` se conserva como
+float en todos los cálculos matemáticos (`s2`, `dgk`, `gk`). Con
+`sigma <= 0` el guard corto-circuito retorna ceros antes de cualquier cálculo
+(D2). Verificado con `sigma ∈ {1.5, 2.5}` (forma, finitud, tipo `ndarray`).
 - **D5**: convolución en Python puro (~57M de iteraciones para 1280×720).
   Candidata futura a `scipy.ndimage`/`cv2.sepFilter2D` o NumPy vectorizado.
 - **D6**: `Convolucion/ConvR.py` y `Convolucion/ConvC.py` son duplicados exactos

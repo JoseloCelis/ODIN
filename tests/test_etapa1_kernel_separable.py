@@ -30,6 +30,24 @@ def test_derivgauss_sigma_negativo_retorna_ceros():
     assert np.allclose(dy, np.zeros_like(img))
 
 
+def test_derivgauss_sigma_flotante_no_truna():
+    """D4 resuelto: sigma flotante (p. ej. 1.5, 2.5) no lanza TypeError."""
+    img = np.random.rand(32, 32).astype(np.float64)
+    dx, dy = kernelSeparable(img, sigma=1.5, wk=0, wConv=0, wr=0)
+    assert dx.shape == img.shape
+    assert dy.shape == img.shape
+    assert isinstance(dx, np.ndarray)
+    assert isinstance(dy, np.ndarray)
+
+
+def test_derivgauss_sigma_flotante_resultado_finito():
+    """D4 resuelto: sigma flotante produce valores finitos (no NaN)."""
+    img = np.random.rand(32, 32).astype(np.float64)
+    dx, dy = kernelSeparable(img, sigma=2.5, wk=0, wConv=0, wr=0)
+    assert np.all(np.isfinite(dx))
+    assert np.all(np.isfinite(dy))
+
+
 def test_derivgauss_tipos_salida_son_ndarray():
     """Las salidas son numpy.ndarray puro (modelo aislado de UI)."""
     img = np.random.rand(16, 16).astype(np.float64)
