@@ -232,7 +232,10 @@ class ModuleLoader:
                     "ERROR",
                     f"Fallo al importar {archivo}: {e}"
                 )
-                raise RuntimeError(f"No se pudo cargar el módulo {alias} ({archivo}): {e}")
+                raise RuntimeError(
+                    f"No se pudo cargar el módulo {alias} ({archivo}) "
+                    f"en modo {mode}: {e}"
+                )
         
         # Importar Handle_Module
         try:
@@ -249,7 +252,7 @@ class ModuleLoader:
                 "ERROR",
                 f"Fallo al importar Handle_Module: {e}"
             )
-            raise RuntimeError(f"Handle_Module no disponible: {e}")
+            raise RuntimeError(f"Handle_Module no disponible en modo {mode}: {e}")
         
         # Log módulos resueltos
         self.logger.log(
@@ -298,7 +301,9 @@ class DisplayValidator:
 def run_bootstrap(package_context: Optional[str] = None) -> BootstrapResult:
     """Orquesta el bootstrap completo de ODIN."""
     logger = StartupLogger()
-    
+    # Componente en curso: si algo falla, R5.4 exige nombrarlo en el ERROR.
+    componente = "EnvironmentProbe"
+
     try:
         # Fase 1: ENV_PROBE
         t0 = time.monotonic()
@@ -307,6 +312,7 @@ def run_bootstrap(package_context: Optional[str] = None) -> BootstrapResult:
         logger.log_phase_complete("ENV_PROBE", (time.monotonic() - t0) * 1000)
         
         # Fase 2: MODULE_LOAD
+        componente = "ModuleLoader"
         t0 = time.monotonic()
         module_loader = ModuleLoader(logger, package_context)
         modules = module_loader.load()
@@ -320,6 +326,6 @@ def run_bootstrap(package_context: Optional[str] = None) -> BootstrapResult:
         logger.log(
             "WINDOW_INIT",
             "ERROR",
-            f"{type(e).__name__}: {e}"
+            f"{componente}: {type(e).__name__}: {e}"
         )
         sys.exit(1)
