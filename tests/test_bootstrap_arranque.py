@@ -219,6 +219,9 @@ def test_fallo_de_handle_module_incluye_modo(package_context, modo, monkeypatch)
 
     mensaje = str(exc_info.value)
     assert "Handle_Module" in mensaje
+    # El módulo real que falló, no solo el alias lógico: una regresión que
+    # nombre otro archivo pero imprima Handle_Module y el modo pasaría si no.
+    assert "handleImage" in mensaje
     assert modo in mensaje
     assert "ERROR" in logger.stream.getvalue()
 
