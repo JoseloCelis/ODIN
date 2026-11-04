@@ -234,7 +234,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - La validación de display ahora ocurre en `on_activate`
     - _Requisitos: 1.1, 1.4_
 
-- [ ] 12. Refactorizar odin/main.py — parte 2 (MainWindow)
+- [x] 12. Refactorizar odin/main.py — parte 2 (MainWindow)
   - [x] 12.1 Actualizar constructor de MainWindow
     - Cambiar signatura a: `__init__(self, *args, bootstrap_result, logger, **kwargs)`
     - Guardar `self._bootstrap_result = bootstrap_result`
@@ -242,7 +242,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - Agregar al inicio del constructor: `t0 = time.monotonic()`
     - _Requisitos: 4.1_
   
-  - [ ] 12.2 Implementar orden estricto de construcción de widgets
+  - [x] 12.2 Implementar orden estricto de construcción de widgets
     - Documentar con comentarios el orden: ToolbarView → HeaderBar → NavigationSplitView → sidebar → VisualizadorInteractivo → ViewStack
     - No reorganizar código, solo asegurar que el orden actual se mantiene
     - _Requisitos: 4.3_
@@ -310,13 +310,14 @@ La implementación se divide en 8 fases principales que construyen progresivamen
       ```
     - _Requisitos: 4.1, 4.2_
 
-- [ ] 14. Checkpoint — Verificar integración completa
+- [x] 14. Checkpoint — Verificar integración completa
   - Ejecutar `python3 -m odin.main` (modo PACKAGE) y verificar que arranca sin errores
   - Ejecutar `python3 odin/main.py` (modo SCRIPT) y verificar que arranca sin errores
   - Verificar que el log de arranque contiene las 4 fases en orden
   - Preguntar al usuario si hay dudas sobre la integración
 
-- [ ] 15. Escribir tests de integración end-to-end
+- [x] 15. Escribir tests de integración end-to-end
+  - Nota: 15.1-15.3 (opcionales, `*`) omitidas; 15.4 implementado y verde. El fallo sin display se verificó manualmente: exit 1 + `DISPLAY_VALID | ERROR`.
   - [ ]* 15.1 Test de arranque exitoso en modo PACKAGE
     - Ejecutar `python3 -m odin.main --version` (agregar flag --version si no existe, o usar otro método de verificación)
     - Capturar stdout y verificar presencia de las 4 fases en orden
@@ -341,7 +342,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - Verificar que los 8 módulos de Preprocesamiento_Suite aparecen en el orden exacto de PREPROCESAMIENTO_SUITE_ORDER
     - _Requisitos: 2.1, 2.5_
 
-- [ ] 16. Checkpoint final — Verificación completa del sistema
+- [x] 16. Checkpoint final — Verificación completa del sistema
   - Ejecutar todos los tests unitarios y de integración
   - Verificar que las 11 propiedades de corrección pasan
   - Verificar que el tiempo de arranque de MainWindow < 3s en hardware de referencia
