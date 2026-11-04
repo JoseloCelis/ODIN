@@ -10,7 +10,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Falsificación por etapa (barrido e1-e8) completada; bugs reales corregidos: (a) `hough_circles_vectorizado` rechaza `r <= 0` con `ValueError` (commit `11183bf`); (b) `_preparar_histograma` maneja rango mínimo (casi-constante) con fallback a un solo bin (commit `12bd93d`).
 - Barrido completo S1-S4 (pipeline full, sin recortar): VERDE sobre img050.bmp — S1 sin errores, S2 consistencias OK, S3 determinismo, S4 sin NaN (salida en /tmp/opencode/barrido-e9/salida_s1_s4_final.json).
 - `.gitignore`: `odin/data/` (3.0 GB) excluido.
-- `.kiro/specs/`: specs de etapas ①-⑨ + arranque (parcial: tasks 12/15 completadas, 14 y 16 abiertas).
+- `.kiro/specs/`: specs de etapas ①-⑨ + arranque (parcial: tasks 12/15 completadas, 14 completada con Wayland, 16 parcial).
 
 ## Mediciones Task 14 / Task 16 (con pantalla virtual Xvfb :99)
 - ENV_PROBE (detección entorno): 0.2 ms (umbral < 200 ms) ✅ OK
@@ -37,7 +37,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Barrido con un solo paso grueso da márgenes frágiles: refinar candidatos gruesos convierte decisión en 2.6:1 por ~3 s.
 
 ## Próximos pasos
-- Task 14: checkpoint de integración completa (requiere pantalla/Wayland).
-- Task 16: checkpoint final de verificación completa (requiere pantalla/Wayland).
-- Slice de arranque: tasks 12 y 15 completadas (flag --version, orden de widgets).
+- Task 16: completar 11 propiedades de corrección (tasks.md:344-349) con tests de propiedad (Hypothesis) y consulta final al usuario.
 - Refactor `src/odin/` al final.
