@@ -12,14 +12,14 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - `.gitignore`: `odin/data/` (3.0 GB) excluido.
 - `.kiro/specs/`: specs de etapas ①-⑨ + arranque (parcial: tasks 12/15 completadas, 14 y 16 abiertas).
 
-## Mediciones Task 14 / Task 16 (sin pantalla)
+## Mediciones Task 14 / Task 16 (con pantalla virtual Xvfb :99)
 - ENV_PROBE (detección entorno): 0.2 ms (umbral < 200 ms) ✅ OK
 - Bootstrap completo: 0.1 ms (umbral < 3000 ms) ✅ OK (en proceso existente)
 - Suite pytest: 168 passed ✅ OK
-- DISPLAY_VALID: requiere pantalla (Wayland/X11) ⏳ bloqueado
-- WINDOW_INIT: requiere MainWindow + pantalla ⏳ bloqueado
-- Task 14 (checkpoint integración GUI): ⏳ bloqueado — DISPLAY=:0 existe pero Gdk.Display.get_default() devuelve None (Xvfb no instalable, no sudo)
-- Task 16 (checkpoint final): ⏳ bloqueado — requiere pantalla + 11 propiedades de corrección (tasks.md:344-349) + consulta final al usuario
+- DISPLAY_VALID: verificada con X11Display (DISPLAY=:99 + GDK_BACKEND=x11) ✅ OK
+- WINDOW_INIT: verificada con Xvfb :99 (15.8 ms) ✅ OK
+- Task 14 (checkpoint integración GUI): COMPLETA — arranque con pantalla virtual (Xvfb :99 + X11 backend, DISPLAY=:99). ENV_PROBE 0.3 ms, MODULE_LOAD 498.9 ms, DISPLAY_VALID X11Display, WINDOW_INIT 15.8 ms, código 0. (Verificación en entorno con display virtual).
+- Task 16 (checkpoint final): PARCIAL — bootstrap OK (0.1 ms < 3000 ms), detección OK (0.2 ms < 200 ms), suite 168 passed. Faltan 11 propiedades de corrección (tasks.md:344-349) y consulta final al usuario.
 
 ## Doc-staleness pendiente (barrido ①-⑧)
 - (ninguna pendiente; R3.2 resuelta, etapa ④ resuelta)

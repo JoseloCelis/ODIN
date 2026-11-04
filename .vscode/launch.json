@@ -2,42 +2,21 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "🐍 Debug Vulkan (Híbrido Automatico)",
+      "name": "🐍 Debug GPU (Híbrido Automatico)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/odin/main.py",
       "python": "${command:python.interpreterPath}",
       "console": "integratedTerminal",
       "purpose": ["debug-test"],
-      "env":{
+      "env": {
         "PYTHONPATH": "${workspaceFolder}",
         "GTK_A11Y": "none",
-        "GSK_RENDERER": "vulkan",
-        "GDK_BACKEND": "wayland",
-        "WAYLAND_DISPLAY": "wayland-0",
-        "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
-        //"LD_LIBRARY_PATH": "${localEnv:LD_LIBRARY_PATH}",
-        //"GSK_RENDERER": "opengl",
-        //"GDK_BACKEND": "wayland"
-        //"MESA_DEBUG": "silent",
-        
-        
-        
-        
-        
+        "DISPLAY": "${env:DISPLAY}",
+        "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}",
+        "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir",
+        "GSK_RENDERER": "vulkan"
       }
-      //"env": {
-      //"PYTHONPATH": "${workspaceFolder}",
-      //"GSK_RENDERER": "opengl",
-      //"GDK_BACKEND": "wayland",
-      //"GTK_A11Y": "none",
-      //"GDK_CORE_DEVICE_EVENTS": "1",
-      //"GTK_IGNORE_PORTAL": "1",
-      //"GDK_DEBUG": "no-hw-cursor",
-      //"XCURSOR_SIZE": "32",
-      //"XCURSOR_THEME": "Adwaita",
-      //"GDK_DEBUG": "no-xshm",
-      //"GDK_DEBUG": "portals"
     },
     {
       "name": "🐍 Debug CPU Cairo (Híbrido Automatico)",
@@ -51,17 +30,11 @@
         "PYTHONPATH": "${workspaceFolder}",
         "GTK_A11Y": "none",
         "LIBGL_ALWAYS_SOFTWARE": "1",
-          "GSK_RENDERER": "cairo",
-          "GDK_BACKEND": "wayland",
-          "WAYLAND_DISPLAY": "wayland-0",
+        "GSK_RENDERER": "cairo",
+        "DISPLAY": "${env:DISPLAY}",
+        "WAYLAND_DISPLAY": "${env:WAYLAND_DISPLAY}",
         "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
-        //"GTK_THEME": "Adwaita:dark", 
-        //"GDK_CORE_DEVICE_EVENTS": "1",
-        //"GTK_IGNORE_PORTAL": "1",
-        //"GDK_DEBUG": "no-hw-cursor",
-        //"XCURSOR_SIZE": "32",
-        //"XCURSOR_THEME": "Adwaita"
-       }
+      }
     }
   ]
 }
