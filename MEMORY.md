@@ -18,8 +18,8 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Suite pytest: 168 passed ✅ OK
 - DISPLAY_VALID: requiere pantalla (Wayland/X11) ⏳ bloqueado
 - WINDOW_INIT: requiere MainWindow + pantalla ⏳ bloqueado
-- Task 14 (checkpoint integración GUI): ⏳ pendiente por falta de pantalla
-- Task 16 (checkpoint final): tests y tiempos OK; faltan 11 propiedades de corrección y consulta final al usuario
+- Task 14 (checkpoint integración GUI): ⏳ bloqueado — DISPLAY=:0 existe pero Gdk.Display.get_default() devuelve None (Xvfb no instalable, no sudo)
+- Task 16 (checkpoint final): ⏳ bloqueado — requiere pantalla + 11 propiedades de corrección (tasks.md:344-349) + consulta final al usuario
 
 ## Doc-staleness pendiente (barrido ①-⑧)
 - (ninguna pendiente; R3.2 resuelta, etapa ④ resuelta)
