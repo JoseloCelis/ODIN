@@ -301,7 +301,10 @@ class DisplayValidator:
 def run_bootstrap(package_context: Optional[str] = None) -> BootstrapResult:
     """Orquesta el bootstrap completo de ODIN."""
     logger = StartupLogger()
-    # Componente en curso: si algo falla, R5.4 exige nombrarlo en el ERROR.
+    # Componente en curso para el ERROR de R5.4. Solo cubre las fases que
+    # corren dentro de este try (ENV_PROBE y MODULE_LOAD); DisplayValidator
+    # se ejecuta en on_activate, fuera, con su propio sys.exit(1). Si se
+    # añade una fase aquí, DEBE asignar esta variable antes de ejecutarse.
     componente = "EnvironmentProbe"
 
     try:

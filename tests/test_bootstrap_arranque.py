@@ -202,6 +202,27 @@ def test_mal_import_de_un_modulo_lanza_runtime_error_con_el_alias(capsys, monkey
     assert "houghCircles" in logger.stream.getvalue()
 
 
+@pytest.mark.parametrize(
+    "package_context, modo",
+    [("odin", "PACKAGE"), (None, "SCRIPT")],
+)
+def test_fallo_de_handle_module_incluye_modo(package_context, modo, monkeypatch):
+    """R6.3: el fallo de Handle_Module nombra el módulo y el modo detectado."""
+    if package_context is None:
+        monkeypatch.syspath_prepend(str(DIR_ODIN))
+
+    logger = B.StartupLogger(io.StringIO())
+    monkeypatch.setattr(B, "importlib", _importlib_con_fallo("handleImage"))
+
+    with pytest.raises(RuntimeError) as exc_info:
+        B.ModuleLoader(logger, package_context).load()
+
+    mensaje = str(exc_info.value)
+    assert "Handle_Module" in mensaje
+    assert modo in mensaje
+    assert "ERROR" in logger.stream.getvalue()
+
+
 # ---------------------------------------------------------------------------
 # DisplayValidator — sin display
 # ---------------------------------------------------------------------------
@@ -380,7 +401,18 @@ class TestPropiedadesCorreccion:
         salida = stream.getvalue()
 
         assert salida == f"[ODIN] {fase} | {nivel} | {mensaje}\n"
-        salida.encode("utf-8")  # decodificable como UTF-8 (no lanza)
+
+        # R5.5 es un contrato sobre el codec de stdout (flujo de bytes), no
+        # sobre un str en memoria: encode() de un str nunca falla. Se emite a
+        # través de un TextIOWrapper UTF-8 real y se decodifican sus bytes.
+        crudo = io.BytesIO()
+        flujo_utf8 = io.TextIOWrapper(crudo, encoding="utf-8", newline="")
+        B.StartupLogger(flujo_utf8).log(fase, nivel, mensaje)
+        flujo_utf8.flush()
+
+        assert crudo.getvalue().decode("utf-8") == (
+            f"[ODIN] {fase} | {nivel} | {mensaje}\n"
+        )
 
     # -----------------------------------------------------------------------
     # Propiedad 2: duración de fase con exactamente un decimal ("123.4 ms")
@@ -467,12 +499,14 @@ class TestPropiedadesCorreccion:
                         B.run_bootstrap("odin")
 
                 elif componente == "ModuleLoader":
-                    def _import_fallido(*_args, **_kwargs):
+                    # Falla TODA importación (a diferencia de
+                    # _importlib_con_fallo, que falla solo un archivo).
+                    def _import_siempre_falla(*_args, **_kwargs):
                         raise ImportError("fallo simulado de módulo")
 
                     mp.setattr(
                         B, "importlib",
-                        types.SimpleNamespace(import_module=_import_fallido),
+                        types.SimpleNamespace(import_module=_import_siempre_falla),
                     )
                     with pytest.raises(SystemExit) as exc_info:
                         B.run_bootstrap("odin")
@@ -499,15 +533,18 @@ class TestPropiedadesCorreccion:
     # Requisitos: 5.4
     # -----------------------------------------------------------------------
 
+    # P5: prefijo exacto del ERROR en los casos de borde de truncado.
+    _PREFIJO_BORDE_P5 = "EnvironmentProbe: ErrorPrueba: "
+
     # Borde de truncado fijado de forma determinista (no delegado al azar):
     # el total cae exactamente en MAX_MSG_LEN y un byte por encima.
     @example(
         tipo="ErrorPrueba",
-        mensaje="x" * (B.MAX_MSG_LEN - len("EnvironmentProbe: ErrorPrueba: ")),
+        mensaje="x" * (B.MAX_MSG_LEN - len(_PREFIJO_BORDE_P5)),
     )
     @example(
         tipo="ErrorPrueba",
-        mensaje="x" * (B.MAX_MSG_LEN - len("EnvironmentProbe: ErrorPrueba: ") + 1),
+        mensaje="x" * (B.MAX_MSG_LEN - len(_PREFIJO_BORDE_P5) + 1),
     )
     @given(
         tipo=st.text(
