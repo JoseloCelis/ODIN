@@ -40,6 +40,8 @@ pip-delete-this-directory.txt
 odin/data/
 
 ### Artefactos de herramientas locales
+# Base de datos de ejemplos de Hypothesis (se recrea en cada corrida)
+.hypothesis/
 # Registro de skills autogenerado por gentle-ai
 .atl/
 

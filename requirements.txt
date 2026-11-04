@@ -3,5 +3,6 @@ opencv-python
 matplotlib
 scipy
 pytest
+hypothesis
 #opencv-contrib-python
 #requests==2.32.5
