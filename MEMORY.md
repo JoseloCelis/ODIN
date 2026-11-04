@@ -6,6 +6,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 
 ## Estado actual
 - Suite de tests: 181 casos en pytest (tests/), `python3 -m pytest tests` desde la raíz (~6-10 s).
+- Refactor `src/odin/` en curso: etapa ① kernelSeparable movida a `src/odin/Preprocesamiento/models/deri_gauss.py` (puro NumPy, sin UI) + `models/convolucion.py` + `tests/test_etapa1_kernel_separable.py` (4 tests, verde). Legacy `odin/` aún coexiste.
 - Etapas implementadas y verificadas: ① kernelSeparable, ② MagFase, ③ NonMaxSup, ④ Otsu/Rosin, ⑥ EdgeTrack_Hyst, ⑦ houghCircles (R1-R10), ⑧ findCircle (R1-R6), ⑨ circuloSimple (cerrada, spec commiteado en `857f422`). Etapa ⑤ = DobleThreshold dentro de ④.
 - Falsificación por etapa (barrido e1-e8) completada; bugs reales corregidos: (a) `hough_circles_vectorizado` rechaza `r <= 0` con `ValueError` (commit `11183bf`); (b) `_preparar_histograma` maneja rango mínimo (casi-constante) con fallback a un solo bin (commit `12bd93d`).
 - Barrido completo S1-S4 (pipeline full, sin recortar): VERDE sobre img050.bmp — S1 sin errores, S2 consistencias OK, S3 determinismo, S4 sin NaN (salida en /tmp/opencode/barrido-e9/salida_s1_s4_final.json).
@@ -33,6 +34,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 
 ## Aprendizajes y errores a evitar
 - `hypothesis` figura en `requirements.txt` (dev/test). En el host vive solo en `~/.local/lib/python3.14/site-packages` (sin pip/venv/sudo); sin él, la clase de propiedades se omite con un único mecanismo stub (18 passed + 11 skipped).
+- Deuda documentada (`.kiro/specs/kernel-separable/design.md`, D4): `sigma` flotante truena en `DerivGauss` (`range(3*sigma)` → TypeError). En `src/odin/.../models/deri_gauss.py` ya se castea `int(3*sigma)` antes de dimensionar arrays. No borrar esta deuda de MEMORY.md ni de Engram.
 - Kiro tiende a truncar/reescriturar AGENTS.md al generar documentación: revisar tras cada sesión de Kiro.
 - Al cambiar firma de helper compartido, verificar TODOS los llamadores.
 - Barrido con un solo paso grueso da márgenes frágiles: refinar candidatos gruesos convierte decisión en 2.6:1 por ~3 s.

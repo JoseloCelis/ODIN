@@ -116,11 +116,20 @@ ODIN/
 ├── data/                           # Imágenes de prueba y resultados exportados
 ├── src/                            # Directorio raíz del código fuente
 │   └── odin/                       # Paquete principal ODIN refactorizado
-│       ├── models/                 # Lógica matemática pura en NumPy/SciPy (sin UI)
-│       │   └── strategies/         # Patrón Estrategia (base_strategy.py)
-│       ├── views/                  # Interfaz gráfica GTK 4 / Libadwaita / Cairo
-│       ├── controllers/            # Orquestación de eventos e hilos asíncronos
-│       └── utils/                  # Puente OpenCV ↔ GdkPixbuf / Gdk.Texture
+│   ├── Preprocesamiento/
+│   │   ├── models/                 # Lógica matemática pura en NumPy/SciPy (sin UI)
+│   │   ├── views/                  # Interfaz gráfica GTK 4 / Libadwaita / Cairo
+│   │   └── controllers/            # Orquestación de eventos e hilos asíncronos
+│   ├── Procesamiento/
+│   │   ├── models/                 # Lógica matemática pura en NumPy/SciPy (sin UI)
+│   │   │   └── strategies/         # Patrón Estrategia (base_strategy.py)
+│   │   ├── views/                  # Interfaz gráfica GTK 4 / Libadwaita / Cairo
+│   │   └── controllers/            # Orquestación de eventos e hilos asíncronos
+│   ├── Ajustes/
+│   │   ├── models/                 # Lógica matemática pura en NumPy/SciPy (sin UI)
+│   │   ├── views/                  # Interfaz gráfica GTK 4 / Libadwaita / Cairo
+│   │   └── controllers/            # Orquestación de eventos e hilos asíncronos
+│   └── utils/                  # Puente OpenCV ↔ GdkPixbuf / Gdk.Texture
 ├── tests/                          # Suite de pruebas unitarias con pytest
 ├── main.py                         # Punto de entrada raíz definitivo
 └── requirements.txt                # Dependencias en codificación UTF-8
@@ -132,12 +141,9 @@ ODIN/
 
 ### 1. Modelo-Vista-Controlador (MVC / MVP)
 
-* **Modelo (`src/odin/models/`):** Matemática pura en NumPy/SciPy, 100% independiente de
-  `gi`, `Gtk`, `Gdk`, `Adw` o `cairo`.
-* **Vista (`src/odin/views/`):** Interfaz gráfica adaptativa en GTK 4 / Libadwaita y
-  dibujado vectorial en Cairo.
-* **Controlador (`src/odin/controllers/`):** Orquestación de eventos de la UI y ejecución
-  asíncrona de tareas pesadas en hilos secundarios.
+* **Modelo (`src/odin/<dominio>/models/`):** Matemática pura en NumPy/SciPy, 100% independiente de `gi`, `Gtk`, `Gdk`, `Adw` o `cairo`. Un `<dominio>` por área de negocio (`Preprocesamiento`, `Procesamiento`, `Ajustes`).
+* **Vista (`src/odin/<dominio>/views/`):** Interfaz gráfica adaptativa en GTK 4 / Libadwaita y dibujado vectorial en Cairo. Las vistas genéricas compartidas (p. ej. `VisualizadorInteractivo`) viven en `src/odin/views/compartido/` para evitar duplicación por dominio.
+* **Controlador (`src/odin/<dominio>/controllers/`):** Orquestación de eventos de la UI y ejecución asíncrona de tareas pesadas en hilos secundarios.
 
 ### 2. Patrón Estrategia (Strategy Pattern)
 
