@@ -19,9 +19,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from odin.Preprocesamiento import aproxHough as H
-from odin.Preprocesamiento import circleFilter as FC
-from odin.Preprocesamiento import circuloSimple as LSC
+from src.odin.Procesamiento.models.hough_circles import (
+    hough_circles_vectorizado as aproxHough,
+    mejor_centro,
+    estimar_radio,
+    estimar_radio_dominante,
+    UMBRAL_AMBIGUEDAD,
+)
+from src.odin.Ajustes.models.find_circle import find_circle as FC
+from src.odin.Ajustes.models.circulo_simple import Circulo_simple as LSC
 
 RAIZ = Path(__file__).resolve().parents[1]
 
@@ -59,7 +65,7 @@ def _ambiguedad(picos, paso, mejor, separacion_px=6.0):
 def test_detecta_el_centro_de_un_circulo_sintetico():
     bordes = _anillo(200, 100, 100, 60)
 
-    x0, y0, n, acumulador = H.hough_circles_vectorizado(bordes, 60, 0.8)
+    x0, y0, n, acumulador = aproxHough(bordes, 60, 0.8)
 
     assert n == 1
     assert (x0[0], y0[0]) == (100, 100)
@@ -69,7 +75,7 @@ def test_detecta_el_centro_de_un_circulo_sintetico():
 def test_el_acumulador_tiene_la_forma_de_la_imagen():
     bordes = _anillo(120, 60, 60, 30)
 
-    _, _, _, acumulador = H.hough_circles_vectorizado(bordes, 30, 0.8)
+    _, _, _, acumulador = aproxHough(bordes, 30, 0.8)
 
     assert acumulador.shape == bordes.shape
 
@@ -78,30 +84,30 @@ def test_rechaza_distancia_menor_a_diez():
     bordes = _anillo(80, 40, 40, 20)
 
     with pytest.raises(ValueError):
-        H.hough_circles_vectorizado(bordes, 20, 0.8, dist=9)
+        aproxHough(bordes, 20, 0.8, dist=9)
 
 
 def test_rechaza_umbral_menor_a_medio():
     bordes = _anillo(80, 40, 40, 20)
 
     with pytest.raises(ValueError):
-        H.hough_circles_vectorizado(bordes, 20, 0.49)
+        aproxHough(bordes, 20, 0.49)
 
 
 def test_rechaza_radio_no_positivo():
     bordes = _anillo(80, 40, 40, 20)
 
     with pytest.raises(ValueError):
-        H.hough_circles_vectorizado(bordes, 0, 0.8)
+        aproxHough(bordes, 0, 0.8)
 
     with pytest.raises(ValueError):
-        H.hough_circles_vectorizado(bordes, -5, 0.8)
+        aproxHough(bordes, -5, 0.8)
 
 
 def test_sin_bordes_devuelve_cero_picos():
     vacio = np.zeros((50, 50), dtype=np.uint8)
 
-    x0, y0, n, acumulador = H.hough_circles_vectorizado(vacio, 10, 0.8)
+    x0, y0, n, acumulador = aproxHough(vacio, 10, 0.8)
 
     assert n == 0
     assert len(x0) == 0 and len(y0) == 0
@@ -111,7 +117,7 @@ def test_sin_bordes_devuelve_cero_picos():
 def test_imagen_de_tamano_cero_no_lanza_excepcion():
     vacio = np.zeros((0, 0), dtype=np.uint8)
 
-    x0, y0, n, _ = H.hough_circles_vectorizado(vacio, 10, 0.8)
+    x0, y0, n, _ = aproxHough(vacio, 10, 0.8)
 
     assert n == 0
     assert len(x0) == 0 and len(y0) == 0
@@ -124,7 +130,7 @@ def test_imagen_de_tamano_cero_no_lanza_excepcion():
 def test_devuelve_todos_los_picos_cuando_hay_dos_circulos():
     bordes = (_anillo(300, 80, 90, 40) | _anillo(300, 220, 200, 40)).astype(np.uint8)
 
-    x0, y0, n, _ = H.hough_circles_vectorizado(bordes, 40, 0.8)
+    x0, y0, n, _ = aproxHough(bordes, 40, 0.8)
 
     assert n == 2
     assert {(x, y) for x, y in zip(x0.tolist(), y0.tolist())} == {(80, 90), (220, 200)}
@@ -137,7 +143,7 @@ def test_mejor_centro_elige_el_de_mas_votos():
     acumulador[7, 5] = 3
     acumulador[20, 10] = 9
 
-    x, y, votos = H.mejor_centro(x0, y0, acumulador)
+    x, y, votos = mejor_centro(x0, y0, acumulador)
 
     assert (x, y, votos) == (10, 20, 9)
 
@@ -145,18 +151,18 @@ def test_mejor_centro_elige_el_de_mas_votos():
 def test_mejor_centro_sin_picos_devuelve_none():
     vacio = np.zeros((0,), dtype=int)
 
-    assert H.mejor_centro(vacio, vacio, np.zeros((10, 10), dtype=int)) is None
+    assert mejor_centro(vacio, vacio, np.zeros((10, 10), dtype=int)) is None
 
 
 def test_el_flujo_con_un_solo_centro_no_lanza_excepcion():
     """Pasar el arreglo de centros a find_circle rompía el broadcasting."""
     bordes = (_anillo(300, 80, 90, 40) | _anillo(300, 220, 200, 40)).astype(np.uint8)
 
-    x0, y0, n, acumulador = H.hough_circles_vectorizado(bordes, 40, 0.8)
-    centro = H.mejor_centro(x0, y0, acumulador)
+    x0, y0, n, acumulador = aproxHough(bordes, 40, 0.8)
+    centro = mejor_centro(x0, y0, acumulador)
 
-    puntos = FC.find_circle(bordes, 40, (centro[0], centro[1]))
-    _, _, r, _ = LSC.Circulo_simple(puntos)
+    puntos = FC(bordes, 40, (centro[0], centro[1]))
+    _, _, r, _ = LSC(puntos)
 
     assert abs(r - 40.0) <= 0.1
 
@@ -169,7 +175,7 @@ def test_el_flujo_con_un_solo_centro_no_lanza_excepcion():
 def test_estimar_radio_recupera_el_radio_conocido(r_real):
     bordes, _, r0 = _recorte_ajustado(r_real)
 
-    radio, pico, _ = H.estimar_radio(bordes, 0.6 * r0, r0)
+    radio, pico, _ = estimar_radio(bordes, 0.6 * r0, r0)
 
     assert abs(radio - r_real) <= 1.0
     assert pico > 0
@@ -179,27 +185,27 @@ def test_estimar_radio_banda_invertida_lanza_error():
     bordes = _anillo(100, 50, 50, 40)
 
     with pytest.raises(ValueError):
-        H.estimar_radio(bordes, 50.0, 10.0)
+        estimar_radio(bordes, 50.0, 10.0)
 
 
 def test_estimar_radio_radio_no_positivo_lanza_error():
     bordes = _anillo(100, 50, 50, 40)
 
     with pytest.raises(ValueError):
-        H.estimar_radio(bordes, 0.0, 40.0)
+        estimar_radio(bordes, 0.0, 40.0)
 
 
 def test_estimar_radio_paso_no_positivo_lanza_error():
     bordes = _anillo(100, 50, 50, 40)
 
     with pytest.raises(ValueError):
-        H.estimar_radio(bordes, 10.0, 40.0, paso=0.0)
+        estimar_radio(bordes, 10.0, 40.0, paso=0.0)
 
 
 def test_estimar_radio_sin_bordes_devuelve_ceros():
     vacio = np.zeros((60, 60), dtype=np.uint8)
 
-    radio, pico, ambiguedad = H.estimar_radio(vacio, 10.0, 30.0)
+    radio, pico, ambiguedad = estimar_radio(vacio, 10.0, 30.0)
 
     assert (radio, pico, ambiguedad) == (0.0, 0, 0.0)
 
@@ -207,9 +213,9 @@ def test_estimar_radio_sin_bordes_devuelve_ceros():
 def test_estimar_radio_no_reporta_ambiguedad_con_un_solo_circulo():
     bordes, _, r0 = _recorte_ajustado(45)
 
-    _, _, ambiguedad = H.estimar_radio(bordes, 0.6 * r0, r0)
+    _, _, ambiguedad = estimar_radio(bordes, 0.6 * r0, r0)
 
-    assert ambiguedad < H.UMBRAL_AMBIGUEDAD
+    assert ambiguedad < UMBRAL_AMBIGUEDAD
 
 
 def test_estimar_radio_reporta_ambiguedad_con_dos_circulos_parecidos():
@@ -218,9 +224,9 @@ def test_estimar_radio_reporta_ambiguedad_con_dos_circulos_parecidos():
     c = lado / 2.0
     bordes = (_anillo(lado, c, c, 35) | _anillo(lado, c, c, 45)).astype(np.uint8)
 
-    _, _, ambiguedad = H.estimar_radio(bordes, 0.6 * c, c)
+    _, _, ambiguedad = estimar_radio(bordes, 0.6 * c, c)
 
-    assert ambiguedad >= H.UMBRAL_AMBIGUEDAD
+    assert ambiguedad >= UMBRAL_AMBIGUEDAD
 
 
 # ---------------------------------------------------------------------------
@@ -228,7 +234,7 @@ def test_estimar_radio_reporta_ambiguedad_con_dos_circulos_parecidos():
 # ---------------------------------------------------------------------------
 
 def test_el_orquestador_no_usa_un_radio_constante():
-    fuente = (RAIZ / "odin" / "main.py").read_text(encoding="utf-8")
+    fuente = (RAIZ / "src" / "odin" / "controllers" / "main_controller.py").read_text(encoding="utf-8")
 
     assert "estimar_radio" in fuente
     assert not re.search(r"^\s*diametro\s*=\s*\d", fuente, re.MULTILINE)
@@ -240,13 +246,11 @@ def test_el_orquestador_no_usa_un_radio_constante():
 
 @pytest.mark.parametrize("disco_claro", [True, False])
 def test_cadena_completa_con_y_sin_contraste_invertido(disco_claro):
-    from odin.Preprocesamiento import (
-        DoubleTh as DTh,
-        kernelSeparable as KS,
-        MagnitudGradiente as MF,
-        NonMaxSup as NMS,
-        Otsu as OT,
-    )
+    from src.odin.Preprocesamiento.models import deri_gauss as KS
+    from src.odin.Preprocesamiento.models import mag_fase as MF
+    from src.odin.Procesamiento.models import edge_track_hyst as DTh
+    from src.odin.Procesamiento.models import non_max_sup as NMS
+    from src.odin.Procesamiento.models import otsu_rosin as OT
 
     r_real = 45
     lado = int(round(2.2 * r_real))
@@ -264,11 +268,11 @@ def test_cadena_completa_con_y_sin_contraste_invertido(disco_claro):
     bordes = DTh.EdgeTrack_Hyst(strong, weak)
 
     r0 = lado / 2.0
-    radio, _, _ = H.estimar_radio(bordes, 0.6 * r0, r0)
-    x0, y0, _, acumulador = H.hough_circles_vectorizado(bordes, radio, 0.8)
-    centro = H.mejor_centro(x0, y0, acumulador)
-    puntos = FC.find_circle(bordes, radio, (centro[0], centro[1]))
-    _, _, r_ajustado, _ = LSC.Circulo_simple(puntos)
+    radio, _, _ = estimar_radio(bordes, 0.6 * r0, r0)
+    x0, y0, _, acumulador = aproxHough(bordes, radio, 0.8)
+    centro = mejor_centro(x0, y0, acumulador)
+    puntos = FC(bordes, radio, (centro[0], centro[1]))
+    _, _, r_ajustado, _ = LSC(puntos)
 
     assert abs(r_ajustado - r_real) <= 0.5
 
@@ -283,7 +287,7 @@ def test_estimar_radio_dominante_admite_recorte_holgado(r_real, factor):
     lado = int(round(factor * r_real))
     bordes = _anillo(lado, lado / 2.0, lado / 2.0, r_real)
 
-    radio, pico, _ = H.estimar_radio_dominante(bordes, lado / 2.0)
+    radio, pico, _ = estimar_radio_dominante(bordes, lado / 2.0)
 
     assert abs(radio - r_real) <= 1.5
     assert pico > 0
@@ -298,7 +302,7 @@ def test_estimar_radio_dominante_no_se_engancha_con_manchas_tipo_texto():
         px, py = rng.integers(20, 280, 2)
         bordes[py - 6:py + 6, px - 4:px + 4] = 1
 
-    radio, _, _ = H.estimar_radio_dominante(bordes, c)
+    radio, _, _ = estimar_radio_dominante(bordes, c)
 
     assert abs(radio - 60) <= 1.5
 
@@ -306,14 +310,14 @@ def test_estimar_radio_dominante_no_se_engancha_con_manchas_tipo_texto():
 def test_estimar_radio_dominante_sin_bordes_devuelve_ceros():
     vacio = np.zeros((200, 200), dtype=np.uint8)
 
-    assert H.estimar_radio_dominante(vacio, 100.0) == (0.0, 0, 0.0)
+    assert estimar_radio_dominante(vacio, 100.0) == (0.0, 0, 0.0)
 
 
 def test_estimar_radio_dominante_r0_no_positivo_lanza_error():
     bordes = _anillo(100, 50, 50, 40)
 
     with pytest.raises(ValueError):
-        H.estimar_radio_dominante(bordes, 0.0)
+        estimar_radio_dominante(bordes, 0.0)
 
 
 def test_estimar_radio_dominante_reporta_ambiguedad_entre_estructuras():
@@ -321,9 +325,9 @@ def test_estimar_radio_dominante_reporta_ambiguedad_entre_estructuras():
     c = lado / 2.0
     bordes = (_anillo(lado, c, c, 35) | _anillo(lado, c, c, 45)).astype(np.uint8)
 
-    _, _, ambiguedad = H.estimar_radio_dominante(bordes, c)
+    _, _, ambiguedad = estimar_radio_dominante(bordes, c)
 
-    assert ambiguedad >= H.UMBRAL_AMBIGUEDAD
+    assert ambiguedad >= UMBRAL_AMBIGUEDAD
 
 
 # ---------------------------------------------------------------------------
@@ -331,7 +335,7 @@ def test_estimar_radio_dominante_reporta_ambiguedad_entre_estructuras():
 # ---------------------------------------------------------------------------
 
 def test_el_estado_del_diametro_arranca_vacio():
-    from odin.main import EstadoDiametro
+    from src.odin.controllers.main_controller import EstadoDiametro
 
     estado = EstadoDiametro()
 
@@ -341,7 +345,7 @@ def test_el_estado_del_diametro_arranca_vacio():
 
 
 def test_el_valor_detectado_no_cuenta_como_decision_del_usuario():
-    from odin.main import EstadoDiametro
+    from src.odin.controllers.main_controller import EstadoDiametro
 
     estado = EstadoDiametro()
     estado.registrar_detectado(855.7)
@@ -352,7 +356,7 @@ def test_el_valor_detectado_no_cuenta_como_decision_del_usuario():
 
 
 def test_el_valor_del_usuario_gana_sobre_el_detectado():
-    from odin.main import EstadoDiametro
+    from src.odin.controllers.main_controller import EstadoDiametro
 
     estado = EstadoDiametro()
     estado.registrar_detectado(855.7)
@@ -364,7 +368,7 @@ def test_el_valor_del_usuario_gana_sobre_el_detectado():
 
 
 def test_volver_a_auto_descarta_el_valor_manual():
-    from odin.main import EstadoDiametro
+    from src.odin.controllers.main_controller import EstadoDiametro
 
     estado = EstadoDiametro()
     estado.registrar_detectado(855.7)
@@ -377,7 +381,7 @@ def test_volver_a_auto_descarta_el_valor_manual():
 
 
 def test_un_diametro_cero_o_negativo_vuelve_a_automatico():
-    from odin.main import EstadoDiametro
+    from src.odin.controllers.main_controller import EstadoDiametro
 
     estado = EstadoDiametro()
     estado.declarar_usuario(500.0)
@@ -387,7 +391,7 @@ def test_un_diametro_cero_o_negativo_vuelve_a_automatico():
 
 
 def test_el_estado_avisa_cuando_la_deteccion_es_ambigua():
-    from odin.main import EstadoDiametro
+    from src.odin.controllers.main_controller import EstadoDiametro
 
     ambiguo = EstadoDiametro()
     ambiguo.registrar_detectado(855.7, ambiguo=True)
@@ -399,8 +403,9 @@ def test_el_estado_avisa_cuando_la_deteccion_es_ambigua():
 
 
 def test_resolver_radio_omite_el_barrido_con_diametro_del_usuario():
-    from odin import aproxHough
-    from odin.main import resolver_radio
+    from src.odin.Procesamiento.models.hough_circles import UMBRAL_AMBIGUEDAD
+    from src.odin.controllers.main_controller import resolver_radio
+    from src.odin.Procesamiento.models import hough_circles as aproxHough
 
     bordes = _anillo(240, 120, 120, 40)
 
@@ -413,8 +418,9 @@ def test_resolver_radio_omite_el_barrido_con_diametro_del_usuario():
 
 
 def test_resolver_radio_barre_cuando_no_hay_diametro_del_usuario():
-    from odin import aproxHough
-    from odin.main import resolver_radio
+    from src.odin.Procesamiento.models.hough_circles import UMBRAL_AMBIGUEDAD
+    from src.odin.controllers.main_controller import resolver_radio
+    from src.odin.Procesamiento.models import hough_circles as aproxHough
 
     bordes = _anillo(240, 120, 120, 40)
 

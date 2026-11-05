@@ -17,10 +17,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from odin.Preprocesamiento import circuloSimple as CS
+from src.odin.Ajustes.models.circulo_simple import Circulo_simple as CS
 
 RAIZ = Path(__file__).resolve().parents[1]
-BASE_DATOS = RAIZ / "odin" / "data" / "images" / "Circulos Servicio Micrometrologia"
+BASE_DATOS = RAIZ / "src" / "data" / "images" / "Circulos Servicio Micrometrologia"
 
 # Valores medidos con el ajuste actual (deterministas, mismo archivo).
 # r100: la lista de bordes reales de `img100.bmp`; r050: círculo chico.
@@ -43,7 +43,7 @@ def test_ajuste_sobre_bordes_reales(nombre, esperado):
     puntos = _cargar_puntos(nombre)
     x_esp, y_esp, r_esp = esperado
 
-    x, y, r, pv = CS.Circulo_simple(puntos)
+    x, y, r, pv = CS(puntos)
 
     assert (x, y) == pytest.approx((x_esp, y_esp), abs=0.05)
     assert r == pytest.approx(r_esp, abs=0.05)
@@ -61,7 +61,7 @@ def test_las_dos_implementaciones_coinciden_sobre_datos_reales(nombre, esperado)
 
     puntos = _cargar_puntos(nombre)
 
-    historico = CS.Circulo_simple(puntos)
+    historico = CS(puntos)
     refactor = CS_SRC.Circulo_simple(puntos)
 
     assert refactor == pytest.approx(historico, abs=0.0)
@@ -89,15 +89,13 @@ def test_pipeline_completo_sobre_imagen_real():
     """
     import cv2
 
-    from odin.Preprocesamiento import (
-        DoubleTh as DT,
-        MagnitudGradiente as MF,
-        NonMaxSup as NMS,
-        Otsu as OT,
-        aproxHough as AH,
-        circleFilter as FC,
-        kernelSeparable as KS,
-    )
+    from src.odin.Preprocesamiento.models import deri_gauss as KS
+    from src.odin.Preprocesamiento.models import mag_fase as MF
+    from src.odin.Procesamiento.models import edge_track_hyst as DT
+    from src.odin.Procesamiento.models import hough_circles as AH
+    from src.odin.Procesamiento.models import non_max_sup as NMS
+    from src.odin.Procesamiento.models import otsu_rosin as OT
+    from src.odin.Ajustes.models import find_circle as FC
 
     if not IMAGEN_REAL.exists():
         pytest.skip(f"imagen real no disponible: {IMAGEN_REAL}")
@@ -134,7 +132,7 @@ def test_pipeline_completo_sobre_imagen_real():
     assert len(puntos) == pytest.approx(3150, abs=20)
 
     # Etapa ⑨: ajuste final.
-    x, y, r, pv = CS.Circulo_simple(puntos)
+    x, y, r, pv = CS(puntos)
     assert (x, y) == pytest.approx((549.86, 550.47), abs=0.1)
     assert r == pytest.approx(428.1769, abs=0.01)
     assert pv == pytest.approx(1.8856, abs=0.01)

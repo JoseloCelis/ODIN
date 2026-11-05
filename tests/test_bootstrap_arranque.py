@@ -24,10 +24,10 @@ from pathlib import Path
 
 import pytest
 
-from odin import bootstrap as B
+from odin import bootstrap as B  # src/ en sys.path vía conftest
 
 RAIZ = Path(__file__).resolve().parents[1]
-DIR_ODIN = RAIZ / "odin"
+DIR_ODIN = RAIZ / "src" / "odin"
 
 # Orden fijado por el spec odin-startup-structure (requirements, regla 1),
 # escrito a mano a propósito: derivarlo de PREPROCESAMIENTO_SUITE_ORDER haría
@@ -188,7 +188,7 @@ def test_mal_import_de_un_modulo_lanza_runtime_error_con_el_alias(capsys, monkey
     real = B.importlib.import_module
 
     def _falso(nombre, *args, **kwargs):
-        if nombre.endswith("houghCircles"):
+        if nombre.endswith("hough_circles"):
             raise ImportError("simulado")
         return real(nombre, *args, **kwargs)
 
@@ -199,7 +199,7 @@ def test_mal_import_de_un_modulo_lanza_runtime_error_con_el_alias(capsys, monkey
         B.ModuleLoader(logger, "odin").load()
 
     assert "ERROR" in logger.stream.getvalue()
-    assert "houghCircles" in logger.stream.getvalue()
+    assert "hough_circles" in logger.stream.getvalue()
 
 
 @pytest.mark.parametrize(
@@ -288,7 +288,7 @@ def test_version_flag_verifica_arranque_y_sale_con_codigo_0():
     """--version ejecuta el bootstrap (fases 1-3), imprime la versión y sale
     con código 0 sin abrir la GUI. Cubre el arranque en modo SCRIPT."""
     resultado = subprocess.run(
-        [sys.executable, str(RAIZ / "odin" / "main.py"), "--version"],
+        [sys.executable, str(RAIZ / "src" / "main.py"), "--version"],
         cwd=RAIZ,
         capture_output=True,
         text=True,
@@ -370,7 +370,7 @@ def _importlib_con_fallo(archivo: str) -> types.SimpleNamespace:
     importar_real = B.importlib.import_module  # capturado antes del parche
 
     def _import_fallido(nombre, package=None, *args, **kwargs):
-        if nombre.endswith(f".{archivo}"):
+        if nombre == archivo or nombre.endswith(f".{archivo}") or nombre.endswith(archivo):
             raise ImportError(f"error simulado en {archivo}")
         return importar_real(nombre, package=package, *args, **kwargs)
 

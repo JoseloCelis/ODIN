@@ -7,12 +7,10 @@ bordes cambia, hay que entender el efecto antes de actualizar el número.
 
 import numpy as np
 
-from odin.Preprocesamiento import (
-    kernelSeparable as KS,
-    MagnitudGradiente as MF,
-    NonMaxSup as NMS,
-    Otsu as OT,
-)
+from src.odin.Preprocesamiento.models import deri_gauss as KS
+from src.odin.Preprocesamiento.models import mag_fase as MF
+from src.odin.Procesamiento.models import non_max_sup as NMS
+from src.odin.Procesamiento.models import otsu_rosin as OT
 
 
 def _rectangulo():

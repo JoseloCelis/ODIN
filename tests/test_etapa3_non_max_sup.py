@@ -13,7 +13,7 @@ Contratos verificados (spec non-max-sup):
 import numpy as np
 import pytest
 
-from odin.Preprocesamiento import NonMaxSup as NMS
+from src.odin.Procesamiento.models import non_max_sup as NMS
 from utilidades import nms_referencia_escalar
 
 

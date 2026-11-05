@@ -11,7 +11,7 @@ Contratos verificados (spec mag-fase):
 import numpy as np
 import pytest
 
-from odin.Preprocesamiento import MagnitudGradiente as MF
+from src.odin.Preprocesamiento.models import mag_fase as MF
 
 
 def test_triangulo_3_4_5():

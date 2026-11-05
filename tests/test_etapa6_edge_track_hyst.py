@@ -15,8 +15,8 @@ Caracterización del comportamiento en producción (spec edge-track-hyst):
 import numpy as np
 import pytest
 
-from odin.Preprocesamiento import DoubleTh as DTh
-from odin.Preprocesamiento import NonMaxSup as NMS
+from src.odin.Procesamiento.models import edge_track_hyst as DTh
+from src.odin.Procesamiento.models import non_max_sup as NMS
 
 DEBIL = 0.30   # 0.25 <= DEBIL < 0.5
 FUERTE = 0.90
@@ -157,11 +157,9 @@ def test_integracion_con_el_pipeline():
     imagen = np.zeros((80, 100))
     imagen[20:60, 30:70] = 1.0
 
-    from odin.Preprocesamiento import (
-        kernelSeparable as KS,
-        MagnitudGradiente as MF,
-        Otsu as OT,
-    )
+    from src.odin.Preprocesamiento.models import deri_gauss as KS
+    from src.odin.Preprocesamiento.models import mag_fase as MF
+    from src.odin.Procesamiento.models import otsu_rosin as OT
 
     gx, gy = KS.DerivGauss(imagen, 2, 0, 0, 0)
     mg, angulo = MF.MagFase(gx, gy)

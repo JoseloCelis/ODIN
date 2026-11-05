@@ -16,7 +16,7 @@ Contratos verificados (spec otsu-rosin):
 import numpy as np
 import pytest
 
-from odin.Preprocesamiento import Otsu as OT
+from src.odin.Procesamiento.models import otsu_rosin as OT
 from utilidades import otsu_referencia, varianza_interclase
 
 
