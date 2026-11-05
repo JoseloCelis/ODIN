@@ -203,7 +203,7 @@ class OdinController:
                 self.current_image
             )
             Gx, Gy = self.kernelSeparable.DerivGauss(
-                self.current_image, self.sigma, 1, 1, 360
+                self.current_image, self.main_window.sigma, 1, 1, 360
             )
             MG, Tetha = self.MagnitudGradiente.MagFase(Gx, Gy)
             GNMaxS = self.NonMaxSup.LinearInterpolation(MG, Gx, Gy, Tetha)
