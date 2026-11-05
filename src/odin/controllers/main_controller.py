@@ -187,7 +187,7 @@ class OdinController:
                 "Procesando", "Iniciando el cálculo de bordes...", es_error=False
             )
 
-            self.current_image = self.handle.recortar_imagen(self)
+            self.current_image = self.handle.recortar_imagen(self.main_window)
 
             hilo_matematico = threading.Thread(
                 target=self._tarea_pesada_computacional
