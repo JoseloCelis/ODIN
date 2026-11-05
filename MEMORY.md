@@ -5,7 +5,9 @@
 Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo que ya no aporte.
 
 ## Estado actual
-- Suite de tests: 181 casos en pytest (tests/), `python3 -m pytest tests` desde la raíz (~6-10 s).
+- Suite de tests: 183 casos en pytest (tests/), `python3 -m pytest tests` desde la raíz (~7-10 s).
+  Etapa ⑨ suma `tests/test_etapa9_imagen_real.py`: 4 tests con bordes Gabor reales (rápidos) y
+  1 e2e con `img100.bmp` (opt-in `ODIN_TEST_LENTO=1`, ~21 s) que reproduce r=428.1769, pv=1.8856.
 - Refactor `src/odin/` en curso: etapa ① kernelSeparable movida a `src/odin/Preprocesamiento/models/deri_gauss.py` (puro NumPy, sin UI) + `models/convolucion.py` + `tests/test_etapa1_kernel_separable.py` (4 tests, verde). Legacy `odin/` aún coexiste.
 - Etapas implementadas y verificadas: ① kernelSeparable, ② MagFase, ③ NonMaxSup, ④ Otsu/Rosin, ⑥ EdgeTrack_Hyst, ⑦ houghCircles (R1-R10), ⑧ findCircle (R1-R6), ⑨ circuloSimple (cerrada, spec commiteado en `857f422`). Etapa ⑤ = DobleThreshold dentro de ④.
 - Falsificación por etapa (barrido e1-e8) completada; bugs reales corregidos: (a) `hough_circles_vectorizado` rechaza `r <= 0` con `ValueError` (commit `11183bf`); (b) `_preparar_histograma` maneja rango mínimo (casi-constante) con fallback a un solo bin (commit `12bd93d`).

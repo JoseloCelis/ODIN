@@ -115,8 +115,9 @@ def dibujar_en_hilo_principal(gk, dgk, wk, wConv, wr, DGX, DGY):
     if (wConv):
         # Acotar cortes al tamaño real de la imagen
         # (la columna 640 estaba hardcodeada: IndexError con <641 columnas)
-        wr_valido = min(max(wr, 0), nr - 1)
-        wc = min(640, nc - 1)
+        # nr/nc no viven en este scope; usar la forma de DGX directamente.
+        wr_valido = min(max(wr, 0), DGX.shape[0] - 1)
+        wc = min(640, DGX.shape[1] - 1)
         gradientes, ay = plt.subplots(1, 2, figsize=(12, 6))
         ay[0].set_title("Derivada Gradiente en X")
         ay[0].plot(DGX[wr_valido,:])

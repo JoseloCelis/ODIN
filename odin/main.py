@@ -485,8 +485,8 @@ class MainWindow(Adw.ApplicationWindow):
             if file:
                 self.ruta_imagen = file.get_path()
                 print(f"File path is {file.get_path()}")
-                is_error, message, self.image_loaded = handle.load_GrayImage(self, self.ruta_imagen)
-                pixbuff = handle.matriz_a_pixbuf(self.image_loaded)
+                is_error, message, self.image_loaded = self.handle.load_GrayImage(self, self.ruta_imagen)
+                pixbuff = self.handle.matriz_a_pixbuf(self.image_loaded)
                 self.mostrar_alerta("Mensaje Imagen", message, is_error)
 # --- Visualización
                 if hasattr(self.image_container, "cargar_imagen"):
@@ -505,9 +505,20 @@ class MainWindow(Adw.ApplicationWindow):
             #self.btn_process.set_sensitive(False)
             self.mostrar_alerta("Procesando", "Iniciando el cálculo de bordes...", es_error=False)
             
-            self.current_image = handle.recortar_imagen(self)
-            
-            
+            self.current_image = self.handle.recortar_imagen(self)
+
+            # GUARD: si el recorte devolvió None, no lanzar el hilo.
+            # Esto pasa cuando self.image_loaded es None (aunque ruta_imagen tenga valor)
+            # o cuando el widget aún no tiene geometría válida.
+            if self.current_image is None:
+                self.mostrar_alerta(
+                    "No se pudo procesar la imagen",
+                    "La imagen no se pudo recortar (self.current_image es None). "
+                    "Verifique que la imagen esté cargada y que el widget de visualización tenga tamaño.",
+                    True
+                )
+                return
+
             # 3. Creamos un hilo de fondo para que la matemática no congele la pantalla
             
             hilo_matematico = threading.Thread(target=self._tarea_pesada_computacional)
