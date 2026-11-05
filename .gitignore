@@ -38,6 +38,8 @@ pip-delete-this-directory.txt
 
 # Dataset de imágenes de micrometría (3.0 GB, no se versiona)
 odin/data/
+src/data/
+data/
 
 ### Artefactos de herramientas locales
 # Base de datos de ejemplos de Hypothesis (se recrea en cada corrida)
