@@ -6,6 +6,9 @@ widgets GTK.
 """
 
 import gi
+import os
+import threading
+from pathlib import Path
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -119,6 +122,7 @@ class OdinController:
 
         # Timing para WINDOW_INIT
         self._t0_window = None
+        self.sigma = None
 
     def registrar_acciones(self):
         """Registra las acciones lógicas de la ventana."""
