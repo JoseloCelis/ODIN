@@ -170,6 +170,7 @@ class OdinController:
                 is_error, message, self.image_loaded = self.handle.load_GrayImage(
                     self, self.ruta_imagen
                 )
+                self.main_window.image_loaded = self.image_loaded
                 pixbuff = self.handle.matriz_a_pixbuf(self.image_loaded)
                 self.main_window.mostrar_alerta("Mensaje Imagen", message, is_error)
                 if hasattr(self.main_window.image_container, "cargar_imagen"):
@@ -188,6 +189,11 @@ class OdinController:
             )
 
             self.current_image = self.handle.recortar_imagen(self.main_window)
+            if self.current_image is None:
+                self.main_window.mostrar_alerta(
+                    "Error", "No se pudo obtener la imagen para procesar.", es_error=True
+                )
+                return
 
             hilo_matematico = threading.Thread(
                 target=self._tarea_pesada_computacional
