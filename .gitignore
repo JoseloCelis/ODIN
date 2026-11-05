@@ -45,5 +45,8 @@ odin/data/
 # Registro de skills autogenerado por gentle-ai
 .atl/
 
+# Documentos temporales de Organic Driven Development (ODD)
+odd/
+
 # Configuracion local del hook de revision (Gentleman Guardian Angel)
 .gga
