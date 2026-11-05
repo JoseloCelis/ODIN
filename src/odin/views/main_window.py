@@ -489,7 +489,7 @@ def main(argv=None):
         return 0
 
     result = run_bootstrap(__package__)
-    app = OdinAdwaita(
+    app = ODINAdwaita(
         bootstrap_result=result,
         logger=result.logger,
         application_id="com.detectorDistancias.Odin",
