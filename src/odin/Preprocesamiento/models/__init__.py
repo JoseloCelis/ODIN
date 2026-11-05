@@ -5,7 +5,7 @@ Lógica matemática pura en NumPy/SciPy. Sin imports de gi, Gtk, Gdk, Adw ni cai
 
 from .deri_gauss import DerivGauss
 from .convolucion import Conv2D, ConvR, ConvC
-from .mag_fase import MagFase as MagnitudGradiente
+from .mag_fase import MagFase, MagFase as MagnitudGradiente
 
 __all__ = [
     "DerivGauss",
@@ -13,4 +13,5 @@ __all__ = [
     "ConvR",
     "ConvC",
     "MagFase",
+    "MagnitudGradiente",
 ]
