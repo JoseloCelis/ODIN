@@ -19,7 +19,7 @@ El código actual tiene tres problemas estructurales:
 1. `Gdk.Display.get_default()` se llama en el ámbito de módulo de `main.py`, lo que
    significa que si no hay display disponible, la excepción ocurre durante la importación,
    sin mensaje claro y sin control sobre el código de salida.
-2. La importación de módulos de preprocesamiento en `odin/__init__.py` no tiene manejo de
+2. La importación de módulos de preprocesamiento en `src/odin/__init__.py` no tiene manejo de
    errores: un `ImportError` en cualquier módulo produce un traceback crudo sin indicar
    cuál módulo falló ni cómo recuperarse.
 3. La detección de WSL2/entorno está incrustada en `show_openDialog`, mezclando lógica de
@@ -29,15 +29,15 @@ El código actual tiene tres problemas estructurales:
 
 ## Architecture
 
-La arquitectura introduce un módulo nuevo `odin/bootstrap.py` que contiene las tres clases
+La arquitectura introduce un módulo nuevo `src/bootstrap.py` que contiene las tres clases
 de arranque (`DisplayValidator`, `ModuleLoader`, `EnvironmentProbe`) y la clase utilitaria
-`StartupLogger`. El módulo `main.py` delega en el `Bootstrapper` antes de construir
+`StartupLogger`. El módulo `src/main.py` delega en el `Bootstrapper` antes de construir
 cualquier widget.
 
 ```mermaid
 graph TD
-    EntryPoint["python3 -m odin.main\no\npython3 odin/main.py"]
-    Bootstrap["Bootstrapper\n(odin/bootstrap.py)"]
+    EntryPoint["python3 -m src.odin.main\no\npython3 src/main.py"]
+    Bootstrap["Bootstrapper\n(src/bootstrap.py)"]
     SL["StartupLogger"]
     EP["EnvironmentProbe"]
     ML["ModuleLoader"]
@@ -46,7 +46,7 @@ graph TD
     MW["MainWindow\n(Adw.ApplicationWindow)"]
     VI["VisualizadorInteractivo\n(handle.py)"]
     PS["Preprocesamiento_Suite"]
-    HM["Handle_Module\n(odin.utils.handle)"]
+    HM["Handle_Module\n(src.odin.utils.handleImage)"]
 
     EntryPoint --> Bootstrap
     Bootstrap --> SL
@@ -150,7 +150,7 @@ flowchart TD
 
 ## Components and Interfaces
 
-### 1. `StartupLogger` (`odin/bootstrap.py`)
+### 1. `StartupLogger` (`src/bootstrap.py`)
 
 Clase utilitaria que formatea y escribe entradas de log al flujo configurado (por defecto
 `sys.stdout`). Encapsula el formato `[ODIN] <fase> | <nivel> | <mensaje>` y maneja el
@@ -178,7 +178,7 @@ class StartupLogger:
 
 ---
 
-### 2. `EnvironmentProbe` (`odin/bootstrap.py`)
+### 2. `EnvironmentProbe` (`src/bootstrap.py`)
 
 Detecta el entorno de ejecución y resuelve la ruta base de archivos.
 
@@ -217,7 +217,7 @@ El algoritmo prueba cada ruta en orden usando `.exists()` y `.is_dir()`, deteni�
 
 ---
 
-### 3. `ModuleLoader` (`odin/bootstrap.py`)
+### 3. `ModuleLoader` (`src/bootstrap.py`)
 
 Importa los módulos de `Preprocesamiento_Suite` y `Handle_Module` en orden definido,
 con manejo de errores por módulo.
@@ -264,7 +264,7 @@ class ModuleLoader:
 
 ---
 
-### 4. `DisplayValidator` (`odin/bootstrap.py`)
+### 4. `DisplayValidator` (`src/bootstrap.py`)
 
 Verifica la disponibilidad del backend gráfico GDK. Se ejecuta **dentro del handler
 `on_activate`** para garantizar que GTK ya haya inicializado su subsistema de display.
@@ -296,7 +296,7 @@ Acción recomendada: Verifique que DISPLAY o WAYLAND_DISPLAY estén configurados
 
 ---
 
-### 5. `Bootstrapper` (`odin/bootstrap.py`)
+### 5. `Bootstrapper` (`src/bootstrap.py`)
 
 Orquestador de las tres fases de pre-inicialización. Expone una función de nivel de módulo
 `run_bootstrap()` que `main.py` llama antes de instanciar `ODINAdwaita`.
@@ -322,13 +322,13 @@ def run_bootstrap(package_context: str | None = None) -> BootstrapResult:
 
 ---
 
-### 6. Refactor de `odin/__init__.py`
+### 6. Refactor de `src/odin/__init__.py`
 
 El archivo actual importa directamente sin manejo de errores. El refactor lo simplifica a
 una re-exportación que depende de que `ModuleLoader` ya haya ejecutado el trabajo real:
 
 ```python
-# odin/__init__.py  — versión refactorizada
+# src/odin/__init__.py  — versión refactorizada
 """
 Paquete ODIN. Los módulos de preprocesamiento se cargan mediante
 ModuleLoader en bootstrap.py durante el arranque; este archivo
@@ -363,12 +363,12 @@ nada por sí mismo.
 
 ### 7. Exportación pública de bootstrap
 
-El módulo `odin/bootstrap.py` contiene componentes que `main.py` y potencialmente otros módulos necesitan importar (`DisplayValidator`, `run_bootstrap`, `BootstrapResult`). Por este motivo, debe ser parte de la interfaz pública del paquete.
+El módulo `src/bootstrap.py` contiene componentes que `main.py` y potencialmente otros módulos necesitan importar (`DisplayValidator`, `run_bootstrap`, `BootstrapResult`). Por este motivo, debe ser parte de la interfaz pública del paquete.
 
-**Actualiza `odin/__init__.py` para incluir:**
+**Actualiza `src/odin/__init__.py` para incluir:**
 
 ```python
-# odin/__init__.py  — versión refactorizada con bootstrap público
+# src/odin/__init__.py  — versión refactorizada con bootstrap público
 
 """
 Paquete ODIN. Los módulos de preprocesamiento se cargan mediante
@@ -406,7 +406,7 @@ Esto permite que `main.py` importe con `from odin.bootstrap import run_bootstrap
 
 ---
 
-### 8. Refactor de `odin/main.py`
+### 8. Refactor de `src/main.py`
 
 Los cambios principales son:
 
@@ -417,7 +417,7 @@ Los cambios principales son:
    `self._bootstrap_result.env.base_path`.
 
 ```python
-# odin/main.py  — estructura refactorizada (pseudocódigo de alto nivel)
+# src/main.py  — estructura refactorizada (pseudocódigo de alto nivel)
 
 # --- imports gi, os, sys, threading, numpy, gtk ---
 from .bootstrap import run_bootstrap, DisplayValidator  # o absolutos si SCRIPT
@@ -814,7 +814,7 @@ def test_base_path_always_exists(env_type, user):
 
 - Ejecutar `python3 -m odin.main --version` en un entorno sin display y verificar que el
   proceso termina con código 1 y un mensaje legible en stderr.
-- Ejecutar `python3 odin/main.py --version` (modo SCRIPT) y verificar que los módulos se
+- Ejecutar `python3 src/main.py --version` (modo SCRIPT) y verificar que los módulos se
   resuelven correctamente.
 - Verificar que el log completo de arranque contiene exactamente una entrada por módulo de
   `Preprocesamiento_Suite` en el orden definido.

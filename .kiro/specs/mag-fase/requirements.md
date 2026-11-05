@@ -6,7 +6,8 @@ Este documento captura los requerimientos de la **etapa ② del pipeline de ODIN
 (`mag-fase`): el cálculo de la magnitud y la dirección del gradiente a partir de
 las derivadas producidas por la etapa ①.
 
-Corresponde a `MagFase(GrX, GrY)` en `odin/Preprocesamiento/MagFase.py`. Es un
+Corresponde a `MagFase(GrX, GrY)` implementado en
+`src/odin/Preprocesamiento/models/mag_fase.py` (legacy `odin/Preprocesamiento/MagFase.py`). Es un
 **spec de caracterización**: la implementación actual resultó correcta en todos
 los requerimientos revisados (ver `design.md`); el objetivo del documento es
 fijar el contrato numérico que las etapas ③ (`LinearInterpolation`,

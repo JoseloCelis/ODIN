@@ -51,10 +51,10 @@ ventana principal queda disponible para el usuario.
 
 #### Acceptance Criteria
 
-1. WHEN `odin/main.py` es invocado, THE `Display_Validator` SHALL comprobar que `Gdk.Display.get_default()` devuelve un display no nulo antes de continuar con la construcción de `MainWindow`.
+1. WHEN `src/main.py` (o `src.odin.main`) es invocado, THE `Display_Validator` SHALL comprobar que `Gdk.Display.get_default()` devuelve un display no nulo antes de continuar con la construcción de `MainWindow`.
 2. IF `Gdk.Display.get_default()` devuelve `None`, THEN THE `Display_Validator` SHALL imprimir en `stderr` un mensaje de error que incluya el nombre del componente (`Display_Validator`), la causa (`no se encontró un display GDK disponible`) y una acción recomendada (p.ej. `"Verifique que DISPLAY o WAYLAND_DISPLAY estén configurados"`), e invocar `sys.exit(1)` antes de instanciar cualquier widget GTK.
 3. WHEN el display es válido, THE `Display_Validator` SHALL registrar en `stdout` el nombre del backend GDK activo obtenido mediante `Gdk.Display.get_name()`, dentro de una entrada `Startup_Log` de nivel `INFO` en la fase `DISPLAY_VALID`.
-4. WHEN `odin/main.py` es invocado, THE `Display_Validator` SHALL completar su verificación antes de que cualquier handler de la señal `activate` de `ODINAdwaita` comience a ejecutarse, de modo que no exista ningún instante en que un handler de `activate` se ejecute sin que la validación haya concluido.
+4. WHEN `src/main.py` (o `src.odin.main`) es invocado, THE `Display_Validator` SHALL completar su verificación antes de que cualquier handler de la señal `activate` de `ODINAdwaita` comience a ejecutarse, de modo que no exista ningún instante en que un handler de `activate` se ejecute sin que la validación haya concluido.
 
 ---
 
@@ -64,8 +64,8 @@ ventana principal queda disponible para el usuario.
 
 #### Acceptance Criteria
 
-1. WHEN `odin/__init__.py` es importado, THE `Module_Loader` SHALL importar los módulos de `Preprocesamiento_Suite` en el orden secuencial de alias: `kernelSeparable` (desde `DeriGauss.py`), `MagnitudGradiente` (desde `MagFase.py`), `NonMaxSup` (desde `NonMaxSuppressionVectorizado.py`), `Otsu` (desde `MtoOtsu.py`), `DoubleTh` (desde `DThEdgeTrackHyst.py`), `aproxHough` (desde `houghCircles.py`), `circleFilter` (desde `findCircle.py`), `LSC` (desde `circuloSimple.py`); y registrar en `Startup_Log` (fase `MODULE_LOAD`, nivel `INFO`) una entrada por cada módulo importado exitosamente, en el mismo orden de importación.
-2. WHEN `odin/__init__.py` es importado, THE `Module_Loader` SHALL importar `Handle_Module` desde `odin.utils` y registrar una entrada `"Handle_Module: OK"` en `Startup_Log` (fase `MODULE_LOAD`, nivel `INFO`).
+1. WHEN el bootstrap es ejecutado, THE `Module_Loader` SHALL importar los módulos de `Preprocesamiento_Suite` en el orden secuencial de alias: `kernelSeparable` (desde `deri_gauss`), `MagnitudGradiente` (desde `mag_fase`), `NonMaxSup` (desde `non_max_sup`), `Otsu` (desde `otsu_rosin`), `DoubleTh` (desde `edge_track_hyst`), `aproxHough` (desde `hough_circles`), `circleFilter` (desde `find_circle`), `LSC` (desde `circulo_simple`); y registrar en `Startup_Log` (fase `MODULE_LOAD`, nivel `INFO`) una entrada por cada módulo importado exitosamente, en el mismo orden de importación.
+2. WHEN el bootstrap es ejecutado, THE `Module_Loader` SHALL importar `Handle_Module` desde `src.odin.utils.handleImage` y registrar una entrada `"Handle_Module: OK"` en `Startup_Log` (fase `MODULE_LOAD`, nivel `INFO`).
 3. IF algún módulo de `Preprocesamiento_Suite` lanza `ImportError` durante la importación, THEN THE `Module_Loader` SHALL capturar la excepción, registrar el nombre del módulo fallido en `Startup_Log` (fase `MODULE_LOAD`, nivel `ERROR`), y relanzar un `RuntimeError` cuyo mensaje contenga el nombre exacto del módulo fallido como subcadena.
 4. IF `Handle_Module` lanza `ImportError`, THEN THE `Module_Loader` SHALL capturar la excepción, registrar el fallo en `Startup_Log` (fase `MODULE_LOAD`, nivel `ERROR`), y relanzar un `RuntimeError` cuyo mensaje contenga la cadena `"Handle_Module"` y una descripción que indique que el subsistema de imagen no está disponible.
 5. WHEN todos los módulos se importan correctamente, THE `Module_Loader` SHALL registrar en `Startup_Log` (fase `MODULE_LOAD`, nivel `INFO`) las cadenas `"Preprocesamiento_Suite: OK"` y `"Handle_Module: OK"` al finalizar la importación de cada grupo.
@@ -129,12 +129,12 @@ ventana principal queda disponible para el usuario.
 
 ### Requirement 6: Compatibilidad con el modo de ejecución dual
 
-**User Story:** Como desarrollador de ODIN, quiero que la aplicación funcione correctamente tanto al ejecutarse como paquete (`python3 -m odin.main`) como al ejecutarse como script directo (`python3 odin/main.py`), para no romper el flujo de trabajo de desarrollo local ni el entrypoint del Dockerfile.
+**User Story:** Como desarrollador de ODIN, quiero que la aplicación funcione correctamente tanto al ejecutarse como paquete (`python3 -m src.odin.main`) como al ejecutarse como script directo (`python3 src/main.py`), para no romper el flujo de trabajo de desarrollo local ni el entrypoint del Dockerfile.
 
 #### Acceptance Criteria
 
-1. WHEN `odin/main.py` es ejecutado como script (`__package__` es `None` o cadena vacía), THE `Bootstrapper` SHALL resolver las importaciones de `Preprocesamiento_Suite` y `Handle_Module` usando rutas absolutas desde `sys.path[0]`, de modo que ambos módulos queden disponibles en el espacio de nombres sin lanzar `ImportError`.
-2. WHEN `odin/main.py` es ejecutado como paquete (`__package__ == 'odin'`), THE `Bootstrapper` SHALL resolver las importaciones de `Preprocesamiento_Suite` y `Handle_Module` usando rutas relativas (`.Preprocesamiento` y `.utils`), de modo que ambos módulos queden disponibles en el espacio de nombres sin lanzar `ImportError`.
+1. WHEN `src/main.py` es ejecutado como script (`__package__` es `None` o cadena vacía), THE `Bootstrapper` SHALL resolver las importaciones de `Preprocesamiento_Suite` y `Handle_Module` usando rutas absolutas desde `sys.path[0]`, de modo que ambos módulos queden disponibles en el espacio de nombres sin lanzar `ImportError`.
+2. WHEN `src/odin/main.py` es ejecutado como paquete (`__package__ == 'src.odin'`), THE `Bootstrapper` SHALL resolver las importaciones de `Preprocesamiento_Suite` y `Handle_Module` de modo que ambos módulos queden disponibles en el espacio de nombres sin lanzar `ImportError`.
 3. IF el `Bootstrapper` no puede resolver las importaciones de `Preprocesamiento_Suite` o `Handle_Module` en el modo detectado, THEN THE `Bootstrapper` SHALL terminar la ejecución con un mensaje de error que indique el módulo que no pudo cargarse y el modo de ejecución activo (`SCRIPT` o `PACKAGE`).
 4. THE `Bootstrapper` SHALL determinar la estrategia de importación exclusivamente a partir del valor de `__package__` en tiempo de ejecución, sin requerir modificación de variables de entorno por parte del usuario o del operador.
 5. WHEN el `Bootstrapper` selecciona la estrategia de importación, THE `Startup_Log` SHALL registrar una entrada en la fase `MODULE_LOAD` (nivel `INFO`) que incluya el modo de ejecución detectado (`SCRIPT` o `PACKAGE`) y los nombres de los módulos resueltos.

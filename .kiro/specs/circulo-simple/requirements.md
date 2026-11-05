@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Etapa ⑨ (`odin/Preprocesamiento/circuloSimple.py`) ajusta un círculo a un conjunto
+Etapa ⑨ (`src/odin/Ajustes/models/circulo_simple.py`, legacy `odin/Preprocesamiento/circuloSimple.py`) ajusta un círculo a un conjunto
 de puntos borde mediante mínimos cuadrados algebraicos (método de Kåsa). Es el
 último ajuste geométrico del pipeline de ODIN: recibe los puntos del anillo
 entregados por ⑧ (`findCircle`) y devuelve el centro $(x_c, y_c)$ y el radio $r$

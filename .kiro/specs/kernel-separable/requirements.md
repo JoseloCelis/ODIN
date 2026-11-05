@@ -7,8 +7,8 @@ Este documento captura los requerimientos de la **etapa ① del pipeline de ODIN
 separable con un kernel derivada-gaussiana.
 
 La etapa corresponde a `DerivGauss(E, sigma, wk, wConv, wr)` en
-`odin/Preprocesamiento/DeriGauss.py`, apoyada por `Conv2D`/`ConvR`/`ConvC` en
-`odin/Preprocesamiento/Convolucion/Conv2D.py`. La especificación fue extraída del
+`src/odin/Preprocesamiento/models/deri_gauss.py` (legacy `odin/Preprocesamiento/DeriGauss.py`), apoyada por `Conv2D`/`ConvR`/`ConvC` en
+`src/odin/Preprocesamiento/models/convolucion.py` (legacy `odin/Preprocesamiento/Convolucion/Conv2D.py`). La especificación fue extraída del
 código actual (spec implícito) y de la referencia matemática; las divergencias
 entre ambas quedan documentadas en `design.md`.
 

@@ -7,7 +7,7 @@ Este documento captura los requerimientos de la **etapa ④ del pipeline de ODIN
 gradiente ya suprimida (etapa ③).
 
 Corresponde a `umbralRosinYOtsu(IG, histo=False)` y `umbralOtsu(IG, histo=False)`
-en `odin/Preprocesamiento/MtoOtsu.py`, con los helpers privados
+en `src/odin/Procesamiento/models/otsu_rosin.py` (legacy `odin/Preprocesamiento/MtoOtsu.py`), con los helpers privados
 `_preparar_histograma` y `_umbral_otsu`.
 
 Contrato aguas arriba: `IG` es la magnitud de gradiente tras NMS (etapa ③),

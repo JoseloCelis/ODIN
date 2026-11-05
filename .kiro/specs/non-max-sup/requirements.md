@@ -8,7 +8,7 @@ subpíxel y el posterior umbralizado doble.
 
 Corresponde a `LinearInterpolation(MG, Gx, Gy, angle)` y
 `DobleThreshold(M, angle, thresh)` en
-`odin/Preprocesamiento/NonMaxSuppressionVectorizado.py`. El módulo contiene
+`src/odin/Procesamiento/models/non_max_sup.py` (legacy `odin/Preprocesamiento/NonMaxSuppressionVectorizado.py`). El módulo contiene
 además tres variantes experimentales no usadas por el pipeline
 (`NMS_Parabolic`, `NMS_Gaussian`, `Interpolation_old`) — ver `design.md`.
 

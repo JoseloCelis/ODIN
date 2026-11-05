@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Etapa ⑧ (`odin/Preprocesamiento/findCircle.py`) selecciona, de todos los bordes
+Etapa ⑧ (`src/odin/Ajustes/models/find_circle.py`, legacy `odin/Preprocesamiento/findCircle.py`) selecciona, de todos los bordes
 de la imagen, los que pertenecen al anillo del círculo estimado en ⑦, y los
 entrega a ⑨ (`circuloSimple`) para el ajuste.
 

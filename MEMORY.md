@@ -1,19 +1,19 @@
 # MEMORY.md — ODIN (Otsu + Directional + Intensity + Non-Maximum Suppression)
 
-Última modificación: 2026-11-04
+Última modificación: 2026-11-05
 
 Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo que ya no aporte.
 
 ## Estado actual
-- Suite de tests: 183 casos en pytest (tests/), `python3 -m pytest tests` desde la raíz (~7-10 s).
-  Etapa ⑨ suma `tests/test_etapa9_imagen_real.py`: 4 tests con bordes Gabor reales (rápidos) y
-  1 e2e con `img100.bmp` (opt-in `ODIN_TEST_LENTO=1`, ~21 s) que reproduce r=428.1769, pv=1.8856.
-- Refactor `src/odin/` en curso: etapa ① kernelSeparable movida a `src/odin/Preprocesamiento/models/deri_gauss.py` (puro NumPy, sin UI) + `models/convolucion.py` + `tests/test_etapa1_kernel_separable.py` (4 tests, verde). Legacy `odin/` aún coexiste.
-- Etapas implementadas y verificadas: ① kernelSeparable, ② MagFase, ③ NonMaxSup, ④ Otsu/Rosin, ⑥ EdgeTrack_Hyst, ⑦ houghCircles (R1-R10), ⑧ findCircle (R1-R6), ⑨ circuloSimple (cerrada, spec commiteado en `857f422`). Etapa ⑤ = DobleThreshold dentro de ④.
-- Falsificación por etapa (barrido e1-e8) completada; bugs reales corregidos: (a) `hough_circles_vectorizado` rechaza `r <= 0` con `ValueError` (commit `11183bf`); (b) `_preparar_histograma` maneja rango mínimo (casi-constante) con fallback a un solo bin (commit `12bd93d`).
-- Barrido completo S1-S4 (pipeline full, sin recortar): VERDE sobre img050.bmp — S1 sin errores, S2 consistencias OK, S3 determinismo, S4 sin NaN (salida en /tmp/opencode/barrido-e9/salida_s1_s4_final.json).
-- `.gitignore`: `odin/data/` (3.0 GB) y `.hypothesis/` excluidos.
-- `.kiro/specs/`: specs de etapas ①-⑨ + arranque (tasks 12-16 marcadas como cerradas).
+- Suite de tests: 183 casos en pytest (tests/), `python3 -m pytest tests` (182 passed, 1 skipped en ~6-7 s).
+- Eliminada carpeta legacy `odin/`: todo el código fuente reside exclusivamente en `src/` (`src/main.py`, `src/bootstrap.py`, `src/odin/`).
+- Estructura modular consolidada por dominios:
+  - Etapas ① y ②: `src/odin/Preprocesamiento/models/`
+  - Etapas ③, ④, ⑥ y ⑦: `src/odin/Procesamiento/models/`
+  - Etapas ⑧ y ⑨: `src/odin/Ajustes/models/`
+- Aliases públicos consolidados en `src/odin/Preprocesamiento/__init__.py` (según AGENTS.md).
+- Resueltos hallazgos RDD (Judgment Day W1 y W4): exposición de `MagFase` en `models/__init__.py` y tests blindados ante dependencias de UI en `test_etapa7_hough_circles.py`.
+- Specs en `.kiro/specs/` actualizados con las rutas reales del nuevo layout.
 
 ## Mediciones Task 14 / Task 16 (con pantalla virtual Xvfb :99)
 - ENV_PROBE (detección entorno): 0.2 ms (umbral < 200 ms) ✅ OK
