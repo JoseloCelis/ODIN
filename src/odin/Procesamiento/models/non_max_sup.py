@@ -17,6 +17,11 @@ de UI (gi, Gtk, Gdk, Adw, cairo, matplotlib).
 import numpy as np
 
 
+def NonMaxSup(MG, Gx, Gy, angle):
+    """Alias de LinearInterpolation para compatibilidad."""
+    return LinearInterpolation(MG, Gx, Gy, angle)
+
+
 def LinearInterpolation(MG, Gx, Gy, angle):
     """
     Supresión de No Máximos: interpolación lineal subpíxel entre los dos

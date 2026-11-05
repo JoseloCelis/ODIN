@@ -147,9 +147,12 @@ def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
     borde), así que un círculo grande domina a uno mucho más chico y la
     ambigüedad no se reporta. Ver `design.md` §3.4.
     """
-    r_min = float(r_min)
-    r_max = float(r_max)
-    paso = float(paso)
+    def _a_escalar(v):
+        a = np.asarray(v)
+        return float(a.item() if a.size == 1 else v)
+    r_min = _a_escalar(r_min)
+    r_max = _a_escalar(r_max)
+    paso = _a_escalar(paso)
 
     if not np.isfinite([r_min, r_max, paso]).all():
         raise ValueError("estimar_radio:: los límites y el paso deben ser finitos")
