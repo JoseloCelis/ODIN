@@ -44,4 +44,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Barrido con un solo paso grueso da márgenes frágiles: refinar candidatos gruesos convierte decisión en 2.6:1 por ~3 s.
 
 ## Próximos pasos
-- Refactor `src/odin/` (MVC + Strategy) al final.
+- Implementar Patrón Estrategia (`DeteccionStrategy` en `src/odin/Procesamiento/models/strategies/base_strategy.py`, según AGENTS.md §4.2).
+- Modularizar la vista y el controlador monolíticos (`main_window.py` / `main_controller.py`) hacia sus dominios (`Preprocesamiento`, `Procesamiento`, `Ajustes`) solo si se requiere desacoplar componentes gráficos independientes.
