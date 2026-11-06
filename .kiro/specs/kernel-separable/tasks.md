@@ -7,14 +7,14 @@
 
 ## Tarea 2: Fix D1 — soporte completo del kernel
 
-- [x] En `odin/Preprocesamiento/Convolucion/Conv2D.py`, `ConvR` y `ConvC`:
+- [x] En `src/odin/Preprocesamiento/models/convolucion.py`, `ConvR` y `ConvC`:
   `j1 = i + nk + 1` con clamp superior a `n` (y `j0` como `max(i−nk, 0)`).
 - [x] Verificar AC 4.2: 100 casos aleatorios + bordes vs referencia NumPy
   (`1e-12`) — **200 casos OK** (filas y columnas).
 
 ## Tarea 3: Fix D2 — guard de sigma antes de dimensionar
 
-- [x] En `odin/Preprocesamiento/DeriGauss.py`, mover `if sigma <= 0` al inicio
+- [x] En `src/odin/Preprocesamiento/models/deri_gauss.py`, mover `if sigma <= 0` al inicio
   de `DerivGauss`, antes de calcular `n = 3*sigma` y crear `gk`/`dgk`.
 - [x] Verificar AC 5.1/5.2: `sigma ∈ {0, −1}` → ceros, sin excepción — OK.
 

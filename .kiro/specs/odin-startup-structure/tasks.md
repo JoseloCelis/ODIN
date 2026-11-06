@@ -10,7 +10,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
 
 - [x] 1. Crear infraestructura base de bootstrap
   - [x] 1.1 Crear archivo bootstrap.py con estructura base
-    - Crear `odin/bootstrap.py` con imports necesarios (`sys`, `os`, `time`, `dataclasses`, `pathlib`, `typing`)
+    - Crear `src/bootstrap.py` con imports necesarios (`sys`, `os`, `time`, `dataclasses`, `pathlib`, `typing`)
     - Definir constantes: `FASES`, `NIVELES`, `LOG_FORMAT`, `MAX_MSG_LEN`, `MAX_WARN_LEN`
     - Definir `PREPROCESAMIENTO_SUITE_ORDER` con las 8 tuplas (alias, archivo) en orden
     - Crear dataclasses vacíos: `EnvironmentResult`, `ModuleResult`, `DisplayResult`, `BootstrapResult`
@@ -184,7 +184,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
   - Verificar que todas las fases se registran en el orden correcto
   - Preguntar al usuario si hay dudas sobre la orquestación
 
-- [x] 10. Refactorizar odin/__init__.py
+- [x] 10. Refactorizar src/odin/__init__.py
   - [x] 10.1 Actualizar imports de preprocesamiento
     - Reemplazar imports directos por imports desde archivos físicos con alias
     - Cambiar `from .Preprocesamiento import LSC, DoubleTh, ...` por:
@@ -209,7 +209,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - Eliminar el `print()` de inicialización del módulo
     - _Requisitos: 4.1_
 
-- [x] 11. Refactorizar odin/main.py — parte 1 (imports y estructuras)
+- [x] 11. Refactorizar src/main.py — parte 1 (imports y estructuras)
   - [x] 11.1 Agregar imports de bootstrap
     - Agregar bloque de importación dual después de los imports de gi:
       ```python
@@ -234,7 +234,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - La validación de display ahora ocurre en `on_activate`
     - _Requisitos: 1.1, 1.4_
 
-- [x] 12. Refactorizar odin/main.py — parte 2 (MainWindow)
+- [x] 12. Refactorizar src/main.py — parte 2 (MainWindow)
   - [x] 12.1 Actualizar constructor de MainWindow
     - Cambiar signatura a: `__init__(self, *args, bootstrap_result, logger, **kwargs)`
     - Guardar `self._bootstrap_result = bootstrap_result`
@@ -270,7 +270,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - Simplificar verificación de existencia: `if not os.path.exists(home_dir): home_dir = str(Path.home())`
     - _Requisitos: 3.3, 3.4_
 
-- [x] 13. Refactorizar odin/main.py — parte 3 (ODINAdwaita)
+- [x] 13. Refactorizar src/main.py — parte 3 (ODINAdwaita)
   - [x] 13.1 Actualizar constructor de ODINAdwaita
     - Cambiar signatura a: `__init__(self, bootstrap_result, logger, **kwargs)`
     - Guardar `self._bootstrap_result = bootstrap_result`
@@ -311,21 +311,21 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - _Requisitos: 4.1, 4.2_
 
 - [x] 14. Checkpoint — Verificar integración completa
-  - Ejecutar `python3 -m odin.main` (modo PACKAGE) y verificar que arranca sin errores
-  - Ejecutar `python3 odin/main.py` (modo SCRIPT) y verificar que arranca sin errores
+  - Ejecutar `python3 -m src.odin.main` (modo PACKAGE) y verificar que arranca sin errores
+  - Ejecutar `python3 src/main.py` (modo SCRIPT) y verificar que arranca sin errores
   - Verificar que el log de arranque contiene las 4 fases en orden
   - Preguntar al usuario si hay dudas sobre la integración
 
 - [x] 15. Escribir tests de integración end-to-end
   - Nota: 15.1-15.3 (opcionales, `*`) omitidas; 15.4 implementado y verde. El fallo sin display se verificó manualmente: exit 1 + `DISPLAY_VALID | ERROR`.
   - [ ]* 15.1 Test de arranque exitoso en modo PACKAGE
-    - Ejecutar `python3 -m odin.main --version` (agregar flag --version si no existe, o usar otro método de verificación)
+    - Ejecutar `python3 -m src.odin.main --version` (agregar flag --version si no existe, o usar otro método de verificación)
     - Capturar stdout y verificar presencia de las 4 fases en orden
     - Verificar que el proceso termina con código 0
     - _Requisitos: 4.1, 6.2_
   
   - [ ]* 15.2 Test de arranque exitoso en modo SCRIPT
-    - Ejecutar `python3 odin/main.py --version`
+    - Ejecutar `python3 src/main.py --version`
     - Capturar stdout y verificar presencia de las 4 fases en orden
     - Verificar que el proceso termina con código 0
     - _Requisitos: 4.1, 6.1_

@@ -26,7 +26,7 @@
 
 ## Tarea 3: Implementación — hecha
 
-- [x] `estimar_radio` y `mejor_centro` en `odin/Preprocesamiento/houghCircles.py`
+- [x] `estimar_radio` y `mejor_centro` en `src/odin/Procesamiento/models/hough_circles.py`
       (capa modelo, sin UI).
 - [x] Guarda de imagen vacía en `hough_circles_vectorizado` (R1.4).
 - [x] Limpieza: imports duplicados (`numpy` y `maximum_filter` dos veces,

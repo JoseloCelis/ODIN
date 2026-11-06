@@ -25,10 +25,10 @@
 
 ## Tarea 3: Implementación — hecha
 
-- [x] `odin/Preprocesamiento/findCircle.py`: `tolerancia_anillo`,
+- [x] `src/odin/Ajustes/models/find_circle.py`: `tolerancia_anillo`,
       `cobertura_angular`, `validar_anillo`, y `tolerancia` opcional en
       `find_circle`; centro con arreglos rechazado con mensaje explícito.
-- [x] `odin/main.py`: validar el anillo antes de `Circulo_simple` y abortar con
+- [x] `src/main.py`: validar el anillo antes de `Circulo_simple` y abortar con
       el motivo; el diálogo pasó de "Error Matemático" a "No se pudo procesar
       la imagen" con la causa en el mensaje.
 
