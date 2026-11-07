@@ -6,7 +6,9 @@ Ejecuta el pipeline de procesamiento de imágenes sin congelar la UI.
 import threading
 
 import numpy as np
-from gi.repository import GLib
+from gi.repository import Gdk, GLib
+
+from odin.controllers.main_controller import resolver_radio
 
 
 class WorkerThread(threading.Thread):
@@ -112,7 +114,7 @@ class WorkerThread(threading.Thread):
                     ambiguedad >= controlador.aproxHough.UMBRAL_AMBIGUEDAD,
                 )
 
-            xRecortada, yRecortada, n, accumulador = (
+            xRecortada, yRecortada, _n, accumulador = (
                 controlador.aproxHough.hough_circles_vectorizado(
                     DetectedEdges, radio, 0.8
                 )
@@ -146,14 +148,14 @@ class WorkerThread(threading.Thread):
             if not anillo_ok:
                 raise ValueError(f"No se puede medir el circulo: {motivo}.")
 
-            x, y, r, pv = controlador.LSC.Circulo_simple(puntosFiltrados)
+            x, y, _r, _pv = controlador.LSC.Circulo_simple(puntosFiltrados)
             x = controlador.main_window.xRecorte + x
             y = controlador.main_window.yRecorte + y
             GLib.idle_add(
                 controlador.main_window.finalizar_proceso_exitoso
             )
 
-        except Exception as e:
+        except (ValueError, GLib.Error) as e:
             GLib.idle_add(
                 controlador.main_window.mostrar_alerta,
                 "No se pudo procesar la imagen",

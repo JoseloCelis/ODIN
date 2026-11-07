@@ -5,16 +5,17 @@ procesamiento. Contiene la lógica de negocio sin depender directamente de
 widgets GTK.
 """
 
-import gi
 import os
 import threading
 from pathlib import Path
 
+import gi
+
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gdk, Gio, GLib, Gtk
-
+gi.require_version('Gdk', '4.0')
 import numpy as np
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 
 class EstadoDiametro:
@@ -284,7 +285,7 @@ class OdinController:
                     ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD,
                 )
 
-            xRecortada, yRecortada, n, accumulador = (
+            xRecortada, yRecortada, _n, accumulador = (
                 self.aproxHough.hough_circles_vectorizado(DetectedEdges, radio, 0.8)
             )
             centro = self.aproxHough.mejor_centro(
@@ -316,12 +317,12 @@ class OdinController:
             if not anillo_ok:
                 raise ValueError(f"No se puede medir el circulo: {motivo}.")
 
-            x, y, r, pv = self.LSC.Circulo_simple(puntosFiltrados)
+            x, y, _r, _pv = self.LSC.Circulo_simple(puntosFiltrados)
             x = self.main_window.xRecorte + x
             y = self.main_window.yRecorte + y
             GLib.idle_add(self.main_window.finalizar_proceso_exitoso)
 
-        except Exception as e:
+        except (ValueError, GLib.Error) as e:
             GLib.idle_add(
                 self.main_window.mostrar_alerta,
                 "No se pudo procesar la imagen",
