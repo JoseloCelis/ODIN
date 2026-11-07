@@ -10,40 +10,24 @@ pr:
       - main
       - rama-Hybrida
 
-pool:
-  vmImage: 'ubuntu-24.04'
+resources:
+  containers:
+  - container: odinci
+    image: ghcr.io/joselocelis/odin-ci:latest
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.12'
-  displayName: 'Configurar Versión de Python'
+jobs:
+- job: Test
+  displayName: 'Test ODIN'
+  pool:
+    vmImage: 'ubuntu-24.04'
+  container: odinci
 
-- script: |
-    sudo apt-get update
-    sudo apt-get install -y \
-      libgtk-4-dev \
-      gir1.2-gtk-4.0 \
-      libadwaita-1-dev \
-      gir1.2-adw-1 \
-      python3-gi \
-      python3-gi-cairo \
-      xvfb \
-      libcairo2-dev \
-      libgirepository1.0-dev
-  displayName: 'Instalar Dependencias del Sistema (GTK4, Libadwaita & Xvfb)'
+  steps:
+  - script: |
+      flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.git,__pycache__,src/data,.kiro
+      flake8 . --count --max-line-length=127 --statistics --exit-zero --exclude=.git,__pycache__,src/data,.kiro
+    displayName: 'Validar Estilo de Código (Flake8)'
 
-- script: |
-    python -m pip install --upgrade pip
-    pip install flake8 pytest
-    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-  displayName: 'Instalar Dependencias de Python'
-
-- script: |
-    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.git,__pycache__,src/data,.kiro
-    flake8 . --count --max-line-length=127 --statistics --exit-zero --exclude=.git,__pycache__,src/data,.kiro
-  displayName: 'Validar Estilo de Código (Flake8)'
-
-- script: |
-    xvfb-run --server-args="-screen 0 1024x768x24" python -m pytest tests -v
-  displayName: 'Ejecutar Suite de Pruebas (PyTest + GTK4 en Xvfb)'
+  - script: |
+      xvfb-run --server-args="-screen 0 1024x768x24" python -m pytest tests -v
+    displayName: 'Ejecutar Suite de Pruebas (PyTest + GTK4 en Xvfb)'
