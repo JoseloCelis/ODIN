@@ -32,3 +32,6 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 # Dependencias de ODIN
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt flake8 pytest
+
+# Trigger: publicar imagen CI en GHCR para que ci-odin.yml y azure-pipelines.yml
+# puedan usarla como contenedor de ejecucion.
