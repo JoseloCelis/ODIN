@@ -35,4 +35,4 @@ RUN pip install --no-cache-dir -r requirements.txt flake8 pytest
 
 # Trigger: publicar imagen CI en GHCR para que ci-odin.yml y azure-pipelines.yml
 # puedan usarla como contenedor de ejecucion.
-# Re-dispatch: owner en minusculas ya corregido en docker-ci-image.yml.
+# Build sin cache-from para primera publicacion (evita manifest unknown).

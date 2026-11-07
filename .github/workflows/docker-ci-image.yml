@@ -40,5 +40,3 @@ jobs:
           tags: |
             ghcr.io/joselocelis/odin-ci:latest
             ghcr.io/joselocelis/odin-ci:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
