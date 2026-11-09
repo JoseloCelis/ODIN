@@ -9,17 +9,39 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    container: ghcr.io/joselocelis/odin-ci:latest
 
     steps:
     - name: Descargar Código
       uses: actions/checkout@v4
 
+    - name: Instalar Dependencias del Sistema (GTK4, Libadwaita & Xvfb)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libgtk-4-dev \
+          gir1.2-gtk-4.0 \
+          libadwaita-1-dev \
+          gir1.2-adw-1 \
+          python3-gi \
+          python3-gi-cairo \
+          xvfb \
+          libcairo2-dev \
+          libgirepository1.0-dev \
+          python3-pip
+
+    - name: Instalar Dependencias de Python
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
     - name: Validar Estilo de Código (Flake8)
       run: |
+        # Errores críticos de sintaxis y nombres indefinidos
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.git,__pycache__,src/data,.kiro
+        # Advertencias generales de formato
         flake8 . --count --max-line-length=127 --statistics --exit-zero --exclude=.git,__pycache__,src/data,.kiro
 
     - name: Ejecutar Suite de Pruebas (PyTest + GTK4 en Xvfb)
       run: |
-        xvfb-run --server-args="-screen 0 1024x768x24" python -m pytest tests -v
+        xvfb-run --server-args="-screen 0 1024x768x24" python3 -m pytest tests -v
