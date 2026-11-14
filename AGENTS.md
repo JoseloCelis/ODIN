@@ -1,8 +1,8 @@
 # AGENTS.md — ODIN (Otsu + Directional + Intensity + Non-Maximum Suppression)
 
 Bienvenido al repositorio del software **ODIN** (*Otsu + Directional + Intensity + Non-Maximum Suppression*).
-Este documento define las directrices arquitectónicas, la estructura modular actual (legacy) y la
-proyectada (objetivo `src/odin/`), la configuración multientorno y los protocolos de desarrollo.
+Este documento define las directrices arquitectónicas, la estructura modular actual (`src/odin/`) y los
+protocolos de desarrollo.
 
 ---
 
@@ -16,16 +16,15 @@ centros y radios de círculos) en imágenes BMP, TIFF y JPEG.
 ### Estado del Código y Testing
 
 * **Punto de Entrada Real:** Se ejecuta desde la raíz del repositorio mediante
-  `python3 odin/main.py` o `python3 -m odin.main`. (No existe un archivo `main.py` en la raíz).
-* **Suite de Pruebas Unitarias:** Incluye 44 casos de prueba en `tests/` ejecutados con `pytest`
-  que cubren las etapas 1 a 5 y el pipeline completo, utilizando referencias independientes de
-  convolución, NMS y Otsu:
+  `python3 main.py` (o `python3 -m odin`). El arranque se delega a `src/odin/bootstrap.py`
+  y la ventana principal vive en `src/odin/views/main_window.py`.
+* **Suite de Pruebas Unitarias:** 183 casos en `tests/` ejecutados con `pytest`:
 
   ```bash
   python3 -m pytest tests -v
   ```
 
-* **Prueba de Humo de la UI:** Verificación rápida del arranque del entorno GTK 4 y Libadwaita:
+* **Prueba de Humo de la UI:**
 
   ```bash
   python3 -c "import gi; gi.require_version('Gtk','4.0'); gi.require_version('Adw','1'); from gi.repository import Gtk, Adw; print(f'GTK {Gtk.MAJOR_VERSION} OK, Adw OK')"
@@ -35,7 +34,7 @@ centros y radios de círculos) en imágenes BMP, TIFF y JPEG.
 
 ## 2. Configuración y Ejecución Multientorno (Entorno Híbrido)
 
-El proyecto está preparado para operar de forma transparente entre tres estaciones de trabajo
+El proyecto opera de forma transparente entre tres estaciones de trabajo
 compartiendo la misma infraestructura (`.devcontainer/devcontainer.json`,
 `.vscode/launch.json` y `.vscode/settings.json`).
 
@@ -74,66 +73,75 @@ sin modificaciones adicionales en cualquiera de los tres entornos.
 
 ---
 
-## 3. Estructura Actual del Código (Legacy) vs. Arquitectura Objetivo
+## 3. Estructura del Código (`src/odin/`)
 
-El sistema vive actualmente en la estructura funcional `odin/`, proyectada para refactorizarse
-progresivamente hacia una arquitectura MVC/MVP y Estrategia bajo el paquete **`src/odin/`**.
+El código fuente reside íntegramente en `src/odin/` con arquitectura MVC/MVP por dominios.
 
-### A. Estructura Actual del Código (`odin/`)
-
-* `odin/main.py`: Punto de entrada y ventana principal (`MainWindow(Adw.ApplicationWindow)`).
-  Contiene `MainWindow._tarea_pesada_computacional`, que orquesta el pipeline en un hilo
-  secundario.
-* `odin/utils/handleImage.py` (alias `handle`): Carga de imágenes, conversión a pixbuf/texturas
-  (`matriz_a_pixbuf`), recortes y renderizado en Cairo (`VisualizadorInteractivo`).
-* `odin/utils/uiVentanas.py`: Vacío.
-* `odin/Preprocesamiento/`: Módulos de algoritmos matemáticos individuales expuestos mediante
-  aliases en `__init__.py`.
-* `odin/Preprocesamiento/Convolucion/`: Subpaquete de convoluciones separables 1D
-  (`Conv2D.py`, `ConvC.py`, `ConvR.py`; su `__init__.py` está comentado).
-
-### Pipeline Actual de Procesamiento Subpíxel (9 Etapas)
-
-| # | Archivo | Alias Público | Rol del Algoritmo |
-|---|---------|---------------|-------------------|
-| ① | `DeriGauss.py` | `kernelSeparable` | Gradiente con kernel derivada-gaussiana separable |
-| ② | `MagFase.py` | `MagnitudGradiente` | Magnitud y dirección del gradiente |
-| ③ | `NonMaxSuppressionVectorizado.py` | `NonMaxSup` | Supresión de no máximos (interpolación subpíxel) |
-| ④ | `MtoOtsu.py` | `Otsu` | Umbrales Otsu y Rosin |
-| ⑤ | `NonMaxSuppressionVectorizado.py` | `NonMaxSup` | Doble umbral |
-| ⑥ | `DThEdgeTrackHyst.py` | `DoubleTh` | Histéresis → bordes finales |
-| ⑦ | `houghCircles.py` | `aproxHough` | Centro aproximado del círculo (Hough) |
-| ⑧ | `findCircle.py` | `circleFilter` | Filtrado de puntos en anillo ±10 px |
-| ⑨ | `circuloSimple.py` | `LSC` | Ajuste del círculo simple (x, y, r) |
-
-### B. Arquitectura Objetivo (`src/odin/` Layout — Refactorización Pendiente)
+### Layout Actual
 
 ```text
-ODIN/
-├── .devcontainer/                  # Entorno virtualizado híbrido
-├── .vscode/                        # Configuración de depuración y workspace
-├── config/                         # Parámetros y persistencia (config_default.yaml)
-├── data/                           # Imágenes de prueba y resultados exportados
-├── src/                            # Directorio raíz del código fuente
-│   └── odin/                       # Paquete principal ODIN refactorizado
-│   ├── Preprocesamiento/
-│   │   ├── models/                 # Lógica matemática pura en NumPy/SciPy (sin UI)
-│   │   ├── views/                  # Interfaz gráfica GTK 4 / Libadwaita / Cairo
-│   │   └── controllers/            # Orquestación de eventos e hilos asíncronos
-│   ├── Procesamiento/
-│   │   ├── models/                 # Lógica matemática pura en NumPy/SciPy (sin UI)
-│   │   │   └── strategies/         # Patrón Estrategia (base_strategy.py)
-│   │   ├── views/                  # Interfaz gráfica GTK 4 / Libadwaita / Cairo
-│   │   └── controllers/            # Orquestación de eventos e hilos asíncronos
-│   ├── Ajustes/
-│   │   ├── models/                 # Lógica matemática pura en NumPy/SciPy (sin UI)
-│   │   ├── views/                  # Interfaz gráfica GTK 4 / Libadwaita / Cairo
-│   │   └── controllers/            # Orquestación de eventos e hilos asíncronos
-│   └── utils/                  # Puente OpenCV ↔ GdkPixbuf / Gdk.Texture
-├── tests/                          # Suite de pruebas unitarias con pytest
-├── main.py                         # Punto de entrada raíz definitivo
-└── requirements.txt                # Dependencias en codificación UTF-8
+src/
+├── main.py                     # Punto de entrada (delega a odin.views.main_window.main)
+└── odin/
+    ├── __init__.py
+    ├── __main__.py             # Permite `python3 -m odin`
+    ├── bootstrap.py            # Inicialización: logging, paths, entorno, imports pesados
+    ├── utils/
+    │   ├── __init__.py
+    │   └── handleImage.py      # Puente OpenCV ↔ GdkPixbuf / Gdk.Texture (alias `handle`)
+    ├── views/
+    │   ├── __init__.py
+    │   ├── main_window.py      # Ventana principal (Adw.ApplicationWindow)
+    │   ├── interactive_viewer.py   # VisualizadorInteractivo (recorte Cairo)
+    │   └── compartido/         # Vistas genéricas reutilizables entre dominios
+    ├── controllers/
+    │   ├── __init__.py
+    │   ├── main_controller.py  # Orquestador principal (carga, pipeline, hilos)
+    │   └── worker_thread.py    # Threading + GLib.idle_add para UI
+    ├── Preprocesamiento/       # Dominio: etapas ①-②
+    │   ├── __init__.py         # Aliases públicos: kernelSeparable, MagnitudGradiente
+    │   ├── models/
+    │   │   ├── __init__.py
+    │   │   ├── convolucion.py  # Conv2D/ConvC/ConvR (convolución 1D separable)
+    │   │   ├── deri_gauss.py   # Etapa ①: kernel derivada-gaussiana separable
+    │   │   └── mag_fase.py     # Etapa ②: magnitud y dirección del gradiente
+    │   ├── views/
+    │   └── controllers/
+    ├── Procesamiento/          # Dominio: etapas ③-⑦
+    │   ├── __init__.py
+    │   ├── models/
+    │   │   ├── __init__.py
+    │   │   ├── non_max_sup.py        # Etapa ③ y ⑤: NMS vectorizado + doble umbral
+    │   │   ├── otsu_rosin.py         # Etapa ④: umbrales Otsu y Rosin
+    │   │   ├── edge_track_hyst.py    # Etapa ⑥: histéresis (DoubleTh)
+    │   │   ├── hough_circles.py      # Etapa ⑦: centro aproximado (aproxHough)
+    │   │   └── strategies/           # Patrón Estrategia (pendiente)
+    │   │       └── base_strategy.py  # DeteccionStrategy (abstracto)
+    │   ├── views/
+    │   └── controllers/
+    └── Ajustes/                # Dominio: etapas ⑧-⑨
+        ├── __init__.py
+        ├── models/
+        │   ├── __init__.py
+        │   ├── find_circle.py        # Etapa ⑧: filtrado anillo ±10 px (circleFilter)
+        │   └── circulo_simple.py     # Etapa ⑨: ajuste círculo simple (LSC)
+        ├── views/
+        └── controllers/
 ```
+
+### Pipeline de Procesamiento Subpíxel (9 Etapas)
+
+| # | Módulo (`models/`) | Alias Público | Rol |
+|---|-------------------|---------------|-----|
+| ① | `Preprocesamiento/models/deri_gauss.py` | `kernelSeparable` | Gradiente con kernel derivada-gaussiana separable |
+| ② | `Preprocesamiento/models/mag_fase.py` | `MagnitudGradiente` | Magnitud y dirección del gradiente |
+| ③ | `Procesamiento/models/non_max_sup.py` | `NonMaxSup` | Supresión de no máximos (interpolación subpíxel) |
+| ④ | `Procesamiento/models/otsu_rosin.py` | `Otsu` | Umbrales Otsu y Rosin |
+| ⑤ | `Procesamiento/models/non_max_sup.py` | `NonMaxSup` | Doble umbral |
+| ⑥ | `Procesamiento/models/edge_track_hyst.py` | `DoubleTh` | Histéresis → bordes finales |
+| ⑦ | `Procesamiento/models/hough_circles.py` | `aproxHough` | Centro aproximado del círculo (Hough) |
+| ⑧ | `Ajustes/models/find_circle.py` | `circleFilter` | Filtrado de puntos en anillo ±10 px |
+| ⑨ | `Ajustes/models/circulo_simple.py` | `LSC` | Ajuste del círculo simple (x, y, r) |
 
 ---
 
@@ -142,20 +150,23 @@ ODIN/
 ### 1. Modelo-Vista-Controlador (MVC / MVP)
 
 * **Modelo (`src/odin/<dominio>/models/`):** Matemática pura en NumPy/SciPy, 100% independiente de `gi`, `Gtk`, `Gdk`, `Adw` o `cairo`. Un `<dominio>` por área de negocio (`Preprocesamiento`, `Procesamiento`, `Ajustes`).
-* **Vista (`src/odin/<dominio>/views/`):** Interfaz gráfica adaptativa en GTK 4 / Libadwaita y dibujado vectorial en Cairo. Las vistas genéricas compartidas (p. ej. `VisualizadorInteractivo`) viven en `src/odin/views/compartido/` para evitar duplicación por dominio.
+* **Vista (`src/odin/<dominio>/views/`):** Interfaz gráfica adaptativa en GTK 4 / Libadwaita y dibujado vectorial en Cairo. Las vistas genéricas compartidas (p. ej. `VisualizadorInteractivo` en `src/odin/views/compartido/`) evitan duplicación por dominio.
 * **Controlador (`src/odin/<dominio>/controllers/`):** Orquestación de eventos de la UI y ejecución asíncrona de tareas pesadas en hilos secundarios.
 
 ### 2. Patrón Estrategia (Strategy Pattern)
 
 Familia de algoritmos encapsulada bajo la interfaz abstracta
-`DeteccionStrategy` (`src/odin/models/strategies/base_strategy.py`). Permite alternar la
-estrategia de procesamiento en tiempo de ejecución sin modificar Vistas ni Controladores.
+`DeteccionStrategy` (`src/odin/Procesamiento/models/strategies/base_strategy.py`).
+Permite alternar la estrategia de procesamiento en tiempo de ejecución sin modificar
+Vistas ni Controladores.
 
 ### 3. Reglas de Importación y Aliases
 
-* Admite ejecución como script (`python3 odin/main.py`) o como módulo (`python3 -m odin.main`).
-* Los módulos de algoritmos deben consumirse a través de los aliases expuestos en los archivos
-  `__init__.py` (ej. `MtoOtsu as Otsu`, `houghCircles as aproxHough`, `handleImage as handle`).
+* Ejecución soportada: `python3 main.py` (script) y `python3 -m odin` (módulo).
+* Los módulos de algoritmos se consumen a través de los aliases expuestos en los
+  `__init__.py` de cada dominio (ej. `from odin.Preprocesamiento import kernelSeparable`,
+  `from odin.utils import handle`).
+* **No importar archivos de algoritmos directamente**; usar siempre el alias público.
 
 ---
 
@@ -192,7 +203,42 @@ estrategia de procesamiento en tiempo de ejecución sin modificar Vistas ni Cont
 
 ---
 
-## 6. Convenciones, Memoria y Estado del Proyecto
+## 6. Skills — Carga y Registro (Gentle AI)
+
+El proyecto usa **Gentle AI Skills** como unidades de conocimiento reutilizables para tareas
+recurrentes (ramas/PR, commits, revisión, diseño, issues, etc.).
+
+### Ubicación y Estructura
+
+* Directorio raíz de skills: `.skills/` (en la raíz del repo).
+* Cada skill es una carpeta con su `SKILL.md` (frontmatter + instrucciones).
+* Ejemplos instalados: `skill-creator/`, `pytest/`, `github-pr/`, `angular/`, `django-drf/`, etc.
+
+### Protocolo de Carga (Skill Registry Protocol)
+
+1. **El padre resuelve rutas una vez por sesión** bajo `## Skills to load before work`.
+2. Los subagentes leen esos `SKILL.md` primero (`paths-injected`) o reportan rutas no disponibles.
+3. Fallbacks documentados en `orchestrator-skills.md`.
+
+### Discovery Intent-Driven
+
+Para peticiones con forma de skill, `<available_skills>` es solo ayuda de descubrimiento,
+nunca anula una petición concreta. Ver `orchestrator-skills.md` para orden y hints.
+
+### Creación y Mejora de Skills
+
+* **Crear:** trigger `/skill-creation` → `gentle-ai-skill-creator` (frontmatter válido obligatorio).
+* **Mejorar/Auditar:** trigger `improve skills` / `audit skills` → `gentle-ai-skill-improver`.
+* **Actualizar registro:** trigger `update skills` / `actualizar skills` → `gentle-ai-skill-registry`.
+
+### Skills Propias del Proyecto (por añadir)
+
+Cuando el proyecto requiera skills específicas (p. ej. `odin-pipeline`, `odin-testing`,
+`odin-gtk-debug`), se crearán bajo `.skills/odin-*` siguiendo el mismo protocolo.
+
+---
+
+## 7. Convenciones, Memoria y Estado del Proyecto
 
 * **Idioma:** Identificadores, comentarios, cadenas de UI y mensajes de commit en **Español**.
 * **Codificación:** `requirements.txt` se mantiene obligatoriamente en **UTF-8**.
@@ -206,5 +252,24 @@ estrategia de procesamiento en tiempo de ejecución sin modificar Vistas ni Cont
 * **Datos Sensibles:** Nunca guardar claves, tokens ni datos personales.
 * **Descarga de Core:** El archivo `core.*` en la raíz (dump de crash de GTK) no debe
   commitearse; agregar a `.gitignore` o eliminar.
+
+---
+
+## 8. Referencias Rápidas (Archivos Clave)
+
+| Propósito | Archivo |
+|-----------|---------|
+| Arranque y bootstrap | `src/odin/bootstrap.py` |
+| Ventana principal | `src/odin/views/main_window.py` |
+| Controlador principal | `src/odin/controllers/main_controller.py` |
+| Worker thread (async) | `src/odin/controllers/worker_thread.py` |
+| Aliases Preprocesamiento | `src/odin/Preprocesamiento/__init__.py` |
+| Aliases Procesamiento | `src/odin/Procesamiento/__init__.py` |
+| Aliases Ajustes | `src/odin/Ajustes/__init__.py` |
+| Utils imagen (handle) | `src/odin/utils/handleImage.py` |
+| Estrategia base | `src/odin/Procesamiento/models/strategies/base_strategy.py` |
+| Tests | `tests/` (pytest) |
+| Memoria proyecto | `MEMORY.md` |
+| Specs Kiro | `.kiro/specs/` |
 
 ---
