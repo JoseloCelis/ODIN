@@ -87,19 +87,13 @@ src/
     │   ├── __init__.py             # Public aliases: kernelSeparable, MagnitudGradiente
     │   ├── models/
     │   │   ├── __init__.py
-    │   │   ├── convolucion.py      # Conv2D/ConvC/ConvR (1D separable convolution)
-    │   │   ├── deri_gauss.py       # Stage ①: separable Gaussian-derivative kernel
-    │   │   └── mag_fase.py         # Stage ②: gradient magnitude and direction
+    │   │   └── convolucion.py      # Conv2D/ConvC/ConvR (1D separable convolution)
     │   ├── views/
     │   └── controllers/
     ├── Procesamiento/              # Domain: stages ③-⑦
     │   ├── __init__.py
     │   ├── models/
     │   │   ├── __init__.py
-    │   │   ├── non_max_sup.py      # Stage ③ & ⑤: vectorized NMS + double threshold
-    │   │   ├── otsu_rosin.py       # Stage ④: Otsu and Rosin thresholds
-    │   │   ├── edge_track_hyst.py  # Stage ⑥: hysteresis (DoubleTh)
-    │   │   ├── hough_circles.py    # Stage ⑦: approximate circle center (aproxHough)
     │   │   └── strategies/         # Strategy Pattern (planned)
     │   │       └── base_strategy.py  # DeteccionStrategy (abstract)
     │   ├── views/
@@ -107,9 +101,7 @@ src/
     └── Ajustes/                    # Domain: stages ⑧-⑨
         ├── __init__.py
         ├── models/
-        │   ├── __init__.py
-        │   ├── find_circle.py      # Stage ⑧: ±10 px annulus filtering (circleFilter)
-        │   └── circulo_simple.py   # Stage ⑨: least-squares circle fit (LSC)
+        │   └── __init__.py
         ├── views/
         └── controllers/
 ```
