@@ -32,11 +32,18 @@ These operational rules supersede any autonomous agent behavior. You **MUST** ob
 ## 3. Multi-Agent Environment & Skill Registry Protocol
 This workspace operates via an interchangeable, non-hierarchical tool pipeline (`opecode`, `agy`, and `harness pi`), coordinated globally by `gentle-shell` under Alan Buscaglia's **Receive-Driven Development (RDD)** framework. Do not inject raw `SKILL.md` payloads into the main orchestrator context window.
 
-### Registry Dependencies (`skills.sh`, installed locally via `npx skills add`)
-* **Runtime Logic:** `miles990/claude-software-skills` (`python`)
-* **UI/UX Engine:** `gotar/opencode-config` (`gtk-ui-ux-engineer`)
-* **Environment Sync:** `zjkal/sync-skills-wsl-skill` (`sync-skills-wsl`)
-* **OS Telemetry:** `evolv3-ai/vibe-skills` (`admin-wsl`)
+### Skills — Loading and Registry Dependencies
+
+This workspace relies on the **Open Agent Skills** ecosystem. Skills are centrally maintained in `~/.skills` and dynamically resolved at runtime via symbolic links mapped to local agent configuration directories (e.g., OpenCode, agy, GitHub Copilot) and *gentle-shell*. **Do not embed inline skill definitions (*skill payloads*) in prompts, and do not attempt to reinstall pre-linked local skills.**
+
+### Core Knowledge Units (Gentle AI Skills)
+* **Workflows:** Utilize **Gentle AI Skills** as reusable knowledge units for recurring development tasks (branches/PRs, commits, code reviews, design, issues, etc.).
+
+### Registry Dependencies (`skills.sh`)
+* **Runtime Logic:** `miles990/claude-software-skills` (Skill: `python`)
+* **UI/UX Engine:** `gotar/opencode-config` (Skill: `gtk-ui-ux-engineer`)
+* **Environment Sync:** `zjkal/sync-skills-wsl-skill` (Skill: `sync-skills-wsl`)
+* **OS Telemetry:** `evolv3-ai/vibe-skills` (Skill: `admin-wsl`)
 
 ### Local Subagent Protocol (`.skills/`)
 1. **Parent resolves paths once per session** under `## Skills to load before work` (`.skills/<name>/SKILL.md`).
