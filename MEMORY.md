@@ -11,10 +11,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - API pública encapsulada por dominio (commit `b783395`): `Procesamiento` exporta NonMaxSup/Otsu/DoubleTh/aproxHough, `Ajustes` circleFilter/circuloSimple/LSC; `Preprocesamiento` solo sus 2 etapas. Engram actualizado.
 - Suite de tests reorganizada a `tests/unit/<dominio>/` + `tests/integration/` (commit `3773618`). **Verificado en devcontainer** (imagen `vsc-odin-a8b2d91c9521796425d0e2ffb7ce0c54fdd4e8418fae4b93b7b5408946ddcf96`): `pytest tests` → **181 passed, 6 skipped, 1 failed** (`test_version_flag`, sin DISPLAY; headless). Hypothesis corre dentro del devcontainer (2026-11-17, commits `3773618`, `ebd8342`); en el host Mint se omite (sin pip).
 - Eliminada carpeta legacy `odin/`: todo el código reside en `src/` (.git reducido de 2.3 GB a 1.4 MB); dataset de `src/data/` purgado del historial e ignorado en `.gitignore`.
-- Estructura modular consolidada por dominios:
-  - Etapas ① y ②: `src/odin/Preprocesamiento/models/`
-  - Etapas ③, ④, ⑥ y ⑦: `src/odin/Procesamiento/models/`
-  - Etapas ⑧ y ⑨: `src/odin/Ajustes/models/`
+- Estructura modular por dominios: etapas ①-② `Preprocesamiento/models/` · ③④⑥⑦ `Procesamiento/models/` · ⑧⑨ `Ajustes/models/`.
 - Aliases públicos por dominio (desde `b783395`, `Preprocesamiento` ya no re-exporta API ajena).
 - Resueltos hallazgos RDD (Judgment Day W1 y W4): exposición de `MagFase` en `models/__init__.py` y tests blindados ante dependencias de UI en `test_etapa7_hough_circles.py`.
 - Fix de integración UI: sincronización de `image_loaded` en `main_controller.py` y configuración de depuración en `.vscode/launch.json`.
