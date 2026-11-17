@@ -19,7 +19,7 @@ import pytest
 
 from src.odin.Ajustes.models.circulo_simple import Circulo_simple as CS
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[3]
 BASE_DATOS = RAIZ / "src" / "data" / "images" / "Circulos Servicio Micrometrologia"
 
 # Valores medidos con el ajuste actual (deterministas, mismo archivo).

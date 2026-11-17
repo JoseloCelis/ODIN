@@ -29,7 +29,7 @@ from src.odin.Procesamiento.models.hough_circles import (
 from src.odin.Ajustes.models.find_circle import find_circle as FC
 from src.odin.Ajustes.models.circulo_simple import Circulo_simple as LSC
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[3]
 
 
 # ---------------------------------------------------------------------------
