@@ -34,7 +34,7 @@ This workspace operates via an interchangeable, non-hierarchical tool pipeline (
 
 ### Skills — Loading and Registry Dependencies
 
-This workspace relies on the **Open Agent Skills** ecosystem. Skills are centrally maintained in `~/.skills` and dynamically resolved at runtime via symbolic links mapped to local agent configuration directories (e.g., OpenCode, agy, GitHub Copilot) and *gentle-shell*. **Do not embed inline skill definitions (*skill payloads*) in prompts, and do not attempt to reinstall pre-linked local skills.**
+This workspace relies on the **Open Agent Skills** ecosystem, installed locally via `npx skills`. On this machine, skill sources live in `/home/jolopez/.agents/skills/<name>` and are exposed to the repo as **symbolic links** under `.agents/skills/` (gitignored, per repo `.gitignore`), which agent configuration directories (OpenCode, agy, GitHub Copilot) and *gentle-shell* resolve at runtime. **Do not embed inline skill definitions (*skill payloads*) in prompts, and do not attempt to reinstall pre-linked local skills.**
 
 ### Core Knowledge Units (Gentle AI Skills)
 * **Workflows:** Utilize **Gentle AI Skills** as reusable knowledge units for recurring development tasks (branches/PRs, commits, code reviews, design, issues, etc.).
@@ -43,7 +43,7 @@ This workspace relies on the **Open Agent Skills** ecosystem. Skills are central
 * **Runtime Logic:** `miles990/claude-software-skills` (Skill: `python`)
 * **UI/UX Engine:** `gotar/opencode-config` (Skill: `gtk-ui-ux-engineer`)
 * **Environment Sync:** `zjkal/sync-skills-wsl-skill` (Skill: `sync-skills-wsl`)
-* **OS Telemetry:** `evolv3-ai/vibe-skills` (Skill: `admin-wsl`)
+* **OS Telemetry:** `evolv3-ai/vibe-skills` (Skill: `admin`)
 
 ### Local Subagent Protocol (`.skills/`)
 1. **Parent resolves paths once per session** under `## Skills to load before work` (`.skills/<name>/SKILL.md`).
