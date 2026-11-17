@@ -95,7 +95,7 @@ def test_pipeline_completo_sobre_imagen_real():
     from src.odin.Procesamiento.models import hough_circles as AH
     from src.odin.Procesamiento.models import non_max_sup as NMS
     from src.odin.Procesamiento.models import otsu_rosin as OT
-    from src.odin.Ajustes.models import find_circle as FC
+    from src.odin.Ajustes import find_circle, validar_anillo
 
     if not IMAGEN_REAL.exists():
         pytest.skip(f"imagen real no disponible: {IMAGEN_REAL}")
@@ -126,8 +126,8 @@ def test_pipeline_completo_sobre_imagen_real():
     assert centro[:2] == pytest.approx((551, 550), abs=1)
 
     # Etapa ⑧: anillo validado.
-    puntos = FC.find_circle(bordes, radio, (centro[0], centro[1]))
-    anillo_ok, motivo = FC.validar_anillo(puntos, (centro[0], centro[1]))
+    puntos = find_circle(bordes, radio, (centro[0], centro[1]))
+    anillo_ok, motivo = validar_anillo(puntos, (centro[0], centro[1]))
     assert anillo_ok, motivo
     assert len(puntos) == pytest.approx(3150, abs=20)
 
