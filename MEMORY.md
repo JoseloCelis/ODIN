@@ -5,6 +5,7 @@
 Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo que ya no aporte.
 
 ## Estado actual
+- Type hints completos en `src/odin/` (commit `ca595b0`): 90/90 defs con retorno anotado, 0 params sin anotar. Bonus: `worker_thread.py` con `gi.require_version('Gdk')` (calla PyGIWarning preexistente).
 - API pública encapsulada por dominio (commit `b783395`): `Procesamiento` exporta NonMaxSup/Otsu/DoubleTh/aproxHough, `Ajustes` circleFilter/circuloSimple/LSC; `Preprocesamiento` solo sus 2 etapas. Engram actualizado.
 - Suite de tests reorganizada a `tests/unit/<dominio>/` + `tests/integration/` (commit `3773618`). **Verificado en devcontainer** (imagen `vsc-odin-a8b2d91c9521796425d0e2ffb7ce0c54fdd4e8418fae4b93b7b5408946ddcf96`): `pytest tests` → **181 passed, 6 skipped, 1 failed** (`test_version_flag`, sin DISPLAY; headless). Hypothesis corre dentro del devcontainer (2026-11-17, commits `3773618`, `ebd8342`); en el host Mint se omite (sin pip).
 - Eliminada carpeta legacy `odin/`: todo el código fuente reside exclusivamente en `src/` (`src/main.py`, `src/bootstrap.py`, `src/odin/`).
