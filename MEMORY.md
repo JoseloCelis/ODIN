@@ -10,7 +10,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Type hints completos en `src/odin/` (commit `ca595b0`): 90/90 defs con retorno anotado, 0 params sin anotar. Bonus: `worker_thread.py` con `gi.require_version('Gdk')` (calla PyGIWarning preexistente).
 - API pública encapsulada por dominio (commit `b783395`): `Procesamiento` exporta NonMaxSup/Otsu/DoubleTh/aproxHough, `Ajustes` circleFilter/circuloSimple/LSC; `Preprocesamiento` solo sus 2 etapas. Engram actualizado.
 - Fix de regresión propia #4 (commit `091da78`): `RAIZ` en 2 tests movidos (`parents[1]`→`parents[3]`); desbloqueó 5 tests de dataset real. Host+xvfb: **171 passed, 15 skipped**; devcontainer: **186 passed, 1 skipped, 1 failed** (`--version` headless).
-- Suite de tests reorganizada a `tests/unit/<dominio>/` + `tests/integration/` (commit `3773618`). **Verificado en devcontainer** (imagen `vsc-odin-a8b2d91c9521796425d0e2ffb7ce0c54fdd4e8418fae4b93b7b5408946ddcf96`): `pytest tests` → **181 passed, 6 skipped, 1 failed** (`test_version_flag`, sin DISPLAY; headless). Hypothesis corre dentro del devcontainer (2026-11-17, commits `3773618`, `ebd8342`); en el host Mint se omite (sin pip).
+- Suite de tests reorganizada a `tests/unit/<dominio>/` + `tests/integration/` (commit `3773618`). **Host verde desde 2026-11-17** (`xvfb-run -a pytest tests` → **187 passed, 1 skipped**); devcontainer/imagen: 186 passed, 1 skipped, 1 failed (`--version` sin DISPLAY; verde bajo xvfb). Commits clave: `3773618`, `ebd8342`.
 - Eliminada carpeta legacy `odin/`: todo el código reside en `src/` (.git reducido de 2.3 GB a 1.4 MB); dataset de `src/data/` purgado del historial e ignorado en `.gitignore`.
 - Estructura modular por dominios: etapas ①-② `Preprocesamiento/models/` · ③④⑥⑦ `Procesamiento/models/` · ⑧⑨ `Ajustes/models/`.
 - Aliases públicos por dominio (desde `b783395`, `Preprocesamiento` ya no re-exporta API ajena).
@@ -38,7 +38,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Kernel 5×5 (no 7×7) por decisión de usuario; medido inocuo y mejor bajo ruido.
 
 ## Aprendizajes y errores a evitar
-- `hypothesis` figura en `requirements.txt` (dev/test) y vive en el **devcontainer** (`Dockerfile`: `pip3 install -r requirements.txt`; CI igual). El host Mint `/usr/bin/python3` (3.14, sin pip) **no lo tiene** → las suites `_prop.py` y `TestPropiedadesCorreccion` se omiten en el host. Decisión (2026-11-16): correr tests en el devcontainer, no instalar hypothesis en el host. Imagen `vsc-odin-...:latest` ya existe localmente.
+- `hypothesis` en `requirements.txt` (dev/test) **ya instalado en el host vía apt** (`python3-hypothesis` 6.151.5-1, desde 2026-11-17; el sandbox del agente no puede correr sudo). Host: `xvfb-run -a pytest tests` → **187 passed, 1 skipped**; sin xvfb → 186 passed + 1 failed (issue `--version` sin display). También vive en el devcontainer y CI. Imagen `vsc-odin-...:latest` existe localmente.
 - Deuda documentada (`.kiro/specs/kernel-separable/design.md`, D4): `sigma` flotante truena en `DerivGauss` (`range(3*sigma)` → TypeError). En `src/odin/.../models/deri_gauss.py` ya se castea `int(3*sigma)` antes de dimensionar arrays. No borrar esta deuda de MEMORY.md ni de Engram.
 - Kiro tiende a truncar/reescriturar AGENTS.md al generar documentación: revisar tras cada sesión de Kiro.
 - Al cambiar firma de helper compartido, verificar TODOS los llamadores.
