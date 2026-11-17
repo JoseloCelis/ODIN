@@ -9,7 +9,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, Literal, Optional, TextIO
+from typing import Any, Literal, TextIO
 import importlib
 
 # Asegurar que la raíz del repo esté en el path para importar
@@ -22,7 +22,6 @@ FASES = ("ENV_PROBE", "MODULE_LOAD", "DISPLAY_VALID", "WINDOW_INIT")
 NIVELES = ("INFO", "WARNING", "ERROR")
 LOG_FORMAT = "[ODIN] {fase} | {nivel} | {mensaje}\n"
 MAX_MSG_LEN = 500
-MAX_WARN_LEN = 200
 
 # Orden canónico de importación de la suite de preprocesamiento
 # Tuplas: (alias público, ruta completa del módulo en odin/)
@@ -49,7 +48,7 @@ class EnvironmentResult:
 @dataclass
 class ModuleResult:
     """Resultado de la carga de módulos."""
-    preprocesamiento: Dict[str, Any]
+    preprocesamiento: dict[str, Any]
     handle: Any
     mode: Literal["SCRIPT", "PACKAGE"]
 
@@ -135,7 +134,11 @@ class EnvironmentProbe:
 
     @staticmethod
     def _resolve_base_path(env_type: str, username: str) -> Path:
-        """Resuelve la ruta base con cascada de prioridades."""
+        """Resuelve la ruta base con cascada de prioridades.
+
+        Nota: `env_type` se conserva en la firma (API pública, tests la usan
+        posicional), pero no altera la cascada: es un placeholder.
+        """
         # Todas las rutas usan /home/ (Linux nativo) por rendimiento en WSL2
         candidatos = [
             Path(f"/home/{username}/proyectos/ODIN"),
@@ -191,7 +194,7 @@ class EnvironmentProbe:
 class ModuleLoader:
     """Carga y valida los módulos de preprocesamiento y utilidades."""
 
-    def __init__(self, logger: StartupLogger, package_context: Optional[str]) -> None:
+    def __init__(self, logger: StartupLogger, package_context: str | None) -> None:
         self.logger = logger
         self.package_context = package_context
 
@@ -231,7 +234,7 @@ class ModuleLoader:
                 raise RuntimeError(
                     f"No se pudo cargar el módulo {alias} ({modulo_ruta}) "
                     f"en modo {mode}: {e}"
-                )
+                ) from e
 
         # Importar Handle_Module
         try:
@@ -245,7 +248,7 @@ class ModuleLoader:
                 "ERROR",
                 f"Fallo al importar Handle_Module: {e}"
             )
-            raise RuntimeError(f"Handle_Module no disponible en modo {mode}: {e}")
+            raise RuntimeError(f"Handle_Module no disponible en modo {mode}: {e}") from e
 
         # Log módulos resueltos
         self.logger.log(
@@ -291,7 +294,7 @@ class DisplayValidator:
         return DisplayResult(display=display, backend_name=backend_name)
 
 
-def run_bootstrap(package_context: Optional[str] = None) -> BootstrapResult:
+def run_bootstrap(package_context: str | None = None) -> BootstrapResult:
     """Orquesta el bootstrap completo de ODIN."""
     logger = StartupLogger()
     # Componente en curso para el ERROR de R5.4. Solo cubre las fases que
