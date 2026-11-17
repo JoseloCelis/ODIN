@@ -17,7 +17,7 @@ from src.odin.Procesamiento import umbralRosinYOtsu, umbralOtsu
             st.integers(min_value=16, max_value=40),
             st.integers(min_value=16, max_value=40),
         ),
-        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_inf=False),
+        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_infinity=False),
     ),
 )
 @settings(max_examples=30, deadline=None)
@@ -39,7 +39,7 @@ def test_prop_umbral_rosin_y_otsu_finitos_y_no_negativos(arr):
             st.integers(min_value=16, max_value=40),
             st.integers(min_value=16, max_value=40),
         ),
-        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_inf=False),
+        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_infinity=False),
     ),
 )
 @settings(max_examples=30, deadline=None)

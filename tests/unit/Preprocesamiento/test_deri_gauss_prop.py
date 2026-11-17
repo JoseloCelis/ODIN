@@ -17,9 +17,9 @@ from src.odin.Preprocesamiento import kernelSeparable
             st.integers(min_value=10, max_value=40),
             st.integers(min_value=10, max_value=40),
         ),
-        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_inf=False),
+        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_infinity=False),
     ),
-    sigma=st.floats(min_value=0.5, max_value=4.0, allow_nan=False, allow_inf=False),
+    sigma=st.floats(min_value=0.5, max_value=4.0, allow_nan=False, allow_infinity=False),
 )
 @settings(max_examples=20, deadline=None)
 def test_prop_kernel_separable_shape_y_finito(arr, sigma):
@@ -39,9 +39,9 @@ def test_prop_kernel_separable_shape_y_finito(arr, sigma):
             st.integers(min_value=10, max_value=40),
             st.integers(min_value=10, max_value=40),
         ),
-        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_inf=False),
+        elements=st.floats(min_value=0.0, max_value=255.0, allow_nan=False, allow_infinity=False),
     ),
-    sigma=st.floats(max_value=0.0, allow_nan=False, allow_inf=False),
+    sigma=st.floats(max_value=0.0, allow_nan=False, allow_infinity=False),
 )
 @settings(max_examples=10, deadline=None)
 def test_prop_kernel_separable_sigma_no_positivo_devuelve_ceros(arr, sigma):

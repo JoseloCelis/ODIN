@@ -10,11 +10,11 @@ from src.odin.Ajustes import Circulo_simple
 
 
 @given(
-    radius=st.floats(min_value=10.0, max_value=150.0, allow_nan=False, allow_inf=False),
-    cx=st.floats(min_value=50.0, max_value=400.0, allow_nan=False, allow_inf=False),
-    cy=st.floats(min_value=50.0, max_value=400.0, allow_nan=False, allow_inf=False),
+    radius=st.floats(min_value=10.0, max_value=150.0, allow_nan=False, allow_infinity=False),
+    cx=st.floats(min_value=50.0, max_value=400.0, allow_nan=False, allow_infinity=False),
+    cy=st.floats(min_value=50.0, max_value=400.0, allow_nan=False, allow_infinity=False),
     n_points=st.integers(min_value=30, max_value=120),
-    noise=st.floats(min_value=0.0, max_value=0.5, allow_nan=False, allow_inf=False),
+    noise=st.floats(min_value=0.0, max_value=0.5, allow_nan=False, allow_infinity=False),
     seed=st.integers(min_value=0, max_value=2**31 - 1),
 )
 @settings(max_examples=30, deadline=None)
