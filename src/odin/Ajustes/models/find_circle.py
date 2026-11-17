@@ -28,7 +28,7 @@ HUECO_MAX_DEG = 60.0
 MINIMO_PUNTOS = 3
 
 
-def tolerancia_anillo(re):
+def tolerancia_anillo(re: float) -> float:
     """Tolerancia radial del anillo para un radio de búsqueda `re` (R2).
 
     Es `min(10 px, 0.25 · re)`: el tope absoluto conserva el comportamiento
@@ -43,7 +43,7 @@ def tolerancia_anillo(re):
     return float(min(TOLERANCIA_MAX_PX, FRACCION_TOLERANCIA_RADIO * re))
 
 
-def find_circle(detected_edges, re=None, centro=(0, 0), tolerancia=None):
+def find_circle(detected_edges: np.ndarray, re: float | None = None, centro: tuple[float, float] = (0, 0), tolerancia: float | None = None) -> np.ndarray:
     """
     Filtra los puntos de la matriz DetectedEdges para aislar las coordenadas
     de un círculo.
@@ -104,7 +104,7 @@ def find_circle(detected_edges, re=None, centro=(0, 0), tolerancia=None):
     return puntos0
 
 
-def segmento_mas_largo(puntos):
+def segmento_mas_largo(puntos: np.ndarray) -> np.ndarray:
     """Aísla el grupo más numeroso de puntos por saltos de 6 px en X y luego en Y.
 
     Es el modo "sin radio" de la etapa ⑧, separado de `find_circle` para que no
@@ -184,7 +184,7 @@ def segmento_mas_largo(puntos):
     return np.column_stack((puntos_res[k, 1], puntos_res[k, 0]))
 
 
-def cobertura_angular(puntos, centro, bins=72):
+def cobertura_angular(puntos: np.ndarray, centro: tuple[float, float], bins: int = 72) -> tuple[float, float]:
     """Qué parte del círculo rodean los puntos (spec find-circle, R3).
 
     Devuelve `(cobertura, hueco_max_deg)`:
@@ -228,8 +228,8 @@ def cobertura_angular(puntos, centro, bins=72):
     return float(ocupados.mean()), float(hueco * 360.0 / bins)
 
 
-def validar_anillo(puntos, centro, minimo_puntos=MINIMO_PUNTOS,
-                   cobertura_min=UMBRAL_COBERTURA, hueco_max=HUECO_MAX_DEG):
+def validar_anillo(puntos: np.ndarray, centro: tuple[float, float], minimo_puntos: int = MINIMO_PUNTOS,
+                   cobertura_min: float = UMBRAL_COBERTURA, hueco_max: float = HUECO_MAX_DEG) -> tuple[bool, str]:
     """Decide si la selección de `find_circle` rodea un círculo (R3, R4).
 
     Devuelve `(True, "")` o `(False, motivo)`. No lanza excepción: el motivo es

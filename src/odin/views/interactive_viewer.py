@@ -9,11 +9,13 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf, cairo
 
+from typing import Any
+
 
 class VisualizadorInteractivo(Gtk.Overlay):
     """Área de dibujo con recorte Cairo."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         # Variables de control para el recorte
@@ -41,24 +43,24 @@ class VisualizadorInteractivo(Gtk.Overlay):
         self.controlador_arrastre.connect("drag-end", self.on_drag_end)
         self.capa_dibujo.add_controller(self.controlador_arrastre)
 
-    def cargar_imagen(self, pixbuf: GdkPixbuf.Pixbuf):
+    def cargar_imagen(self, pixbuf: GdkPixbuf.Pixbuf) -> None:
         """Asigna un nuevo Pixbuf al visualizador de forma nativa."""
         textura = Gdk.Texture.new_for_pixbuf(pixbuf)
         self.picture.set_paintable(textura)
 
-    def on_drag_begin(self, gesto, x, y):
+    def on_drag_begin(self, gesto: Gtk.GestureDrag, x: float, y: float) -> None:
         """Se activa justo en el momento del primer clic."""
         self.inicio_x = x
         self.inicio_y = y
         self.arrastrando = True
 
-    def on_drag_update(self, gesto, offset_x, offset_y):
+    def on_drag_update(self, gesto: Gtk.GestureDrag, offset_x: float, offset_y: float) -> None:
         """Se ejecuta continuamente mientras el usuario arrastra el ratón."""
         self.actual_x = self.inicio_x + offset_x
         self.actual_y = self.inicio_y + offset_y
         self.capa_dibujo.queue_draw()
 
-    def on_drag_end(self, gesto, offset_x, offset_y):
+    def on_drag_end(self, gesto: Gtk.GestureDrag, offset_x: float, offset_y: float) -> None:
         """Se activa cuando el usuario suelta el botón del ratón."""
         self.arrastrando = False
 
@@ -77,7 +79,7 @@ class VisualizadorInteractivo(Gtk.Overlay):
         self.inicio_x = self.inicio_y = self.actual_x = self.actual_y = 0
         self.capa_dibujo.queue_draw()
 
-    def draw_callback(self, drawing_area, cr, width, height, user_data=None):
+    def draw_callback(self, drawing_area: Gtk.DrawingArea, cr: cairo.Context, width: int, height: int, user_data: Any = None) -> None:
         """Pinta el rectángulo de recorte usando Cairo."""
         if self.arrastrando:
             x = min(self.inicio_x, self.actual_x)

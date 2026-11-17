@@ -9,7 +9,7 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, Literal, Optional
+from typing import Dict, Any, Literal, Optional, TextIO
 import importlib
 
 # Asegurar que la raíz del repo esté en el path para importar
@@ -72,7 +72,7 @@ class BootstrapResult:
 class StartupLogger:
     """Logger de arranque con formato canónico y fallback a stderr."""
 
-    def __init__(self, stream=None):
+    def __init__(self, stream: TextIO | None = None) -> None:
         self.stream = stream or sys.stdout
 
     def log(self, fase: str, nivel: str, mensaje: str) -> None:
@@ -122,7 +122,7 @@ class StartupLogger:
 class EnvironmentProbe:
     """Detecta el entorno de ejecución y resuelve la ruta base de archivos."""
 
-    def __init__(self, logger: StartupLogger):
+    def __init__(self, logger: StartupLogger) -> None:
         self.logger = logger
 
     def _classify(self, release: str, dockerenv_path: Path) -> str:
@@ -191,7 +191,7 @@ class EnvironmentProbe:
 class ModuleLoader:
     """Carga y valida los módulos de preprocesamiento y utilidades."""
 
-    def __init__(self, logger: StartupLogger, package_context: Optional[str]):
+    def __init__(self, logger: StartupLogger, package_context: Optional[str]) -> None:
         self.logger = logger
         self.package_context = package_context
 
@@ -264,7 +264,7 @@ class ModuleLoader:
 class DisplayValidator:
     """Valida la disponibilidad de un display GDK."""
 
-    def __init__(self, logger: StartupLogger):
+    def __init__(self, logger: StartupLogger) -> None:
         self.logger = logger
 
     def validate(self) -> DisplayResult:

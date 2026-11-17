@@ -27,7 +27,7 @@ import numpy as np
 UMBRAL_CONDICION_NORMALIZADA = 3.0
 
 
-def Circulo_simple(puntos0):
+def Circulo_simple(puntos0: np.ndarray) -> tuple[float, float, float, float]:
     """
     Ajusta un círculo a un conjunto de puntos usando mínimos cuadrados.
 

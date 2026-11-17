@@ -6,7 +6,7 @@ Funciones puras sobre numpy.ndarray. Usado exclusivamente por DerivGauss.
 import numpy as np
 
 
-def Conv2D(g, gkr, gkc, nk, nr, nc):
+def Conv2D(g: np.ndarray, gkr: np.ndarray, gkc: np.ndarray, nk: int, nr: int, nc: int) -> np.ndarray:
     h = np.zeros((nr, nc))
     f = np.zeros((nr, nc))
     for i in range(0, nr):
@@ -18,7 +18,7 @@ def Conv2D(g, gkr, gkc, nk, nr, nc):
     return f
 
 
-def ConvR(f, gk, nk, n, ir):
+def ConvR(f: np.ndarray, gk: np.ndarray, nk: int, n: int, ir: int) -> np.ndarray:
     g = np.zeros((1, n))
     for i in range(0, n):
         s = 0
@@ -36,7 +36,7 @@ def ConvR(f, gk, nk, n, ir):
     return g
 
 
-def ConvC(f, gk, nk, n, ic):
+def ConvC(f: np.ndarray, gk: np.ndarray, nk: int, n: int, ic: int) -> np.ndarray:
     g = np.zeros((1, n))
     for i in range(0, n):
         s = 0
