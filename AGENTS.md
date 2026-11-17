@@ -122,7 +122,7 @@ src/
 | ⑨ | `Ajustes/models/circulo_simple.py` | `LSC` | Least-Squares Circle fitting `(x, y, r)` |
 
 ### Centralized Config & Strategy Pattern
-* **Centralized Configuration:** All processing parameters and logic thresholds are centralized in `config/config.yaml`.
+* **Centralized Configuration:** No centralized config file exists yet: processing parameters and thresholds are currently defined in code (model modules) and UI/default settings. A `config/config.yaml` is planned; until it lands, do NOT reference it.
 * **Strategy Extension:** New detection algorithms must subclass `DeteccionStrategy` (`src/odin/Procesamiento/models/strategies/base_strategy.py`), implement `detectar(self, imagen_np: np.ndarray, **kwargs) -> np.ndarray`, and register in the controller without altering views.
 
 ---

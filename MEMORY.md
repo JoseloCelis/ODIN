@@ -5,7 +5,7 @@
 Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo que ya no aporte.
 
 ## Estado actual
-- Suite de tests: 183 casos en pytest (tests/), `python3 -m pytest tests` (182 passed, 1 skipped en ~7 s).
+- Suite de tests reorganizada a `tests/unit/<dominio>/` + `tests/integration/` (commit `3773618`). **Verificado en devcontainer** (imagen `vsc-odin-a8b2d91c9521796425d0e2ffb7ce0c54fdd4e8418fae4b93b7b5408946ddcf96`): `pytest tests` → **181 passed, 6 skipped, 1 failed** (`test_version_flag`, sin DISPLAY; headless). Hypothesis corre dentro del devcontainer (2026-11-17, commits `3773618`, `ebd8342`); en el host Mint se omite (sin pip).
 - Eliminada carpeta legacy `odin/`: todo el código fuente reside exclusivamente en `src/` (`src/main.py`, `src/bootstrap.py`, `src/odin/`).
 - Dataset de imágenes en `src/data/` purgado del historial Git (.git reducido de 2.3 GB a 1.4 MB) e ignorado en `.gitignore`.
 - Estructura modular consolidada por dominios:
@@ -37,7 +37,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - Kernel 5×5 (no 7×7) por decisión de usuario; medido inocuo y mejor bajo ruido.
 
 ## Aprendizajes y errores a evitar
-- `hypothesis` figura en `requirements.txt` (dev/test). En el host vive solo en `~/.local/lib/python3.14/site-packages` (sin pip/venv/sudo); sin él, la clase de propiedades se omite con un único mecanismo stub (18 passed + 11 skipped).
+- `hypothesis` figura en `requirements.txt` (dev/test) y vive en el **devcontainer** (`Dockerfile`: `pip3 install -r requirements.txt`; CI igual). El host Mint `/usr/bin/python3` (3.14, sin pip) **no lo tiene** → las suites `_prop.py` y `TestPropiedadesCorreccion` se omiten en el host. Decisión (2026-11-16): correr tests en el devcontainer, no instalar hypothesis en el host. Imagen `vsc-odin-...:latest` ya existe localmente.
 - Deuda documentada (`.kiro/specs/kernel-separable/design.md`, D4): `sigma` flotante truena en `DerivGauss` (`range(3*sigma)` → TypeError). En `src/odin/.../models/deri_gauss.py` ya se castea `int(3*sigma)` antes de dimensionar arrays. No borrar esta deuda de MEMORY.md ni de Engram.
 - Kiro tiende a truncar/reescriturar AGENTS.md al generar documentación: revisar tras cada sesión de Kiro.
 - Al cambiar firma de helper compartido, verificar TODOS los llamadores.

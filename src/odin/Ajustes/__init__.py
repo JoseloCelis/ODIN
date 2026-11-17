@@ -1,8 +1,8 @@
 """Paquete de ajustes geométricos (regresiones y ajuste de puntos a líneas y círculos).
 
-Alias públicos (según AGENTS.md):
+Alias públicos (según AGENTS.md §4):
     find_circle, segmento_mas_largo, cobertura_angular, validar_anillo,
-    tolerancia_anillo, Circulo_simple
+    tolerancia_anillo, Circulo_simple, LSC
 """
 
 from .models import (
@@ -20,6 +20,9 @@ from .models import (
     UMBRAL_CONDICION_NORMALIZADA,
 )
 
+# Alias público documentado en AGENTS.md (tabla de 9 etapas): LSC -> Circulo_simple
+LSC = Circulo_simple
+
 __all__ = [
     "find_circle",
     "segmento_mas_largo",
@@ -33,4 +36,5 @@ __all__ = [
     "MINIMO_PUNTOS",
     "Circulo_simple",
     "UMBRAL_CONDICION_NORMALIZADA",
+    "LSC",
 ]
