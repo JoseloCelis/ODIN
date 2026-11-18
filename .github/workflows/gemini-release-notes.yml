@@ -1,0 +1,87 @@
+name: Gemini Release Notes
+
+on:
+  workflow_run:
+    workflows:
+      - Release Please
+    types:
+      - completed
+
+jobs:
+  generate-notes:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Get release tag
+        id: tag
+        run: |
+          TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+          if [ -z "$TAG" ]; then
+            echo "No release tag on this commit; skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Release tag: $TAG"
+
+      - name: Get commits since previous tag
+        if: steps.tag.outputs.skip != 'true'
+        id: commits
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            git log "${PREV_TAG}..${TAG}" --pretty=format:"- %s (%h)" > commits.txt
+          else
+            git log --pretty=format:"- %s (%h)" -n 50 > commits.txt
+          fi
+          echo "Commits:"
+          cat commits.txt
+
+      - name: Generate release notes with Gemini
+        if: steps.tag.outputs.skip != 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          COMMITS_JSON=$(jq -Rs . < commits.txt)
+
+          PAYLOAD=$(jq -n \
+            --arg tag "$TAG" \
+            --argjson commits "$COMMITS_JSON" \
+            '{
+              contents: [{
+                parts: [{
+                  text: ("Genera notas de release para la versión " + $tag + " en español, profesional y bien estructurada. Incluye resumen breve, Nuevas funcionalidades, Correcciones de errores y Otros cambios, basándote en estos commits:\n\n" + $commits)
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.7
+              }
+            }')
+
+          RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -X POST \
+            -d "$PAYLOAD")
+
+          echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' > release_notes.md
+          echo "--- Generated release notes ---"
+          cat release_notes.md
+
+      - name: Update GitHub release with notes
+        if: steps.tag.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          gh release edit "$TAG" --notes-file release_notes.md
+          echo "Release $TAG updated with Gemini-generated notes."

@@ -122,7 +122,7 @@ src/
 | ⑨ | `Ajustes/models/circulo_simple.py` | `LSC` | Least-Squares Circle fitting `(x, y, r)` |
 
 ### Centralized Config & Strategy Pattern
-* **Centralized Configuration:** All processing parameters and logic thresholds are centralized in `config/config.yaml`.
+* **Centralized Configuration:** No centralized config file exists yet: processing parameters and thresholds are currently defined in code (model modules) and UI/default settings. A `config/config.yaml` is planned; until it lands, do NOT reference it.
 * **Strategy Extension:** New detection algorithms must subclass `DeteccionStrategy` (`src/odin/Procesamiento/models/strategies/base_strategy.py`), implement `detectar(self, imagen_np: np.ndarray, **kwargs) -> np.ndarray`, and register in the controller without altering views.
 
 ---
@@ -167,7 +167,8 @@ Every patch or PR generated or audited by `opecode`, `agy`, or `harness pi` **MU
 * Disconnect signals or use weak references (`weakref`) when a widget outlives its controller to prevent memory leaks.
 
 ### 6.4 Conventions, Typing & Git Hygiene
-* **Language:** All **code identifiers, comments, UI strings, and Conventional Commits** (`<type>[<scope>]: <desc>`) must be in **Spanish**. Keep code simple, descriptive, and clean (comments only where they add real value). Never add AI attribution (`Co-Authored-By`).
+* **Language:** All **code identifiers, comments, UI strings, and commit descriptions** must be in **Spanish**. Keep code simple, descriptive, and clean (comments only where they add real value).
+* **Git & Conventional Commits:** Follow `<type>[<scope>]: <desc>`, keeping `<type>` strictly in **English** (`feat`, `fix`, `chore`, `docs`, `refactor`, `style`, `test`, `ci`, `perf`, `build`) for Release Please compatibility, and writing `<scope>` and `<desc>` in **Spanish** (e.g., `feat(ui): agregar botón de exportación`). Never add AI attribution (`Co-Authored-By`).
   > **Note:** This `AGENTS.md` is the sole technical document maintained in English per user decision.
 * **Strict Typing & Anti-Blob Rule:** Enforce Python Type Hinting across all functions, parameters, and event callbacks. Never rewrite entire files for localized fixes.
 * **System Telemetry:** Enabled via native MCP servers (Shell execution logs, Filesystem graphs, REPL runtimes) for automated RDD verification cycles.

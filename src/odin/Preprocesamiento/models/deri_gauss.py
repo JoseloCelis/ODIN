@@ -9,7 +9,7 @@ import numpy as np
 from .convolucion import Conv2D
 
 
-def DerivGauss(E, sigma, wk, wConv, wr):
+def DerivGauss(E: np.ndarray, sigma: float, wk: int, wConv: int, wr: int) -> tuple[np.ndarray, np.ndarray]:
     """Gradiente con kernel derivada-gaussiana separable.
 
     Recibe y retorna numpy.ndarray. Pureza de modelo: sin UI.

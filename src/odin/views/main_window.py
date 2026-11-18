@@ -6,6 +6,8 @@ Sin algoritmos de procesamiento ni convoluciones.
 
 import gi
 
+from typing import Any
+
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
@@ -17,7 +19,7 @@ from pathlib import Path
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from odin.bootstrap import run_bootstrap, DisplayValidator, StartupLogger
+from odin.bootstrap import run_bootstrap, DisplayValidator, StartupLogger, BootstrapResult
 from odin.controllers.main_controller import OdinController
 from odin.views.interactive_viewer import VisualizadorInteractivo
 
@@ -29,7 +31,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
     Toda la lógica de negocio vive en OdinController.
     """
 
-    def __init__(self, *args, bootstrap_result, logger, **kwargs):
+    def __init__(self, *args: Any, bootstrap_result: BootstrapResult, logger: StartupLogger, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self._bootstrap_result = bootstrap_result
@@ -68,7 +70,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
         # Construir la UI
         self._construir_ui()
 
-    def _construir_ui(self):
+    def _construir_ui(self) -> None:
         """Construye toda la interfaz de usuario."""
         # Contenedor principal adaptativo
         toolbar_view = Adw.ToolbarView.new()
@@ -304,11 +306,11 @@ class OdinMainWindow(Adw.ApplicationWindow):
 
     # --- Métodos de la ventana (delegan al controlador) ---
 
-    def slider_changed(self, spinRow):
+    def slider_changed(self, spinRow: Adw.SpinRow) -> None:
         print(spinRow.get_value())
         self.sigma = int(spinRow.get_value())
 
-    def _diametro_cambiado(self, ajuste):
+    def _diametro_cambiado(self, ajuste: Gtk.Adjustment) -> None:
         """El usuario tocó el campo: su valor pasa a mandar sobre el barrido."""
         if self._actualizando_diametro:
             return
@@ -317,7 +319,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
             self.estado_diametro.texto_estado()
         )
 
-    def _volver_a_diametro_auto(self, _boton):
+    def _volver_a_diametro_auto(self, _boton: Gtk.Button | None) -> None:
         """Descarta el valor manual y vuelve a estimar en la próxima corrida."""
         self.estado_diametro.volver_a_auto()
         self._escribir_campo_diametro(
@@ -327,13 +329,13 @@ class OdinMainWindow(Adw.ApplicationWindow):
             self.estado_diametro.texto_estado()
         )
 
-    def _escribir_campo_diametro(self, valor):
+    def _escribir_campo_diametro(self, valor: float) -> None:
         """Escribe el campo sin que cuente como cambio del usuario (R6.3)."""
         self._actualizando_diametro = True
         self.row_diametro.get_adjustment().set_value(valor)
         self._actualizando_diametro = False
 
-    def _mostrar_diametro_detectado(self, diametro, ambiguo):
+    def _mostrar_diametro_detectado(self, diametro: float, ambiguo: bool) -> bool:
         """Corre en el hilo principal, vía GLib.idle_add."""
         self.estado_diametro.registrar_detectado(diametro, ambiguo)
         if not self.estado_diametro.es_manual:
@@ -345,7 +347,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
         )
         return False
 
-    def _registrar_acciones(self):
+    def _registrar_acciones(self) -> None:
         """Inicializa y registra las acciones lógicas de la ventana."""
         GLib.set_application_name("My App ODIN")
 
@@ -357,16 +359,16 @@ class OdinMainWindow(Adw.ApplicationWindow):
         action_about.connect("activate", self.show_about)
         self.add_action(action_about)
 
-    def show_openDialog(self, button, *args):
+    def show_openDialog(self, button: Any, *args: Any) -> None:
         self.controller.on_open_dialog(button, *args)
 
-    def on_file_opened_callback(self, dialog, response):
+    def on_file_opened_callback(self, dialog: Gtk.FileDialog, response: Gio.AsyncResult) -> None:
         self.controller.on_file_opened_callback(dialog, response)
 
-    def on_process_clicked(self, button):
+    def on_process_clicked(self, button: Gtk.Button) -> None:
         self.controller.on_process_clicked(button)
 
-    def finalizar_proceso_exitoso(self):
+    def finalizar_proceso_exitoso(self) -> None:
         """Este método corre en el hilo principal de la UI cuando la
         matemática termina."""
         self.mostrar_alerta(
@@ -378,7 +380,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
             es_error=False,
         )
 
-    def mostrar_alerta(self, titulo, mensaje, es_error=True):
+    def mostrar_alerta(self, titulo: str, mensaje: str, es_error: bool = True) -> None:
         """Crea una ventana flotante independiente con la estética exacta
         de Adwaita."""
         dialog_win = Gtk.Window(
@@ -449,7 +451,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
 
         dialog_win.present()
 
-    def show_about(self, action, param):
+    def show_about(self, action: Any, param: Any) -> None:
         self.about = Gtk.AboutDialog()
         self.about.set_transient_for(self)
         self.about.set_modal(True)
@@ -463,7 +465,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
         self.about.set_visible(True)
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Punto de entrada principal de ODIN.
 
     Puede llamarse desde otro módulo o ejecutarse directamente.
@@ -499,13 +501,13 @@ def main(argv=None):
 
 
 class ODINAdwaita(Adw.Application):
-    def __init__(self, bootstrap_result=None, logger=None, **kwargs):
+    def __init__(self, bootstrap_result: BootstrapResult | None = None, logger: StartupLogger | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.bootstrap_result = bootstrap_result
         self.logger = logger
         self.connect('activate', self.on_activate)
 
-    def on_activate(self, app):
+    def on_activate(self, app: Adw.Application) -> None:
         # Validación de display primero (spec: antes de construir MainWindow)
         validator = DisplayValidator(self.logger or StartupLogger())
         validator.validate()  # sys.exit(1) si falla

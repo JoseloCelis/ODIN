@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 
 
-def EdgeTrack_Hyst(strong, weaks):
+def EdgeTrack_Hyst(strong: np.ndarray, weaks: np.ndarray) -> np.ndarray:
     """
     Realiza el seguimiento de bordes por histéresis de forma vectorizada
     (sin recursión).

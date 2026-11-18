@@ -18,6 +18,7 @@ Código muerto del módulo (R8, no movido, pendiente autorización para borrar):
 """
 
 import numpy as np
+from typing import Any
 from scipy.ndimage import maximum_filter
 
 # Umbral de ambigüedad del barrido de radios (spec hough-circles, R5): si el
@@ -30,7 +31,7 @@ UMBRAL_AMBIGUEDAD = 0.8
 SEPARACION_AMBIGUEDAD_PX = 6.0
 
 
-def hough_circles_vectorizado(im_binary, r, thres=0.5, dist=20):
+def hough_circles_vectorizado(im_binary: np.ndarray, r: float, thres: float = 0.5, dist: float = 20) -> tuple[np.ndarray, np.ndarray, int, np.ndarray]:
     """
     Detecta círculos en una imagen binaria de bordes usando la Transformada
     de Hough.
@@ -107,7 +108,7 @@ def hough_circles_vectorizado(im_binary, r, thres=0.5, dist=20):
     return x0_detected, y0_detected, n, accumulator
 
 
-def mejor_centro(x0, y0, acumulador):
+def mejor_centro(x0: np.ndarray, y0: np.ndarray, acumulador: np.ndarray) -> tuple[int, int, int] | None:
     """Devuelve `(x, y, votos)` del pico con más votos, o `None` sin picos.
 
     `hough_circles_vectorizado` devuelve TODOS los picos, en orden de barrido
@@ -127,8 +128,8 @@ def mejor_centro(x0, y0, acumulador):
     return int(x0[mejor]), int(y0[mejor]), int(votos[mejor])
 
 
-def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
-                  separacion_px=SEPARACION_AMBIGUEDAD_PX):
+def estimar_radio(im_binary: np.ndarray, r_min: float, r_max: float, paso: float = 2.0, thres: float = 0.99, dist: float = 20,
+                  separacion_px: float = SEPARACION_AMBIGUEDAD_PX) -> tuple[float, int, float]:
     """Estima el radio dominante barriendo la banda `[r_min, r_max]`.
 
     Devuelve `(radio, pico, ambiguedad)`:
@@ -147,7 +148,7 @@ def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
     borde), así que un círculo grande domina a uno mucho más chico y la
     ambigüedad no se reporta. Ver `design.md` §3.4.
     """
-    def _a_escalar(v):
+    def _a_escalar(v: Any) -> float:
         a = np.asarray(v)
         return float(a.item() if a.size == 1 else v)
     r_min = _a_escalar(r_min)
@@ -184,8 +185,8 @@ def estimar_radio(im_binary, r_min, r_max, paso=2.0, thres=0.99, dist=20,
     return float(radios[mejor]), int(picos[mejor]), float(segundo / picos[mejor])
 
 
-def estimar_radio_dominante(im_binary, r0, fraccion_min=0.08, paso_grueso_rel=0.02,
-                            candidatos=2, paso_fino=None, thres=0.99, dist=20):
+def estimar_radio_dominante(im_binary: np.ndarray, r0: float, fraccion_min: float = 0.08, paso_grueso_rel: float = 0.02,
+                            candidatos: int = 2, paso_fino: float | None = None, thres: float = 0.99, dist: float = 20) -> tuple[float, int, float]:
     """Estima el radio dominante de un recorte, holgado o ajustado.
 
     Barrido en dos escalas (spec hough-circles, R10):
