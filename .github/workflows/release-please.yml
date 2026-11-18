@@ -1,3 +1,5 @@
+name: Release Please
+
 on:
   push:
     branches:
@@ -8,34 +10,6 @@ permissions:
   issues: write
   pull-requests: write
 
-name: release-please
-
-jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    outputs:
-        release_created: ${{ steps.release.outputs.release_created }}
-        tag_name: ${{ steps.release.outputs.tag_name }}
-    steps:
-      - name: Run release-please
-        id: release
-        uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          release-type: python
-          extra-files: 
-            src/odin/__init__.py  
-name: Release Please
-
-on:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   release-please:
     runs-on: ubuntu-latest
@@ -43,68 +17,14 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Run release-please
         id: release
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           release-type: python
-
-  generate-release-notes:
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get commits since last release
-        id: commits
-        run: |
-          TAG="${{ needs.release-please.outputs.tag_name }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-
-          if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"- %s" 2>/dev/null || echo "")
-          else
-            COMMITS=$(git log --pretty=format:"- %s" -n 50)
-          fi
-
-          # Guardamos los commits en un archivo para evitar problemas de escape en variables
-          echo "$COMMITS" > commits.txt
-
-      - name: Generate release notes with Gemini
-        id: ai_notes
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TAG: ${{ needs.release-please.outputs.tag_name }}
-        run: |
-          COMMITS_JSON=$(jq -Rs . < commits.txt)
-
-          PAYLOAD=$(jq -n \
-            --arg tag "$TAG" \
-            --argjson commits "$COMMITS_JSON" \
-            '{
-              systemInstruction: {
-                parts: [{
-                  text: "Eres un redactor técnico experto. A partir de la lista de cambios que te proporciono, genera notas de release en castellano, bien estructuradas y profesionales. Incluye: un resumen breve de 1-2 líneas al inicio, y secciones para Nuevas funcionalidades, Correcciones de bugs y Otros cambios. Usa un tono cercano pero profesional."
-                }]
-              },
-              contents: [{
-                parts: [{
-                  text: ("Genera las notas de release para la versión " + $tag + " basándote en los siguientes cambios:\n\n" + $commits)
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.7
-              }
-            }')
-
-          RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY" \
-            -H "Content-Type: application/json" \
-            -X POST \
-            -d "$PAYLOAD")
-
-          echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' > release_notes.md
