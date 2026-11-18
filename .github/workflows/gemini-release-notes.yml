@@ -15,6 +15,11 @@ on:
         description: "Release tag to regenerate (empty: latest release)"
         required: false
         type: string
+      models:
+        description: "Comma-separated model fallback order"
+        required: false
+        type: string
+        default: "gemini-3.8-flash,gemini-3.6-flash"
 
 jobs:
   generate-notes:
@@ -24,6 +29,7 @@ jobs:
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
+      GEMINI_MODELS: ${{ inputs.models || 'gemini-3.8-flash,gemini-3.6-flash' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -69,32 +75,61 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           COMMITS_JSON=$(jq -Rs . < commits.txt)
+          IFS=',' read -ra MODEL_LIST <<< "$GEMINI_MODELS"
+          SUCCESS=false
 
-          PAYLOAD=$(jq -n \
-            --arg tag "$TAG" \
-            --argjson commits "$COMMITS_JSON" \
-            '{
-              contents: [{
-                parts: [{
-                  text: ("Genera notas de release para la versión " + $tag + " en español, profesional y bien estructurada. Incluye resumen breve, Nuevas funcionalidades, Correcciones de errores y Otros cambios, basándote en estos commits:\n\n" + $commits)
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.7
-              }
-            }')
+          for MODEL in "${MODEL_LIST[@]}"; do
+            MODEL=$(printf '%s' "$MODEL" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')
+            [ -z "$MODEL" ] && continue
+            echo "Trying model: $MODEL"
 
-          RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY" \
-            -H "Content-Type: application/json" \
-            -X POST \
-            -d "$PAYLOAD")
+            PAYLOAD=$(jq -n \
+              --arg tag "$TAG" \
+              --argjson commits "$COMMITS_JSON" \
+              '{
+                contents: [{
+                  parts: [{
+                    text: ("Genera notas de release para la versión " + $tag + " en español, profesional y bien estructurada. Incluye resumen breve, Nuevas funcionalidades, Correcciones de errores y Otros cambios, basándote en estos commits:\n\n" + $commits)
+                  }]
+                }],
+                generationConfig: {
+                  temperature: 0.7
+                }
+              }')
 
-          echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' > release_notes.md
-          cat release_notes.md
+            HTTP_CODE=$(curl -sS -o gemini_response.json -w '%{http_code}' \
+              "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=$GEMINI_API_KEY" \
+              -H "Content-Type: application/json" \
+              -X POST \
+              -d "$PAYLOAD")
+
+            TEXT=$(jq -r '.candidates[0].content.parts[0].text // empty' gemini_response.json 2>/dev/null || true)
+
+            if [ "$HTTP_CODE" = "200" ] && [ -n "$TEXT" ] && [ "$TEXT" != "null" ]; then
+              printf '%s' "$TEXT" > release_notes.md
+              echo "Selected model: $MODEL"
+              echo "--- Generated release notes ---"
+              cat release_notes.md
+              SUCCESS=true
+              break
+            fi
+
+            ERROR_MESSAGE=$(jq -r '.error.message // .error.status // "no candidates in response"' gemini_response.json 2>/dev/null || echo "invalid JSON response")
+            echo "Model $MODEL failed (HTTP $HTTP_CODE): $ERROR_MESSAGE"
+          done
+
+          if [ "$SUCCESS" != "true" ]; then
+            echo "Gemini did not produce release notes for any configured model; release will not be edited."
+            exit 1
+          fi
 
       - name: Update GitHub release with notes
         if: steps.tag.outputs.skip != 'true'
         run: |
+          if [ ! -s release_notes.md ]; then
+            echo "release_notes.md is empty or missing; refusing to edit the release."
+            exit 1
+          fi
           TAG="${{ steps.tag.outputs.tag }}"
           gh release edit "$TAG" --notes-file release_notes.md
           echo "Release $TAG updated with Gemini-generated notes."
