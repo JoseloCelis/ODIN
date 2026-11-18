@@ -17,12 +17,12 @@ de UI (gi, Gtk, Gdk, Adw, cairo, matplotlib).
 import numpy as np
 
 
-def NonMaxSup(MG, Gx, Gy, angle):
+def NonMaxSup(MG: np.ndarray, Gx: np.ndarray, Gy: np.ndarray, angle: np.ndarray) -> np.ndarray:
     """Alias de LinearInterpolation para compatibilidad."""
     return LinearInterpolation(MG, Gx, Gy, angle)
 
 
-def LinearInterpolation(MG, Gx, Gy, angle):
+def LinearInterpolation(MG: np.ndarray, Gx: np.ndarray, Gy: np.ndarray, angle: np.ndarray) -> np.ndarray:
     """
     Supresión de No Máximos: interpolación lineal subpíxel entre los dos
     vecinos discretos que estrangulan la dirección de la línea del gradiente
@@ -89,7 +89,7 @@ def LinearInterpolation(MG, Gx, Gy, angle):
     return output
 
 
-def NMS_Parabolic(MG, angle):
+def NMS_Parabolic(MG: np.ndarray, angle: np.ndarray) -> np.ndarray:
     """
     NMS con interpolación parabólica de subpíxel: estima el VALOR del pico
     con ajuste cuadrático de 3 puntos a lo largo del eje del gradiente.
@@ -175,7 +175,7 @@ def NMS_Parabolic(MG, angle):
     return output
 
 
-def NMS_Gaussian(MG, angle):
+def NMS_Gaussian(MG: np.ndarray, angle: np.ndarray) -> np.ndarray:
     """
     NMS con interpolación parabólica en espacio logarítmico (perfil de
     intensidad modelado como gaussiano: su logaritmo es cuadrático).
@@ -265,7 +265,7 @@ def NMS_Gaussian(MG, angle):
     return output
 
 
-def DobleThreshold(M, thresh):
+def DobleThreshold(M: np.ndarray, thresh: float) -> np.ndarray:
     """
     Umbralizado doble vectorizado sobre la magnitud normalizada.
 

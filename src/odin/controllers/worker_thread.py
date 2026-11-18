@@ -5,21 +5,24 @@ Ejecuta el pipeline de procesamiento de imágenes sin congelar la UI.
 
 import threading
 
+import gi
+
+gi.require_version('Gdk', '4.0')
 import numpy as np
 from gi.repository import Gdk, GLib
 
-from odin.controllers.main_controller import resolver_radio
+from odin.controllers.main_controller import OdinController, resolver_radio
 
 
 class WorkerThread(threading.Thread):
     """Ejecuta el pipeline de detección de bordes en segundo plano."""
 
-    def __init__(self, controller):
+    def __init__(self, controller: OdinController) -> None:
         super().__init__(daemon=True)
         self.controller = controller
         self.error = None
 
-    def run(self):
+    def run(self) -> None:
         try:
             print("Hilo secundario: Iniciando convoluciones...")
             controlador = self.controller

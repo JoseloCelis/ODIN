@@ -9,7 +9,7 @@ el modelo solo devuelve los umbrales numéricos.
 import numpy as np
 
 
-def _preparar_histograma(IG):
+def _preparar_histograma(IG: np.ndarray) -> tuple[np.ndarray | None, np.ndarray | None, np.ndarray | None]:
     """Filtra píxeles > 0 y calcula el histograma con 256 bins fijos.
 
     Devuelve (counts, edges, xcenters), o (None, None, None) si no hay
@@ -54,7 +54,7 @@ def _preparar_histograma(IG):
     return counts, edges, xcenters
 
 
-def _umbral_otsu(counts, xcenters):
+def _umbral_otsu(counts: np.ndarray, xcenters: np.ndarray) -> float:
     """Otsu vectorizado: devuelve el umbral que maximiza la varianza interclase.
 
     Parameters:
@@ -99,7 +99,7 @@ def _umbral_otsu(counts, xcenters):
     return xcenters[idx_max]
 
 
-def umbralRosinYOtsu(IG, histo=False):
+def umbralRosinYOtsu(IG: np.ndarray, histo: bool = False) -> tuple[float, float]:
     """Calcula el umbral utilizando Otsu y Rosin.
 
     Devuelve (umbral_otsu, umbral_rosin). El parámetro `histo` se conserva
@@ -161,7 +161,7 @@ def umbralRosinYOtsu(IG, histo=False):
     return umbral_otsu, umbral_rosin
 
 
-def umbralOtsu(IG, histo=False):
+def umbralOtsu(IG: np.ndarray, histo: bool = False) -> float:
     """Calcula el umbral óptimo de Otsu para una imagen dada.
 
     API pública conservada (sin llamadores internos en el pipeline, pero

@@ -5,9 +5,12 @@ procesamiento. Contiene la lógica de negocio sin depender directamente de
 widgets GTK.
 """
 
+from __future__ import annotations
+
 import os
 import threading
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import gi
 
@@ -16,6 +19,10 @@ gi.require_version('Adw', '1')
 gi.require_version('Gdk', '4.0')
 import numpy as np
 from gi.repository import Gdk, Gio, GLib, Gtk
+
+if TYPE_CHECKING:
+    from odin.bootstrap import BootstrapResult
+    from odin.views.main_window import OdinMainWindow
 
 
 class EstadoDiametro:
@@ -27,17 +34,17 @@ class EstadoDiametro:
     siguiente ejecución se volvería manual sin que nadie lo pidiera.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.detectado = None
         self.usuario = None
         self.ambiguo = False
 
-    def registrar_detectado(self, diametro, ambiguo=False):
+    def registrar_detectado(self, diametro: float, ambiguo: bool = False) -> None:
         """Guarda lo que estimó el barrido. No cuenta como decisión del usuario."""
         self.detectado = float(diametro)
         self.ambiguo = bool(ambiguo)
 
-    def declarar_usuario(self, diametro):
+    def declarar_usuario(self, diametro: float | None) -> float | None:
         """Marca un valor escrito a mano. `None` o <= 0 vuelve a automático."""
         if diametro is None or float(diametro) <= 0:
             self.usuario = None
@@ -45,22 +52,22 @@ class EstadoDiametro:
             self.usuario = float(diametro)
         return self.usuario
 
-    def volver_a_auto(self):
+    def volver_a_auto(self) -> None:
         self.usuario = None
 
     @property
-    def es_manual(self):
+    def es_manual(self) -> bool:
         return self.usuario is not None
 
-    def diametro_para_procesar(self):
+    def diametro_para_procesar(self) -> float | None:
         return self.usuario
 
-    def valor_visible(self):
+    def valor_visible(self) -> float:
         if self.es_manual:
             return self.usuario
         return self.detectado if self.detectado is not None else 0.0
 
-    def texto_estado(self):
+    def texto_estado(self) -> str:
         if self.es_manual:
             return f"Manual: {self.usuario:.1f} px (se omite la estimación)"
         if self.detectado is None:
@@ -69,7 +76,7 @@ class EstadoDiametro:
         return f"Detectado: {self.detectado:.1f} px{aviso}"
 
 
-def resolver_radio(diametro_usuario, bordes, r0, aprox_hough):
+def resolver_radio(diametro_usuario: float | None, bordes: np.ndarray, r0: float, aprox_hough: Any) -> tuple[float, int, float, str]:
     """Devuelve `(radio, pico, ambiguedad, origen)`.
 
     Un diámetro declarado por el usuario se usa tal cual y **omite** el
@@ -95,7 +102,7 @@ class OdinController:
     No contiene lógica matemática ni renderizado de widgets.
     """
 
-    def __init__(self, bootstrap_result, logger, main_window):
+    def __init__(self, bootstrap_result: BootstrapResult, logger: Any, main_window: OdinMainWindow) -> None:
         self.bootstrap_result = bootstrap_result
         self.logger = logger
         self.main_window = main_window
@@ -125,7 +132,7 @@ class OdinController:
         self._t0_window = None
         self.sigma = None
 
-    def registrar_acciones(self):
+    def registrar_acciones(self) -> None:
         """Registra las acciones lógicas de la ventana."""
         self.logger.set_application_name("My App ODIN")
 
@@ -137,7 +144,7 @@ class OdinController:
         action_about.connect("activate", self.show_about)
         self.add_action(action_about)
 
-    def on_open_dialog(self, button, *args):
+    def on_open_dialog(self, button: Gtk.Button | None, *args: Any) -> None:
         """Abre el diálogo de selección de archivo."""
         fileDialog = Gtk.FileDialog.new()
         fileDialog.set_title("Selecciona la imagen")
@@ -162,7 +169,7 @@ class OdinController:
 
         fileDialog.open(self.main_window, None, self.on_file_opened_callback)
 
-    def on_file_opened_callback(self, dialog, response):
+    def on_file_opened_callback(self, dialog: Gtk.FileDialog, response: Gio.AsyncResult) -> None:
         try:
             file = dialog.open_finish(response)
             if file:
@@ -183,7 +190,7 @@ class OdinController:
         except GLib.Error as error:
             print(f"Error al abrir el archivo: {error.message}")
 
-    def on_process_clicked(self, button):
+    def on_process_clicked(self, button: Gtk.Button) -> None:
         if self.ruta_imagen:
             self.main_window.mostrar_alerta(
                 "Procesando", "Iniciando el cálculo de bordes...", es_error=False
@@ -201,7 +208,7 @@ class OdinController:
             )
             hilo_matematico.start()
 
-    def _tarea_pesada_computacional(self):
+    def _tarea_pesada_computacional(self) -> None:
         """Ejecuta la matemática pesada en un hilo de fondo."""
         try:
             print("Hilo secundario: Iniciando convoluciones...")
@@ -331,7 +338,7 @@ class OdinController:
             )
             GLib.idle_add(self.main_window.btn_procesar.set_sensitive, True)
 
-    def _mostrar_diametro_detectado(self, diametro, ambiguo):
+    def _mostrar_diametro_detectado(self, diametro: float, ambiguo: bool) -> bool:
         """Corre en el hilo principal, vía GLib.idle_add."""
         self.estado_diametro.registrar_detectado(diametro, ambiguo)
         if not self.estado_diametro.es_manual:
@@ -343,7 +350,7 @@ class OdinController:
         )
         return False
 
-    def _escribir_campo_diametro(self, valor):
+    def _escribir_campo_diametro(self, valor: float) -> None:
         """Escribe el campo sin que cuente como cambio del usuario (R6.3)."""
         self._actualizando_diametro = True
         self.main_window.row_diametro.get_adjustment().set_value(valor)

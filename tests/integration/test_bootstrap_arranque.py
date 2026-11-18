@@ -26,7 +26,7 @@ import pytest
 
 from odin import bootstrap as B  # src/ en sys.path vía conftest
 
-RAIZ = Path(__file__).resolve().parents[1]
+RAIZ = Path(__file__).resolve().parents[2]
 DIR_ODIN = RAIZ / "src" / "odin"
 
 # Orden fijado por el spec odin-startup-structure (requirements, regla 1),
