@@ -4,6 +4,7 @@ Lógica matemática pura en NumPy/SciPy. Sin imports de gi, Gtk, Gdk, Adw ni cai
 """
 
 from .non_max_sup import (
+    NonMaxSup,
     LinearInterpolation,
     DobleThreshold,
     NMS_Parabolic,
@@ -21,6 +22,7 @@ from .hough_circles import (
 )
 
 __all__ = [
+    "NonMaxSup",
     "LinearInterpolation",
     "DobleThreshold",
     "NMS_Parabolic",

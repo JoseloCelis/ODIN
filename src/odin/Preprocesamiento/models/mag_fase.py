@@ -7,7 +7,7 @@ Adw, cairo, matplotlib).
 import numpy as np
 
 
-def MagFase(GrX, GrY):
+def MagFase(GrX: np.ndarray, GrY: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Magnitud y fase del gradiente.
 
     Calcula MGr = hypot(GrX, GrY) normalizada a [0, 1] y angle = atan2 en

@@ -3,10 +3,12 @@
 #import sys
 import cv2 as cv
 import numpy as np
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf, cairo
+
+from typing import Any
 
 
-def load_GrayImage(self, path):
+def load_GrayImage(self: Any, path: str) -> tuple[bool, str, np.ndarray | None]:
     # --- Carga para Procesamiento ---
     current_image = cv.imread(path)
     if current_image is None or len(current_image) < 2:
@@ -35,7 +37,7 @@ def load_GrayImage(self, path):
        
 
 
-def matriz_a_pixbuf(matriz_numpy):
+def matriz_a_pixbuf(matriz_numpy: np.ndarray) -> GdkPixbuf.Pixbuf | None:
     # Convierte una matriz de OpenCV/NumPy (BGR o Grises) a GdkPixbuf.Pixbuf.
 
     img = matriz_numpy.copy()
@@ -66,7 +68,7 @@ def matriz_a_pixbuf(matriz_numpy):
     )
     return pixbuff
 
-def recortar_imagen(self):
+def recortar_imagen(self: Any) -> np.ndarray | None:
         #Calcula el área de recorte real sobre la matriz NumPy original."""
         if self.image_loaded is None:
             return None
@@ -119,7 +121,7 @@ def recortar_imagen(self):
         return submatriz 
 
 class VisualizadorInteractivo(Gtk.Overlay):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         
         # 1. Variables de control para el recorte
@@ -159,18 +161,18 @@ class VisualizadorInteractivo(Gtk.Overlay):
         # Añadimos el controlador a la capa de dibujo para que intercepte el ratón
         self.capa_dibujo.add_controller(self.controlador_arrastre)
 
-    def cargar_imagen(self, pixbuf: GdkPixbuf.Pixbuf):
+    def cargar_imagen(self, pixbuf: GdkPixbuf.Pixbuf) -> None:
         """Asigna un nuevo Pixbuf al visualizador de forma nativa."""
         textura = Gdk.Texture.new_for_pixbuf(pixbuf)
         self.picture.set_paintable(textura)
         
-    def on_drag_begin(self, gesto, x, y):
+    def on_drag_begin(self, gesto: Gtk.GestureDrag, x: float, y: float) -> None:
         """Se activa justo en el momento del primer clic."""
         self.inicio_x = x
         self.inicio_y = y
         self.arrastrando = True
 
-    def on_drag_update(self, gesto, offset_x, offset_y):
+    def on_drag_update(self, gesto: Gtk.GestureDrag, offset_x: float, offset_y: float) -> None:
         """Se ejecuta continuamente mientras el usuario arrastra el ratón."""
         # Calculamos la posición actual sumando el desplazamiento (offset) al inicio
         self.actual_x = self.inicio_x + offset_x
@@ -179,7 +181,7 @@ class VisualizadorInteractivo(Gtk.Overlay):
         # Le ordenamos al DrawingArea que se borre y se vuelva a pintar de inmediato
         self.capa_dibujo.queue_draw()
 
-    def on_drag_end(self, gesto, offset_x, offset_y):
+    def on_drag_end(self, gesto: Gtk.GestureDrag, offset_x: float, offset_y: float) -> None:
         """Se activa cuando el usuario suelta el botón del ratón."""
         self.arrastrando = False
         
@@ -198,7 +200,7 @@ class VisualizadorInteractivo(Gtk.Overlay):
         self.inicio_x = self.inicio_y = self.actual_x = self.actual_y = 0
         self.capa_dibujo.queue_draw()
 
-    def draw_callback(self, drawing_area, cr, width, height, user_data=None):
+    def draw_callback(self, drawing_area: Gtk.DrawingArea, cr: cairo.Context, width: int, height: int, user_data: Any = None) -> None:
         """Función encargada de pintar el rectángulo usando Cairo CSS."""
         if self.arrastrando:
 
