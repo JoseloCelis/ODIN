@@ -5,14 +5,14 @@
 Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo que ya no aporte.
 
 ## Estado actual
-- **PRs en slices abiertos (GitHub, stacked):** la rama `chore/agents-arquitectura-skills` (26 commits) se partió en 4 PRs encadenados — #1 `chore/agents-docs` → `main` (+175/−167), #2 `test/suite-reorg` → #1 (+149/−6), #3 `fix/auditoria-src` → #2 (+160/−151), #4 `ci/release-workflows` → #3 (+141/−1). Árbol final idéntico al de la rama original; backup en `backup/chore-completo`.
+- **PRs en slices abiertos (GitHub/Azure, stacked):** la rama original `chore/agents-arquitectura-skills` (26 commits) se partió en 4 PRs encadenados. Azure #2 `chore/agents-docs`→`main` ≡ GitHub #1 (+175/−167); Azure #3 `test/suite-reorg`→`chore/agents-docs` ≡ GitHub #2; Azure #4 `fix/auditoria-src`→`test/suite-reorg` ≡ GitHub #3; Azure #5 `ci/release-workflows`→`fix/auditoria-src` ≡ GitHub #4. Árbol final idéntico al original; backup en `backup/chore-completo`. PR Azure #1 `rama-Hybrida`→`main` preexistente: no tocar.
 - **Suite verde:** `xvfb-run -a ODIN_TEST_LENTO=1 python3 -m pytest tests` → **188 passed, 0 skipped** (host). Sin xvfb falla solo `--version` (por diseño, requiere DISPLAY).
 - Tests reorganizados a `tests/unit/<dominio>/` + `tests/integration/` (`3773618`, `ebd8342`); `RAIZ` `parents[3]` (`091da78`); shadowing `find_circle` resuelto (`d9b9209`).
 - `AGENTS.md` reescrito en inglés (única doc técnica en inglés, decisión del usuario): arquitectura real `src/odin/`, carga de skills (`.agents/skills/` → symlinks a `~/.agents/skills/`), commits compatibles con Release Please.
 - Type hints completos en `src/odin/` (`ca595b0`): 90/90 defs con retorno anotado, 0 params sin anotar.
 - API pública encapsulada por dominio (`b783395`, `603dc72`): `Procesamiento` exporta NonMaxSup/Otsu/DoubleTh/aproxHough, `Ajustes` circleFilter/circuloSimple/LSC; `Preprocesamiento` solo sus 2 etapas. `config/config.yaml` **no existe** (referencia corregida en AGENTS.md).
 - `bootstrap.py` revisado con skill `python` (`d9f6902`): `raise ... from e` ×2, `MAX_WARN_LEN` eliminada, `env_type` documentado placeholder, typing moderno, print de import en utils eliminado.
-- CI: `.github/workflows/{release-please,gemini-release-notes,security}.yml`. Requieren secrets `MY_RELEASE_PLEASE_TOKEN` y `CLAUDE_API_KEY` en el remoto antes de mergear #4.
+- CI: `.github/workflows/{release-please,gemini-release-notes,security}.yml`. Requieren secrets `MY_RELEASE_PLEASE_TOKEN`, `GEMINI_API_KEY` (Release-Please + notas Gemini) y `CLAUDE_API_KEY` (security review) en GitHub. Azure DevOps NO ejecuta `.github/workflows`; requiere pipelines equivalentes si se quiere el mismo automatismo allí.
 - Máquina: **WSL2 Ubuntu** (kernel 6.18.58.1-microsoft-standard-WSL2), NO el "PC Personal Mint" de AGENTS.md §5.1; GPU passthrough D3D12/DXCore (`/usr/lib/wsl/lib`), perfil ~"Debug GPU (Híbrido Automatico)".
 - Eliminada carpeta legacy `odin/`: todo el código en `src/` (.git de 2.3 GB a 1.4 MB); dataset `src/data/` purgado del historial e ignorado en `.gitignore`.
 - Estructura por dominios: ①-② `Preprocesamiento/models/` · ③④⑥⑦ `Procesamiento/models/` · ⑧⑨ `Ajustes/models/`.
