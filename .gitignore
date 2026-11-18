@@ -52,3 +52,6 @@ odd/
 
 # Configuracion local del hook de revision (Gentleman Guardian Angel)
 .gga
+
+# Skills descargadas localmente (npx skills); no se versionan
+.agents/
