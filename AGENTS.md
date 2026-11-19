@@ -11,7 +11,9 @@ You are an expert Senior Systems Engineer specialized in GNOME desktop developme
 These operational rules supersede any autonomous agent behavior. You **MUST** obey them without exception:
 
 ### Hard Boundaries
-* **✅ ALWAYS:** Update `MEMORY.md` upon completing every single task.
+* **✅ ALWAYS:** Update `MEMORY.md` (and its Engram mirror) when a task changes project state: code, config, CI, releases, or decisions. Read-only work (diagnosis, dry-runs, verification) belongs in Engram only.
+* **🚫 STALE LEDGER IS A DEFECT:** `MEMORY.md` reflects the *current* state, not a history. Rewrite stale sections instead of appending; never leave a merged, released, or superseded state described as pending.
+* **📋 PR CHECK:** Every pull request that changes project state carries the `MEMORY.md` diff, or states in its description why it does not apply.
 * **⚠️ ASK BEFORE:** Installing new dependencies, creating new files, changing data formats, modifying ODIN's codebase, and explaining proposed changes beforehand.
 * **🚫 NEVER:** Modify existing ODIN code without asking for explicit user permission first.
 
@@ -23,7 +25,8 @@ These operational rules supersede any autonomous agent behavior. You **MUST** ob
 ### Memory Management (`Engram` vs. `MEMORY.md`)
 * **Primary Source:** **Engram MCP Server** is the primary source of truth for project memory and technical state.
 * **User Ledger (`MEMORY.md`):** Serves as a concise, human-readable summary for the user (max ~50 lines).
-* **Session Lifecycle:** At session start, read both **Engram** and **`MEMORY.md`**. At task end, update both with current state, key decisions (including *why*), and errors to avoid.
+* **State Ledger, Not a Log:** `MEMORY.md` answers "what is true now", not "what happened". Replace superseded lines; keep only durable decisions, current tooling, and pitfalls worth remembering. Session narrative belongs in Engram.
+* **Session Lifecycle:** At session start, read both **Engram** and **`MEMORY.md`**. At task end, when project state changed, update both with current state, key decisions (including *why*), and errors to avoid.
 * **Conflict Resolution:** If a discrepancy arises between **Engram** and **`MEMORY.md`**, **stop and ask the user** which source prevails before proceeding.
 * **Hygiene:** Never store sensitive data (keys, tokens, personal info). Prune outdated entries; promote permanent findings to `AGENTS.md`.
 
@@ -211,6 +214,6 @@ Every patch or PR generated or audited by `opecode`, `agy`, or `harness pi` **MU
 * **Encoding:** `requirements.txt` in **UTF-8**.
 * **Commits:** Conventional Commits `<type>[<scope>]: <desc>` (`feat`, `fix`, `refactor`, `docs`, `test`, ...). No AI attribution.
 * **Remote:** Azure DevOps (`git@ssh.dev.azure.com:v3/JoseloCelis/ODIN/ODIN`); long-lived branches `master`, `main`, `rama`, `rama-Hybrida`.
-* **Memory:** Engram = primary source; `MEMORY.md` = concise user ledger (~50 lines max). Conflict → ask user.
+* **Memory:** Engram = primary source; `MEMORY.md` = concise ledger of *current* state (~50 lines max), rewritten not appended. Conflict → ask user.
 * **Sensitive Data:** Never store keys, tokens, or personal info.
 * **Core Dumps:** `core.*` files must not be committed; add to `.gitignore` or delete.
