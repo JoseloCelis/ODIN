@@ -87,13 +87,19 @@ jobs:
               --arg tag "$TAG" \
               --argjson commits "$COMMITS_JSON" \
               '{
-                contents: [{
+                systemInstruction: {
                   parts: [{
-                    text: ("Genera notas de release para la versión " + $tag + " en español, profesional y bien estructurada. Incluye resumen breve, Nuevas funcionalidades, Correcciones de errores y Otros cambios, basándote en estos commits:\n\n" + $commits)
+                    text: "Eres el redactor técnico experto de notas del release del proyecto. Escribe en español mexicano neutro y profesional. Respondés únicamente con Markdown válido el cual se publicará tal cual como cuerpo de la release en GitHub. No agregás introducciones, aclaraciones, disclaimers, ni cierres. No dices frases como: «aquí tienes» o «a continuación». No mencionás el modelo de IA que redactó el texto ni el proceso de generación. No envuelves la respuesta en bloques de código. No inventás cambios que no figuren en los commits."
+                  }]
+                },
+                contents: [{
+                  role: "user",
+                  parts: [{
+                    text: ("Versión: " + $tag + "\n\nCommits (asunto y hash):\n" + $commits + "\n\nRedactá las notas con esta estructura exacta: ## Resumen, ## Nuevas funcionalidades, ## Correcciones de errores o bugs, ## Otros cambios. Usá viñetas concisas y omite las secciones que no apliquen. Empieza directamente con ## Resumen.")
                   }]
                 }],
                 generationConfig: {
-                  temperature: 0.7
+                  temperature: 0.2
                 }
               }')
 
@@ -106,12 +112,22 @@ jobs:
             TEXT=$(jq -r '.candidates[0].content.parts[0].text // empty' gemini_response.json 2>/dev/null || true)
 
             if [ "$HTTP_CODE" = "200" ] && [ -n "$TEXT" ] && [ "$TEXT" != "null" ]; then
-              printf '%s' "$TEXT" > release_notes.md
-              echo "Selected model: $MODEL"
-              echo "--- Generated release notes ---"
-              cat release_notes.md
-              SUCCESS=true
-              break
+              # Descarta preámbulos y verjas de código; conserva desde el primer título.
+              printf '%s\n' "$TEXT" \
+                | sed -E 's/^[[:space:]]*```(markdown|md)?[[:space:]]*$//' \
+                | awk 'inicio == 0 && /^#{1,3}[[:space:]]/ { inicio = 1 } inicio == 1 { print }' \
+                > release_notes.md
+
+              if [ -s release_notes.md ]; then
+                echo "Selected model: $MODEL"
+                echo "--- Generated release notes ---"
+                cat release_notes.md
+                SUCCESS=true
+                break
+              fi
+
+              echo "Model $MODEL returned text without Markdown headings; discarding."
+              rm -f release_notes.md
             fi
 
             ERROR_MESSAGE=$(jq -r '.error.message // .error.status // "no candidates in response"' gemini_response.json 2>/dev/null || echo "invalid JSON response")
