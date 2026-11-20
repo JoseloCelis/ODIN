@@ -13,7 +13,7 @@ These operational rules supersede any autonomous agent behavior. You **MUST** ob
 ### Hard Boundaries
 * **✅ ALWAYS:** Update `MEMORY.md` (and its Engram mirror) when a task changes project state: code, config, CI, releases, or decisions. Read-only work (diagnosis, dry-runs, verification) belongs in Engram only.
 * **🚫 STALE LEDGER IS A DEFECT:** `MEMORY.md` reflects the *current* state, not a history. Rewrite stale sections instead of appending; never leave a merged, released, or superseded state described as pending.
-* **📋 PR CHECK:** Every pull request that changes project state carries the `MEMORY.md` diff, or states in its description why it does not apply.
+* **📋 PR CHECK:** `MEMORY.md` is a **local-only ledger** (gitignored; never committed nor pushed). Update it in your working copy when a task changes project state, and state in the PR description what project state changed so the ledger can be refreshed.
 * **⚠️ ASK BEFORE:** Installing new dependencies, creating new files, changing data formats, modifying ODIN's codebase, and explaining proposed changes beforehand.
 * **🚫 NEVER:** Modify existing ODIN code without asking for explicit user permission first.
 

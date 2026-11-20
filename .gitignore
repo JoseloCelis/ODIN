@@ -55,3 +55,9 @@ odd/
 
 # Skills descargadas localmente (npx skills); no se versionan
 .agents/
+
+# Memoria del proyecto (ledger interno; solo local, nunca en los remotos)
+MEMORY.md
+
+# Base de datos local de Engram (sesiones, memorias y prompts)
+.engram/
