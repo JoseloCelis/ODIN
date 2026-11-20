@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/JoseloCelis/ODIN/compare/v0.1.1...v0.1.2) (2026-11-20)
+
+
+### Documentation
+
+* agregar README.md ([b9e9b0c](https://github.com/JoseloCelis/ODIN/commit/b9e9b0c3b91d62b262ee1600bd178e3e90732900))
+
 ## [0.1.1](https://github.com/JoseloCelis/ODIN/compare/v0.1.0...v0.1.1) (2026-11-19)
 
 
