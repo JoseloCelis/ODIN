@@ -60,5 +60,5 @@
 
   "remoteUser": "root",
   
-  "postCreateCommand": "git config --global user.email 'jolopez@cenam.mx' && git config --global user.name 'J. Armando López Celis' && python3 -c \"import gi; gi.require_version('Gtk','4.0'); gi.require_version('Adw','1'); from gi.repository import Gtk, Adw; print(f'GTK {Gtk.MAJOR_VERSION} OK, Adw OK')\""
+  "postCreateCommand": "git config --global user.email 'joselocelis@users.noreply.github.com' && git config --global user.name 'J. Armando López Celis' && python3 -c \"import gi; gi.require_version('Gtk','4.0'); gi.require_version('Adw','1'); from gi.repository import Gtk, Adw; print(f'GTK {Gtk.MAJOR_VERSION} OK, Adw OK')\""
 }
