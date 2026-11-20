@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/JoseloCelis/ODIN/compare/v0.1.0...v0.1.1) (2026-11-19)
+
+
+### Documentation
+
+* exigir ledger de estado actualizado en cada PR ([8962e6d](https://github.com/JoseloCelis/ODIN/commit/8962e6ddc730f34758ae9a75a2d1126ba953e01e))
+* exigir ledger de estado actualizado en cada PR ([8f36158](https://github.com/JoseloCelis/ODIN/commit/8f36158ff2c1cd403c380131c92693f051a7c450))
+
 ## 0.1.0 (2026-11-18)
 
 
