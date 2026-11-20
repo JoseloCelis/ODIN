@@ -28,3 +28,31 @@ jobs:
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           release-type: python
+
+  release-zip:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          fetch-depth: 0
+
+      - name: Build versioned zip
+        run: |
+          TAG="${{ needs.release-please.outputs.tag_name }}"
+          NAME="odin-${TAG}.zip"
+          git archive --format=zip --output="$NAME" "$TAG"
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          ls -la "$NAME"
+
+      - name: Upload zip to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ needs.release-please.outputs.tag_name }}" "$NAME" --clobber
+          echo "Uploaded $NAME"
