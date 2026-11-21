@@ -19,8 +19,10 @@ from pathlib import Path
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
+from odin.Procesamiento import Geometria
 from odin.bootstrap import run_bootstrap, DisplayValidator, StartupLogger, BootstrapResult
 from odin.controllers.main_controller import OdinController
+from odin.controllers.plan_geometria import OPCIONES_GEOMETRIA
 from odin.views.interactive_viewer import VisualizadorInteractivo
 
 
@@ -165,6 +167,29 @@ class OdinMainWindow(Adw.ApplicationWindow):
         self.btn_limpiar_recorte.set_sensitive(False)
         row_limpiar.add_suffix(self.btn_limpiar_recorte)
         grupo_recorte.add(row_limpiar)
+
+        # Grupo: Geometría (T5, selector explícito + autodetección)
+        grupo_geometria = Adw.PreferencesGroup.new()
+        grupo_geometria.set_title("Geometría")
+        grupo_geometria.set_margin_top(28)
+        grupo_geometria.set_margin_bottom(12)
+        pag_opciones.add(grupo_geometria)
+
+        self.combo_geometria = Adw.ComboRow.new()
+        self.combo_geometria.set_title("Geometría a medir")
+        self.combo_geometria.set_model(
+            Gtk.StringList.new(list(OPCIONES_GEOMETRIA))
+        )
+        self.combo_geometria.set_selected(2)  # Automático
+        self.combo_geometria.connect(
+            "notify::selected", self._geometria_cambiada
+        )
+        grupo_geometria.add(self.combo_geometria)
+
+        self.row_geometria = Adw.ActionRow.new()
+        self.row_geometria.set_title("Geometría propuesta")
+        self.row_geometria.set_subtitle("Automático: se decide al procesar")
+        grupo_geometria.add(self.row_geometria)
 
         # Grupo: Parámetros científicos
         grupo_parametros = Adw.PreferencesGroup.new()
@@ -318,6 +343,16 @@ class OdinMainWindow(Adw.ApplicationWindow):
         self.row_diametro.set_subtitle(
             self.estado_diametro.texto_estado()
         )
+
+    def _geometria_cambiada(self, combo: Adw.ComboRow, _param: Any) -> None:
+        """El operador cambió el selector: se fija la geometría del pipeline."""
+        self.controller.establecer_geometria(combo.get_selected())
+        if self.controller.geometria_seleccionada is None:
+            self.row_geometria.set_subtitle("Automático: se decide al procesar")
+        elif self.controller.geometria_seleccionada is Geometria.CIRCULO:
+            self.row_geometria.set_subtitle("Fijada por el operador: círculo")
+        else:
+            self.row_geometria.set_subtitle("Fijada por el operador: recta")
 
     def _volver_a_diametro_auto(self, _boton: Gtk.Button | None) -> None:
         """Descarta el valor manual y vuelve a estimar en la próxima corrida."""
