@@ -56,6 +56,7 @@ Toda corrección del caso 2 debe venir acompañada de la prueba de que el caso 1
 | T3 | S6 | Aliases en `Procesamiento/__init__.py`, `Ajustes/__init__.py` y registro en `bootstrap.py` | hecho | `f4f4c8a` |
 | T4 | S4 | `Procesamiento/models/geometria.py` — clasificador puro con evidencia | pendiente | — |
 | T5 | S4 | Selector explícito en controlador y vista; retiro del supuesto círculo-only | pendiente | — |
+| T6 | L6 | `Procesamiento/models/strategies/base_strategy.py` — contrato de estrategia | hecho | `115b3bc` |
 
 ### T4 — criterios de diseño del clasificador
 
@@ -77,6 +78,17 @@ Semántica ratificada tras la implementación (las cuatro cosas que el bloque de
 - `detalle` es un texto en español legible por el operador, no un diccionario de números: los números ya están en los campos tipados.
 
 Propiedades de Hypothesis exigidas: confianza en `[0,1]`; invariancia ante rotación y reflexión rígidas; nunca lanza en entradas degeneradas; monotonicidad del ganador; y falla cerrado como invariante.
+
+### T5 — criterios de diseño del selector
+
+Decisión del orquestador (2026-11-21), con autorización explícita del usuario para modificar código existente. S4 fija la política (selector explícito + autodetección que falla cerrado) pero no el contrato del pipeline ni de la vista.
+
+1. **La geometría es una entrada explícita.** El pipeline recibe `geometria` y, cuando el operador la fija, la obedece sin consultar al clasificador.
+2. **Automático consulta, no adivina.** Cuando la geometría no está fijada, se consulta `clasificar_geometria` sobre los puntos de borde ya detectados (etapas ①–⑥) y la propuesta se usa **solo** si el clasificador decidió. El clasificador ya falla cerrado devolviendo `None`.
+3. **Sin decisión no hay excepción críptica.** Se retira el `ValueError` de círculo ausente: el pipeline se detiene reportando **ambos** candidatos con la confianza y la evidencia numérica, y la vista los muestra para que el operador elija.
+4. **Las dos geometrías son ramas del mismo selector.** Círculo usa ⑦→⑧→⑨; recta usa ⑩→⑪. Ninguna es el camino por defecto.
+5. **La vista expone el selector** (círculo / recta / automático) y, en automático, muestra la geometría propuesta con su confianza y detalle; cuando falla cerrado, muestra ambos candidatos.
+6. **La decisión es una función pura.** El mapeo «geometría + evidencia → plan de etapas» se aísla en una función sin GTK, para poder probarlo sin UI. El hilo de trabajo no toca GTK; el resultado vuelve por `GLib.idle_add` (AGENTS.md §6.3).
 
 ## Log
 **L1** (usuario, 2026-11-20): "Este proyecto es la migración de un antiguo codigo que tenia de Matlab a Python. Agregue al repo la carpeta CodigoMatlab. Ya hemos realizado la migración y optimizacion de varias etapas de ese codigo. como siguiente paso quiero que analices lo que hay en la carpeta CodigoMatlab para ver que falta de migrar. Circle_detector era mi codigo principal. vamos a proponer como continuar con la migración"
@@ -120,3 +132,7 @@ El ejemplo falsador era `puntos=[[3.0, 0.0], [1.11253693e-308, 0.0], [0.0, 0.0]]
 De paso quedó un defecto real que la investigación destapó: el ajuste algebraico de Kåsa usa coordenadas absolutas, así que ahora se ajusta sobre la nube centrada y el centro se devuelve al marco original. Medido sobre un círculo de radio 50 desplazado `1e6`: el residual pasa de `2.441e-06` a `1.785e-11` y el radio de `49.999998` a `50.000000`. Suite completa: **313 passed, 1 skipped**.
 
 Lección de proceso: un `| tail` me devolvió exit `0` con la suite en rojo. Las verificaciones se corren leyendo el código de salida explícito, nunca a través del pipe.
+
+**L15** (T6, 2026-11-21): se creó `Procesamiento/models/strategies/base_strategy.py` con `DeteccionStrategy` y su `strategies/__init__.py`, cumpliendo L6. Test-first: RED observado como `ModuleNotFoundError: No module named 'src.odin.Procesamiento.models.strategies'` (exit 2, error de colección); GREEN `4 passed`. Cubre que la base y una subclase sin `detectar` no se instancian, que una concreta devuelve la máscara con la forma de la entrada, y que los `kwargs` llegan a la estrategia. Suite completa: **317 passed, 1 skipped**. Commit `115b3bc`.
+
+**L16** (autorización, 2026-11-21): el usuario autorizó explícitamente **T5 completo, controlador y vista**, que es la primera modificación de código existente en esta fase y por eso requería permiso según AGENTS.md. Se escribió el bloque «T5 — criterios de diseño del selector» antes de delegar, por la misma razón que en T4: sin criterio explícito el writer habría inventado el contrato del pipeline y de la UI.
