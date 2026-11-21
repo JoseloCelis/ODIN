@@ -22,6 +22,7 @@ FASES = ("ENV_PROBE", "MODULE_LOAD", "DISPLAY_VALID", "WINDOW_INIT")
 NIVELES = ("INFO", "WARNING", "ERROR")
 LOG_FORMAT = "[ODIN] {fase} | {nivel} | {mensaje}\n"
 MAX_MSG_LEN = 500
+MAX_WARN_LEN = 200
 
 # Orden canónico de importación de la suite de preprocesamiento
 # Tuplas: (alias público, ruta completa del módulo en odin/)
@@ -81,7 +82,8 @@ class StartupLogger:
         Formato: [ODIN] <fase> | <nivel> | <mensaje>\n
         - fase: una de ENV_PROBE, MODULE_LOAD, DISPLAY_VALID, WINDOW_INIT
         - nivel: INFO, WARNING, ERROR
-        - mensaje: truncado a 500 caracteres
+        - mensaje: truncado a 200 caracteres si el nivel es WARNING (R5.3),
+          500 en INFO y ERROR (R5.1, R5.4)
         - UTF-8, exactamente un \n por línea
         """
         if fase not in FASES:
@@ -89,8 +91,9 @@ class StartupLogger:
         if nivel not in NIVELES:
             raise ValueError(f"Nivel inválido: {nivel}. Debe ser uno de {NIVELES}")
 
-        # Truncar mensaje a 500 caracteres
-        mensaje = mensaje[:MAX_MSG_LEN]
+        # Truncar mensaje: las advertencias tienen un límite más corto (R5.3)
+        limite = MAX_WARN_LEN if nivel == "WARNING" else MAX_MSG_LEN
+        mensaje = mensaje[:limite]
 
         linea = LOG_FORMAT.format(fase=fase, nivel=nivel, mensaje=mensaje)
 
@@ -161,8 +164,16 @@ class EnvironmentProbe:
         except (OSError, AttributeError):
             username = Path.home().name
 
-        # Clasificar entorno
-        env_type = self._classify(os.uname().release, Path("/.dockerenv"))
+        # Clasificar entorno. `os.uname()` no existe fuera de POSIX y puede
+        # lanzar; en ese caso no hay release que contenga "microsoft" y el
+        # entorno se clasifica como NATIVE_LINUX (R3.1), conservando la
+        # prioridad de DOCKER que resuelve `_classify`.
+        try:
+            release = os.uname().release
+        except (AttributeError, OSError):
+            release = ""
+
+        env_type = self._classify(release, Path("/.dockerenv"))
 
         # Resolver ruta base
         base_path = self._resolve_base_path(env_type, username)
