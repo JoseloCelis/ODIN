@@ -53,7 +53,7 @@ Toda corrección del caso 2 debe venir acompañada de la prueba de que el caso 1
 |----|-------|------|--------|--------|
 | T1 | S1, S6, S7 | `src/odin/Procesamiento/models/hough_lineas.py` + tests | hecho | `be90572` |
 | T2 | S2, S5, S6, S7 | `src/odin/Ajustes/models/linea_robusta.py` + tests | hecho | `aac7292` |
-| T3 | S6 | Aliases en `Procesamiento/__init__.py`, `Ajustes/__init__.py` y registro en `bootstrap.py` | pendiente | — |
+| T3 | S6 | Aliases en `Procesamiento/__init__.py`, `Ajustes/__init__.py` y registro en `bootstrap.py` | hecho | `f4f4c8a` |
 | T4 | S4 | `Procesamiento/models/geometria.py` — clasificador puro con evidencia | pendiente | — |
 | T5 | S4 | Selector explícito en controlador y vista; retiro del supuesto círculo-only | pendiente | — |
 
@@ -83,3 +83,7 @@ Hallazgo del worker que corrige la lectura anterior: **`CodigoMatlab/reduce.m` n
 **L10** (cierre de T1 y T2, 2026-11-21): ambos ports commiteados en `feat/migracion-lineas-geometria` — `be90572` (Hough de líneas, 1069 líneas), `aac7292` (ajuste robusto, 833 líneas) y `3927e82` (este documento y `.gitignore`). **Las rebanadas superan el presupuesto de ~400 líneas**: quedan como dos slices de trabajo autocontenidos (modelo + sus tests, sin mezclar dominios); la forma de entrega se decide al publicar.
 
 GGA actúa como pre-commit hook y en T2 rechazó cuatro hallazgos. Se corrigieron dos, de anotaciones faltantes en helpers de test (`_recta`, `_inliers_con_outliers`, `_param_de_recta`). Se **rechazaron con evidencia** los otros dos, que exigían importar por el alias del dominio en vez de por el módulo: todos los tests preexistentes del repo importan directo (`from src.odin.Procesamiento.models import non_max_sup as NMS`, `from src.odin.Ajustes.models.circulo_simple import Circulo_simple`), GGA aprobó T1 con ese mismo patrón, y el alias que exige recién lo crea T3. Además `.gga` vive gitignorado: su fix es configuración local y no entra al repositorio.
+
+**L11** (cierre de T3, 2026-11-21): las etapas ⑩ y ⑪ se exponen por la cadena `models/__init__.py` → `dominio/__init__.py` y entran en `PREPROCESAMIENTO_SUITE_ORDER` de `bootstrap.py` como `HoughLineas` y `LineaRobusta`. RED observado con tres fallas: `ImportError: cannot import name 'CandidatasLineas' from 'src.odin.Procesamiento'`, lo mismo con `dist_p_recta` en `Ajustes`, y `AssertionError` del registro de arranque. GREEN: `3 passed`.
+
+Tocar el registro **rompió 3 tests de integración** de `tests/integration/test_bootstrap_arranque.py`, que fijan `ALIASES_ESPERADOS` con las 8 etapas originales. La lista es escrita a mano a propósito — derivarla del código haría que el test se comparara contra sí mismo. Se amplió a 10 entradas conservando la igualdad y el orden exactos; no se debilitó ningún assert. Suite completa: **278 passed, 1 skipped**.
