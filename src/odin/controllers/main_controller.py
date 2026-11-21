@@ -174,7 +174,7 @@ class OdinController:
             file = dialog.open_finish(response)
             if file:
                 self.ruta_imagen = file.get_path()
-                print(f"File path is {file.get_path()}")
+                print(f"Ruta del archivo: {file.get_path()}")
                 is_error, message, self.image_loaded = self.handle.load_GrayImage(
                     self, self.ruta_imagen
                 )
