@@ -7,6 +7,8 @@ vista (§4). Ahora el hilo entrega el resultado por `GLib.idle_add` y la vista
 renderiza.
 """
 
+import ast
+import inspect
 import threading
 import types
 from pathlib import Path
@@ -14,6 +16,7 @@ from pathlib import Path
 import numpy as np
 
 from src.odin.controllers import main_controller
+from src.odin.utils import handleImage
 
 RAIZ = Path(__file__).resolve().parents[3]
 
@@ -106,3 +109,45 @@ def test_main_controller_no_conoce_las_texturas_de_gdk():
     )
 
     assert "Gdk.Texture" not in texto
+
+
+def test_cada_modulo_declara_la_version_de_gdk_que_usa():
+    """`main_window` usa `Gdk.Texture`: es quien debe declarar su versión.
+
+    `bootstrap` ya llama `require_version('Gdk', '4.0')` antes de los imports
+    pesados, pero la declaración local no depende del orden de importación.
+    El controlador, que ya no toca `Gdk`, no debe mencionarlo.
+    """
+    vista = (RAIZ / "src/odin/views/main_window.py").read_text(encoding="utf-8")
+    controlador = (RAIZ / "src/odin/controllers/main_controller.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "gi.require_version('Gdk', '4.0')" in vista
+    assert "Gdk" not in controlador, "el controlador ya no usa Gdk"
+
+
+def test_matriz_a_pixbuf_produce_solo_datos():
+    """La conversión corre en el hilo de fondo, así que no puede tocar la UI.
+
+    `GdkPixbuf.Pixbuf` es un buffer de CPU refcontado, no un widget ni una
+    textura de GPU: crearlo fuera del hilo principal es seguro y mantiene la
+    conversión pesada lejos de la UI. `Gdk.Texture` y `set_paintable` sí exigen
+    el hilo principal, y viven en la vista.
+    """
+    arbol = ast.parse(inspect.getsource(handleImage.matriz_a_pixbuf))
+    atributos = {n.attr for n in ast.walk(arbol) if isinstance(n, ast.Attribute)}
+    cualificados = {
+        f"{n.value.id}.{n.attr}"
+        for n in ast.walk(arbol)
+        if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
+    }
+
+    # Se inspeccionan los accesos reales, no el texto: el docstring nombra esas
+    # APIs justamente para explicar dónde está el límite.
+    assert "Gdk.Texture" not in cualificados
+    assert "set_paintable" not in atributos
+    assert not any(n.startswith("Gtk.") for n in cualificados)
+    assert any(n.startswith("GdkPixbuf.") for n in cualificados), (
+        "debe seguir produciendo un objeto de datos"
+    )

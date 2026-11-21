@@ -16,7 +16,6 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-gi.require_version('Gdk', '4.0')
 import numpy as np
 from gi.repository import Gio, GLib, Gtk
 
