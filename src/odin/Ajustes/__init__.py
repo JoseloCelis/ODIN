@@ -3,12 +3,12 @@
 Alias públicos (según AGENTS.md §4):
     find_circle, segmento_mas_largo, cobertura_angular, validar_anillo,
     tolerancia_anillo, Circulo_simple, LSC,
-    circleFilter (find_circle), circuloSimple (Circulo_simple)
+    circleFilter (find_circle), circuloSimple (Circulo_simple),
+    dist_p_recta, euc_space, linea_mc, linea_robusta, linea1
 """
 
 from .models import (
-    find_circle,
-    segmento_mas_largo,
+    find_circle,    segmento_mas_largo,
     cobertura_angular,
     validar_anillo,
     tolerancia_anillo,
@@ -19,6 +19,11 @@ from .models import (
     MINIMO_PUNTOS,
     Circulo_simple,
     UMBRAL_CONDICION_NORMALIZADA,
+    dist_p_recta,
+    euc_space,
+    linea_mc,
+    linea_robusta,
+    linea1,
 )
 
 # Alias públicos documentados en AGENTS.md (tabla de 9 etapas)
@@ -42,4 +47,9 @@ __all__ = [
     "LSC",
     "circuloSimple",
     "circleFilter",
+    "dist_p_recta",
+    "euc_space",
+    "linea_mc",
+    "linea_robusta",
+    "linea1",
 ]

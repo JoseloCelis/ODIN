@@ -7,7 +7,9 @@ Alias públicos (según AGENTS.md §4):
     hough_circles_vectorizado, mejor_centro, estimar_radio,
     estimar_radio_dominante, UMBRAL_AMBIGUEDAD, SEPARACION_AMBIGUEDAD_PX,
     Otsu (umbralRosinYOtsu), DoubleTh (EdgeTrack_Hyst),
-    aproxHough (hough_circles_vectorizado)
+    aproxHough (hough_circles_vectorizado),
+    CandidatasLineas, hough_lineas, candidatas_lineas, reducir_candidatas,
+    acumulador_lineas, NUM_THETAS, PASO_RHO, PASO_THETA
 """
 
 from .models import (
@@ -28,6 +30,14 @@ from .models import (
     umbralRosinYOtsu as Otsu,
     EdgeTrack_Hyst as DoubleTh,
     hough_circles_vectorizado as aproxHough,
+    CandidatasLineas,
+    acumulador_lineas,
+    candidatas_lineas,
+    hough_lineas,
+    reducir_candidatas,
+    NUM_THETAS,
+    PASO_RHO,
+    PASO_THETA,
 )
 
 __all__ = [
@@ -48,4 +58,12 @@ __all__ = [
     "Otsu",
     "DoubleTh",
     "aproxHough",
+    "CandidatasLineas",
+    "acumulador_lineas",
+    "candidatas_lineas",
+    "hough_lineas",
+    "reducir_candidatas",
+    "NUM_THETAS",
+    "PASO_RHO",
+    "PASO_THETA",
 ]
