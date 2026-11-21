@@ -57,6 +57,27 @@ Toda corrección del caso 2 debe venir acompañada de la prueba de que el caso 1
 | T4 | S4 | `Procesamiento/models/geometria.py` — clasificador puro con evidencia | pendiente | — |
 | T5 | S4 | Selector explícito en controlador y vista; retiro del supuesto círculo-only | pendiente | — |
 
+### T4 — criterios de diseño del clasificador
+
+Decisión del orquestador (2026-11-21). S4 fija el contrato —geometría propuesta con confianza, evidencia, y falla cerrado bajo el umbral— pero no el criterio de decisión. Sin criterio explícito el worker tendría que inventar el algoritmo, contra la regla de cero adivinación.
+
+Contrato: `Geometria` (enumeración `CIRCULO`/`RECTA`) y `EvidenciaGeometria` (`@dataclass(frozen=True, slots=True)`) con `geometria`, `confianza`, `candidatos`, `residual_recta`, `residual_circulo`, `cobertura_angular`, `radio` y `detalle`. Función `clasificar_geometria(puntos, *, umbral_confianza=0.75, tolerancia_px=2.0, factor_radio_max=4.0) -> EvidenciaGeometria`.
+
+1. **Residuales por mediana.** Recta por PCA/SVD; círculo por ajuste algebraico consumido por el alias público del dominio. La mediana, no la media, para que un puñado de puntos sueltos no decida.
+2. **Admisibilidad del círculo.** Si `radio > factor_radio_max · extensión` o el radio no es finito, el residual del círculo pasa a `inf`. Sin este paso toda recta es un círculo de radio enorme y el clasificador elige círculo siempre.
+3. **Confianza.** `(peor - mejor) / peor`, con `1.0` cuando `peor` es infinito y `0.0` cuando ambos lo son. Queda en `[0,1]` por construcción, es `0` cuando las dos hipótesis ajustan igual, y crece al mejorar el ganador.
+4. **Falla cerrado.** `confianza < umbral` ⇒ `geometria=None` y `candidatos=(CIRCULO, RECTA)`.
+5. **Degenerados no lanzan.** Menos de 3 puntos, valores no finitos, duplicados, o una extensión que no supera `tolerancia_px`, devuelven confianza `0` con ambos candidatos. **La colinealidad exacta no es una degeneración:** es la evidencia más limpia de una recta, y el criterio 2 ya la resuelve al dejar el círculo sin radio admisible.
+
+Semántica ratificada tras la implementación (las cuatro cosas que el bloque dejaba abiertas):
+
+- `extensión` es la diagonal de la caja envolvente medida en el marco de componentes principales, para que la admisibilidad del círculo sea invariante ante rotación y reflexión.
+- `tolerancia_px` es la **extensión mínima clasificable**: un conjunto confinado a menos de esa distancia no tiene geometría determinable, así que cae en el criterio 5.
+- `candidatos` es `(geometria,)` cuando el clasificador decide y `(CIRCULO, RECTA)` cuando falla cerrado. Un operador que lee un solo candidato sabe que hubo decisión.
+- `detalle` es un texto en español legible por el operador, no un diccionario de números: los números ya están en los campos tipados.
+
+Propiedades de Hypothesis exigidas: confianza en `[0,1]`; invariancia ante rotación y reflexión rígidas; nunca lanza en entradas degeneradas; monotonicidad del ganador; y falla cerrado como invariante.
+
 ## Log
 **L1** (usuario, 2026-11-20): "Este proyecto es la migración de un antiguo codigo que tenia de Matlab a Python. Agregue al repo la carpeta CodigoMatlab. Ya hemos realizado la migración y optimizacion de varias etapas de ese codigo. como siguiente paso quiero que analices lo que hay en la carpeta CodigoMatlab para ver que falta de migrar. Circle_detector era mi codigo principal. vamos a proponer como continuar con la migración"
 
@@ -87,3 +108,15 @@ GGA actúa como pre-commit hook y en T2 rechazó cuatro hallazgos. Se corrigiero
 **L11** (cierre de T3, 2026-11-21): las etapas ⑩ y ⑪ se exponen por la cadena `models/__init__.py` → `dominio/__init__.py` y entran en `PREPROCESAMIENTO_SUITE_ORDER` de `bootstrap.py` como `HoughLineas` y `LineaRobusta`. RED observado con tres fallas: `ImportError: cannot import name 'CandidatasLineas' from 'src.odin.Procesamiento'`, lo mismo con `dist_p_recta` en `Ajustes`, y `AssertionError` del registro de arranque. GREEN: `3 passed`.
 
 Tocar el registro **rompió 3 tests de integración** de `tests/integration/test_bootstrap_arranque.py`, que fijan `ALIASES_ESPERADOS` con las 8 etapas originales. La lista es escrita a mano a propósito — derivarla del código haría que el test se comparara contra sí mismo. Se amplió a 10 entradas conservando la igualdad y el orden exactos; no se debilitó ningún assert. Suite completa: **278 passed, 1 skipped**.
+
+**L12** (decisión, 2026-11-21): S4 exige confianza y evidencia pero no fija el criterio de decisión, así que el orquestador lo definió antes de delegar T4 y lo dejó escrito en «T4 — criterios de diseño del clasificador». El punto que no se puede omitir es la admisibilidad del círculo: una recta es un círculo de radio infinito, y sin acotar el radio el clasificador responde círculo ante cualquier conjunto colineal. La confianza se define como separación relativa de residuales para que sea monótona y quede en `[0,1]` por construcción, en vez de un puntaje ad hoc.
+
+**L13** (corrección de la spec, 2026-11-21): el bloque de diseño de T4 se contradecía a sí mismo — el criterio 5 listaba los «colineales exactos» como degenerados mientras la tarea exigía un test que probase que una nube colineal se clasifica como recta. El worker lo detectó y resolvió a favor del test. **La resolución correcta es esa**: la colinealidad exacta no es un dato degenerado, es la evidencia más limpia de una recta, y el criterio 2 ya la cubre porque deja el círculo sin radio admisible. Se reescribió el criterio 5 para sacar la colinealidad de la lista de degenerados y se ratificaron las cuatro semánticas que el bloque dejaba implícitas (`extensión`, `tolerancia_px`, `candidatos`, `detalle`). Lección para el próximo bloque de diseño: si un criterio y una prueba exigida pueden contradecirse, el criterio está mal escrito.
+
+**L14** (hallazgo, 2026-11-21): la suite completa falló **después** de que T4 reportara verde en el foco (`161 passed`). Ese verde fue suerte de semilla: la propiedad de invariancia es aleatoria y su primer ejemplo falsador apareció en la corrida completa. Con `--hypothesis-seed` explícito pasaba 5 de 5 porque eso desactiva el replay de la base de datos de Hypothesis.
+
+El ejemplo falsador era `puntos=[[3.0, 0.0], [1.11253693e-308, 0.0], [0.0, 0.0]]` con `angulo=0.0`, `reflejar=False` y `desplazamiento=[1., 1.]`: la única transformación es una **traslación**, y la decisión cambiaba de `RECTA` a `None` con el detalle «menos de 3 puntos distintos». Causa real: sumar `1.0` vuelve exactamente idénticos dos puntos que difieren en `1e-308`, así que el detector de duplicados —correcto según el criterio 5— los colapsa. **No era una falla del clasificador sino una propiedad insatisfacible**: exigía invariancia para un input cuya distinción destruye la aritmética de punto flotante. Se corrigió el test con `assume(...)` que exige que la transformación conserve cuántos puntos distintos hay, y se fijó la conducta real en dos pruebas deterministas: el colapso se reporta degenerado, y una traslación que conserva los puntos no cambia la decisión.
+
+De paso quedó un defecto real que la investigación destapó: el ajuste algebraico de Kåsa usa coordenadas absolutas, así que ahora se ajusta sobre la nube centrada y el centro se devuelve al marco original. Medido sobre un círculo de radio 50 desplazado `1e6`: el residual pasa de `2.441e-06` a `1.785e-11` y el radio de `49.999998` a `50.000000`. Suite completa: **313 passed, 1 skipped**.
+
+Lección de proceso: un `| tail` me devolvió exit `0` con la suite en rojo. Las verificaciones se corren leyendo el código de salida explícito, nunca a través del pipe.
