@@ -9,7 +9,8 @@ Alias públicos (según AGENTS.md §4):
     Otsu (umbralRosinYOtsu), DoubleTh (EdgeTrack_Hyst),
     aproxHough (hough_circles_vectorizado),
     CandidatasLineas, hough_lineas, candidatas_lineas, reducir_candidatas,
-    acumulador_lineas, NUM_THETAS, PASO_RHO, PASO_THETA
+    acumulador_lineas, NUM_THETAS, PASO_RHO, PASO_THETA,
+    Geometria, EvidenciaGeometria, clasificar_geometria
 """
 
 from .models import (
@@ -38,6 +39,9 @@ from .models import (
     NUM_THETAS,
     PASO_RHO,
     PASO_THETA,
+    Geometria,
+    EvidenciaGeometria,
+    clasificar_geometria,
 )
 
 __all__ = [
@@ -66,4 +70,7 @@ __all__ = [
     "NUM_THETAS",
     "PASO_RHO",
     "PASO_THETA",
+    "Geometria",
+    "EvidenciaGeometria",
+    "clasificar_geometria",
 ]
