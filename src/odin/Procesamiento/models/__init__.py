@@ -30,6 +30,11 @@ from .hough_lineas import (
     PASO_RHO,
     PASO_THETA,
 )
+from .geometria import (
+    EvidenciaGeometria,
+    Geometria,
+    clasificar_geometria,
+)
 
 __all__ = [
     "NonMaxSup",
@@ -54,4 +59,7 @@ __all__ = [
     "NUM_THETAS",
     "PASO_RHO",
     "PASO_THETA",
+    "EvidenciaGeometria",
+    "Geometria",
+    "clasificar_geometria",
 ]
