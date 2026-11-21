@@ -47,8 +47,16 @@ data/
 # Registro de skills autogenerado por gentle-ai
 .atl/
 
-# Documentos temporales de Organic Driven Development (ODD)
-odd/
+# Organic Driven Development (ODD): se versionan las specs y las tareas, el resto no.
+# Git no puede re-incluir un archivo cuyo directorio padre esta excluido, por eso
+# se excluye el contenido de odd/ y no el directorio mismo.
+odd/*
+!odd/tasks/
+odd/tasks/*
+!odd/tasks/*.md
+!odd/specs/
+odd/specs/*
+!odd/specs/*.md
 
 # Configuracion local del hook de revision (Gentleman Guardian Angel)
 .gga
