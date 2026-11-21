@@ -15,6 +15,13 @@ from .find_circle import (
     HUECO_MAX_DEG,
     MINIMO_PUNTOS,
 )
+from .linea_robusta import (
+    dist_p_recta,
+    euc_space,
+    linea_mc,
+    linea_robusta,
+    linea1,
+)
 from .circulo_simple import (
     Circulo_simple,
     UMBRAL_CONDICION_NORMALIZADA,
@@ -33,4 +40,9 @@ __all__ = [
     "MINIMO_PUNTOS",
     "Circulo_simple",
     "UMBRAL_CONDICION_NORMALIZADA",
+    "dist_p_recta",
+    "euc_space",
+    "linea_mc",
+    "linea_robusta",
+    "linea1",
 ]

@@ -41,6 +41,8 @@ ALIASES_ESPERADOS = [
     "aproxHough",
     "circleFilter",
     "LSC",
+    "HoughLineas",
+    "LineaRobusta",
 ]
 
 

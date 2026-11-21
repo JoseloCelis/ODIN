@@ -20,6 +20,16 @@ from .hough_circles import (
     UMBRAL_AMBIGUEDAD,
     SEPARACION_AMBIGUEDAD_PX,
 )
+from .hough_lineas import (
+    CandidatasLineas,
+    acumulador_lineas,
+    candidatas_lineas,
+    hough_lineas,
+    reducir_candidatas,
+    NUM_THETAS,
+    PASO_RHO,
+    PASO_THETA,
+)
 
 __all__ = [
     "NonMaxSup",
@@ -36,4 +46,12 @@ __all__ = [
     "estimar_radio_dominante",
     "UMBRAL_AMBIGUEDAD",
     "SEPARACION_AMBIGUEDAD_PX",
+    "CandidatasLineas",
+    "acumulador_lineas",
+    "candidatas_lineas",
+    "hough_lineas",
+    "reducir_candidatas",
+    "NUM_THETAS",
+    "PASO_RHO",
+    "PASO_THETA",
 ]
