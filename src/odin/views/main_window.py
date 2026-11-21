@@ -6,7 +6,7 @@ Sin algoritmos de procesamiento ni convoluciones.
 
 import gi
 
-from typing import Any
+from typing import Any, ClassVar
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -367,6 +367,34 @@ class OdinMainWindow(Adw.ApplicationWindow):
 
     def on_process_clicked(self, button: Gtk.Button) -> None:
         self.controller.on_process_clicked(button)
+
+    # Qué resultado del pipeline se publica en qué pestaña. El mapeo es
+    # conocimiento de la vista: el controlador solo nombra las salidas del
+    # pipeline, no las pestañas (AGENTS.md §4).
+    _PESTAÑA_POR_RESULTADO: ClassVar[dict[str, str]] = {
+        "inicial": "original",
+        "gx": "gradiente x",
+        "gy": "gradiente y",
+        "mag": "magnitud",
+        "maximos": "maximos",
+        "bordesdebiles": "bordes debiles",
+        "bordesfuertes": "bordes fuertes",
+        "bordes": "bordes",
+    }
+
+    def mostrar_resultados(self, imagenes: dict[str, Any]) -> None:
+        """Publica los resultados del pipeline en las pestañas.
+
+        Corre en el hilo principal, despachada por `GLib.idle_add`: el hilo de
+        fondo entrega pixbufs y acá se convierten a textura y se pintan
+        (AGENTS.md §6.3). El controlador no conoce estos widgets (§4).
+        """
+        for nombre, id_pestaña in self._PESTAÑA_POR_RESULTADO.items():
+            pixbuf = imagenes.get(nombre)
+            vista = self.vistas_procesadas.get(id_pestaña)
+            if pixbuf is None or vista is None:
+                continue
+            vista.set_paintable(Gdk.Texture.new_for_pixbuf(pixbuf))
 
     def finalizar_proceso_exitoso(self) -> None:
         """Este método corre en el hilo principal de la UI cuando la

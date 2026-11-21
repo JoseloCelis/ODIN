@@ -18,7 +18,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Gdk', '4.0')
 import numpy as np
-from gi.repository import Gdk, Gio, GLib, Gtk
+from gi.repository import Gio, GLib, Gtk
 
 if TYPE_CHECKING:
     from odin.bootstrap import BootstrapResult
@@ -246,29 +246,10 @@ class OdinController:
                 DetectedEdges
             )
 
-            self.main_window.vistas_procesadas["original"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["inicial"])
-            )
-            self.main_window.vistas_procesadas["gradiente x"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["gx"])
-            )
-            self.main_window.vistas_procesadas["gradiente y"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["gy"])
-            )
-            self.main_window.vistas_procesadas["magnitud"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["mag"])
-            )
-            self.main_window.vistas_procesadas["maximos"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["maximos"])
-            )
-            self.main_window.vistas_procesadas["bordes debiles"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordesdebiles"])
-            )
-            self.main_window.vistas_procesadas["bordes fuertes"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordesfuertes"])
-            )
-            self.main_window.vistas_procesadas["bordes"].set_paintable(
-                Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordes"])
+            # El hilo de fondo no toca GTK: entrega los pixbufs y la vista
+            # renderiza en el hilo principal (AGENTS.md §6.3 y §4).
+            GLib.idle_add(
+                self.main_window.mostrar_resultados, resultadosProcesamiento
             )
 
             # Etapa 7: el radio no es una constante (spec hough-circles, R2).
