@@ -22,6 +22,8 @@ Documentación únicamente: no se toca código de producción.
   pendiente lo que el código ya tiene miente igual que un `requirements.md`
   desactualizado. El bloque va delimitado por `<!-- ESTADO:INICIO -->` y
   `<!-- ESTADO:FIN -->` para que sea separable del cuerpo de forma mecánica.
+  Un requisito que no se pudo verificar se declara `INCIERTO`: nunca se completa
+  por inferencia.
 
 - **S4 — Un requisito no implementado se declara PENDIENTE**, nunca se presenta
   como cumplido. Aplica a R4.1/R4.2/R4.6 (límites de 2s/3s) y a
@@ -36,12 +38,18 @@ Documentación únicamente: no se toca código de producción.
   `[0.6·r0, r0]` de `find-circle` es una contradicción spec-vs-código, no un
   docstring mentiroso.
 
-- **S6 — Los 7 ABSORB se escriben en `odd/specs/<slug>.md`** citando verbatim
-  los requisitos absorbidos: `kernel-separable`, `mag-fase`, `otsu-rosin`,
-  `edge-track-hyst`, `hough-circles`, `find-circle`, `odin-startup-structure`.
+- **S6 — Los ABSORB se escriben en `odd/specs/<slug>.md`** citando verbatim
+  los requisitos absorbidos. Tras la re-verificación (L7) son **9 de 9**:
+  `kernel-separable`, `mag-fase`, `otsu-rosin`, `edge-track-hyst`,
+  `hough-circles`, `find-circle`, `non-max-sup`, `circulo-simple`,
+  `odin-startup-structure`.
 
-- **S7 — Los 2 ARCHIVE se marcan superados** con el motivo, sin absorber su
-  contenido: `non-max-sup`, `circulo-simple`.
+- **S7 — No hay specs ARCHIVADOS.** Los dos que la auditoría previa marcó como
+  ARCHIVE (`non-max-sup`, `circulo-simple`) tienen módulo vivo y requisitos
+  accionables: el primero contradice al código en R1.1/R2.1
+  (`non_max_sup.py:64-67,78-80`), el segundo contradice en R1.6
+  (`circulo_simple.py:55` lanza `TypeError` donde el spec exige `ValueError`).
+  El veredicto previo se emitió antes de re-verificar y no se sostiene.
 
 - **S8 — `odd/specs/` se versiona.** Hoy `.gitignore` excluye `odd/` entero, así
   que un spec escrito ahí se pierde en silencio. Hay que extender la regla
@@ -70,7 +78,7 @@ Documentación únicamente: no se toca código de producción.
 | ID | Specs | Alcance |
 |----|-------|---------|
 | T1 | S8 | Extender `.gitignore` para versionar `odd/specs/*.md` — **hecho** |
-| T2 | S11 | Re-verificar los 9 veredictos contra el código actual, con evidencia `archivo:línea` |
+| T2 | S11 | Re-verificar los 9 veredictos contra el código actual — **hecho**, ver L7 |
 | T3 | S9 | Escribir `odd/specs/README.md` con la tabla de los 9 specs |
 | T4 | S3, S4, S5 | Bloque de estado en los **tres** archivos de cada spec, con evidencia y PENDIENTES |
 | T5 | S6 | Absorber los 7 ABSORB en `odd/specs/<slug>.md` con citas verbatim |
@@ -109,3 +117,32 @@ Documentación únicamente: no se toca código de producción.
   ser un test con manifiesto de hashes (S10, T7), sin leer historia de git;
   (4) los 9 veredictos se re-verifican contra el código actual antes de absorber
   nada (S11, T2).
+
+- **L7 (resultado de T2, 9 specs re-verificados contra el código):**
+  **los 9 son ABSORBIDO**, no 7. La auditoría previa falló en dos:
+  `non-max-sup` (R1.1/R2.1 contradichos en `non_max_sup.py:64-67,78-80`) y
+  `circulo-simple` (R1.6 contradicho en `circulo_simple.py:55`). Ambos tienen
+  módulo vivo y requisito accionable, que es lo que S11 exige.
+
+- **L8 (divergencias candidatas, resueltas):** **A es CIERTA** —
+  `tests/integration/test_pipeline.py:24-31` encadena etapas ①-⑤ y no incluye
+  ⑥-⑨. **B es FALSA** — la banda `[0.6·r0, r0]` no pertenece a `find-circle`:
+  aparece en `hough-circles/requirements.md:80,190`, donde ya está declarada
+  descartada, y el código barre `[0.08·r0, r0]` (`hough_circles.py:188`).
+  `find_circle.py` no trabaja con `r0`. Queda descartada: no entra a ningún
+  bloque de estado.
+
+- **L9 (engaños en `tasks.md`, para T4):** hay casillas marcadas hechas sobre
+  código que no existe o no hace lo que dice. Los más graves están en
+  `odin-startup-structure/tasks.md`: 10.1/10.2 piden aliases en
+  `src/odin/__init__.py`, que es solo un docstring; 12.2 se autodesmiente en su
+  propio Log; 14 y 16 están `[x]` con pendientes declarados; 15.1 está `[ ]`
+  pero `--version` ya existe (`main_window.py:479-491`). También
+  `hough-circles` T5 ("no se borran" cuando ya fueron eliminados) y
+  `kernel-separable` T4 (`dibujar_en_hilo_principal` no existe).
+
+- **L10 (límite de la evidencia):** el explorador no ejecutó la suite. Las filas
+  marcadas `INCIERTO` (kernel R3/R4 sin cross-check contra OpenCV ni contra
+  `tests/utilidades.py`; startup R5.5 codec de stdout) y las marcadas
+  "test, no ejecutado" se escriben como tales en los bloques de estado. No se
+  convierten en IMPLEMENTADO por inferencia.
