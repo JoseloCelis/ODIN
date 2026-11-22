@@ -62,14 +62,23 @@ Documentación únicamente: no se toca código de producción.
   su veredicto y el enlace a la versión ODD. Es el punto de entrada para saber
   qué está vigente sin abrir nueve documentos.
 
-- **S10 — El cuerpo original queda inmutable, y eso se prueba.** Un manifiesto
-  `odd/specs/.originales.sha256` guarda el hash del cuerpo de `requirements.md`
-  y `design.md` de cada spec (todo lo que queda fuera del bloque delimitado).
-  Un test automatizado verifica que cada cuerpo sigue coincidiendo con su hash:
-  si alguien reescribe un requisito, el test falla. `tasks.md` **queda fuera del
-  manifiesto**: sus casillas son estado vivo y deben poder corregirse. El test
-  no lee historia de git ni un commit fijo; compara contra el manifiesto
-  versionado.
+- **S10 — El cuerpo de los tres archivos queda pinneado, y eso se prueba.**
+  Un manifiesto `odd/specs/.originales.sha256` guarda el hash del cuerpo de
+  `requirements.md`, `design.md` **y `tasks.md`** de cada spec (todo lo que queda
+  fuera del bloque delimitado). Un test verifica que cada cuerpo sigue
+  coincidiendo con su hash.
+
+  **Cómo convive con S2 y S12:** el manifiesto no prohíbe corregir, exige que la
+  corrección sea visible. Una casilla corregida cambia el hash, y el hash se
+  actualiza **en el mismo commit** que la corrección. Así el diff muestra qué
+  archivo cambió, S12 registra por qué, y una reescritura accidental o silenciosa
+  falla el test. El manifiesto no es "estos archivos nunca cambian": es "ningún
+  cuerpo cambia sin que alguien lo declare".
+
+  El test no lee historia de git ni un commit fijo; compara contra el manifiesto
+  versionado. **Orden:** el manifiesto se genera después de T3 (bloques de
+  estado), porque los bloques quedan fuera del hash; generarlo antes haría fallar
+  el test al insertarlos.
 
 - **S12 — Toda casilla corregida queda registrada.** Cada corrección de
   `tasks.md` se anota en el bloque de estado de ese archivo con el valor
@@ -94,7 +103,7 @@ Documentación únicamente: no se toca código de producción.
 | T4 | S3, S4, S5 | Bloque de estado en los **tres** archivos de cada spec, con evidencia y PENDIENTES |
 | T5 | S6 | Absorber los 7 ABSORB en `odd/specs/<slug>.md` con citas verbatim |
 | T6 | S7 | Marcar los 2 ARCHIVE como superados con su motivo |
-| T7 | S10 | Manifiesto `.originales.sha256` y test que detecte cualquier reescritura del cuerpo |
+| T7 | S10 | Manifiesto `.originales.sha256` de los **tres** archivos y test que detecte cualquier cambio de cuerpo no declarado (después de T3) |
 | T8 | S2, S12 | Corregir las casillas falsas de los `tasks.md` y registrar cada corrección |
 
 ## Log
@@ -172,3 +181,13 @@ Documentación únicamente: no se toca código de producción.
   `imregionalmax` dan 0 hits; y el Log del propio
   `odin-startup-structure/tasks.md` dice «Pendiente 12.2», «Pendiente 14» y
   «Pendiente 16» (`:403,406,409`), contradiciendo sus casillas `[x]`.
+
+- **L13 (decisión del usuario, verbatim):** «prefiero que el manifiesto cubra
+  task.md». Cambia S10: el manifiesto cubre los tres archivos, no dos.
+
+- **L14 (por qué L13 mejora el diseño):** dejar `tasks.md` fuera del manifiesto
+  dejaba las correcciones invisibles y la protección a medias. Cubriéndolo, toda
+  corrección mueve el hash y el hash se actualiza en el mismo commit: el diff
+  muestra qué cambió y S12 registra por qué. El manifiesto pasa de "no cambies"
+  a "no cambies sin declararlo", que es una garantía más fuerte y compatible con
+  S2 y S12. Consecuencia de orden: T7 se ejecuta **después** de T3.
