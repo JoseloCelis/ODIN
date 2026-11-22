@@ -8,10 +8,13 @@ Documentación únicamente: no se toca código de producción.
   (`requirements.md`, `design.md`, `tasks.md`) se conservan, versionados. La
   absorción no elimina ni mueve el original.
 
-- **S2 — El cuerpo de un requisito no se reescribe.** Las citas se preservan
+- **S2 — El texto de un requisito no se reescribe.** Las citas se preservan
   verbatim. Corregir el texto de un requisito para que coincida con el código
   borra la evidencia de qué se especificó y cuándo: eso es falsificar el
-  registro, no corregirlo.
+  registro, no corregirlo. **Alcance:** aplica a los requisitos de
+  `requirements.md` y a los enunciados de `design.md`. Una casilla `[x]`/`[ ]`
+  de `tasks.md` no es un requisito: es el **estado** de una tarea, y un estado
+  falso se corrige en el lugar donde está, no se deja mintiendo.
 
 - **S3 — Todo spec declara su estado en sus tres archivos.** Al inicio de
   `requirements.md`, `design.md` y `tasks.md` de cada uno de los 9 specs va un
@@ -60,11 +63,19 @@ Documentación únicamente: no se toca código de producción.
   qué está vigente sin abrir nueve documentos.
 
 - **S10 — El cuerpo original queda inmutable, y eso se prueba.** Un manifiesto
-  `odd/specs/.originales.sha256` guarda el hash del cuerpo de cada archivo
-  (todo lo que queda fuera del bloque delimitado). Un test automatizado verifica
-  que cada cuerpo sigue coincidiendo con su hash: si alguien reescribe un
-  requisito, el test falla. El test no lee historia de git ni un commit fijo;
-  compara contra el manifiesto versionado.
+  `odd/specs/.originales.sha256` guarda el hash del cuerpo de `requirements.md`
+  y `design.md` de cada spec (todo lo que queda fuera del bloque delimitado).
+  Un test automatizado verifica que cada cuerpo sigue coincidiendo con su hash:
+  si alguien reescribe un requisito, el test falla. `tasks.md` **queda fuera del
+  manifiesto**: sus casillas son estado vivo y deben poder corregirse. El test
+  no lee historia de git ni un commit fijo; compara contra el manifiesto
+  versionado.
+
+- **S12 — Toda casilla corregida queda registrada.** Cada corrección de
+  `tasks.md` se anota en el bloque de estado de ese archivo con el valor
+  anterior, el nuevo, la evidencia `archivo:línea` y la fecha. Corregir sin
+  registrar borraría el hecho de que el documento estuvo mal, que es información
+  tan valiosa como la corrección.
 
 - **S11 — Los veredictos se re-verifican contra el código actual.** ABSORBIDO
   exige al menos un requisito accionable hoy, verificable contra un módulo vivo
@@ -84,6 +95,7 @@ Documentación únicamente: no se toca código de producción.
 | T5 | S6 | Absorber los 7 ABSORB en `odd/specs/<slug>.md` con citas verbatim |
 | T6 | S7 | Marcar los 2 ARCHIVE como superados con su motivo |
 | T7 | S10 | Manifiesto `.originales.sha256` y test que detecte cualquier reescritura del cuerpo |
+| T8 | S2, S12 | Corregir las casillas falsas de los `tasks.md` y registrar cada corrección |
 
 ## Log
 
@@ -146,3 +158,17 @@ Documentación únicamente: no se toca código de producción.
   `tests/utilidades.py`; startup R5.5 codec de stdout) y las marcadas
   "test, no ejecutado" se escriben como tales en los bloques de estado. No se
   convierten en IMPLEMENTADO por inferencia.
+
+- **L11 (decisión del usuario, verbatim):** «mejor corrígela». La casilla falsa
+  se corrige en el lugar; no alcanza con declararla en el bloque de estado.
+
+- **L12 (correcciones a S2/S10 y verificaciones propias):** como corregir una
+  casilla edita `tasks.md`, S2 se acota a los requisitos y enunciados, y
+  `tasks.md` sale del manifiesto de hashes de S10. Para no borrar el hecho de
+  que el documento estaba mal, se agrega S12. Las cinco afirmaciones se
+  verificaron de forma independiente antes de corregir: `src/odin/__init__.py`
+  tiene 1 línea sin aliases; `--version` existe en `main_window.py:480`;
+  `dibujar_en_hilo_principal` da 0 hits; `def houghCircles`/`houghpeaks`/
+  `imregionalmax` dan 0 hits; y el Log del propio
+  `odin-startup-structure/tasks.md` dice «Pendiente 12.2», «Pendiente 14» y
+  «Pendiente 16» (`:403,406,409`), contradiciendo sus casillas `[x]`.
