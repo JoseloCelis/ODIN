@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/JoseloCelis/ODIN/compare/v0.1.3...v0.1.4) (2026-11-22)
+
+
+### Bug Fixes
+
+* **docs:** traer la cadena de absorcion completa a main ([863886b](https://github.com/JoseloCelis/ODIN/commit/863886bfccb2363eef520bf8017256ee9b7696d1))
+
 ## [0.1.3](https://github.com/JoseloCelis/ODIN/compare/v0.1.2...v0.1.3) (2026-11-22)
 
 
