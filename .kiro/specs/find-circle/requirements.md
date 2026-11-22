@@ -1,3 +1,20 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/find-circle.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | IMPLEMENTADO | `find_circle.py:46-105` (salida (N,2), vacío (0,2) en `:92`, orden irrelevante); tests `tests/unit/Ajustes/test_etapa8_find_circle.py:64,74,82` |
+> | R2 | IMPLEMENTADO | `tolerancia_anillo` `find_circle.py:31-43` (`min(10, 0.25·re)`), parámetro explícito `:46,98`; tests `:105,116,129,138` |
+> | R3 | IMPLEMENTADO | `cobertura_angular` `find_circle.py:187-229`, `validar_anillo:231-262`; umbrales `:26-28`; aborta con motivo en `main_controller.py:321-325`; tests `:151,161,178,188,203` |
+> | R4 | IMPLEMENTADO | `validar_anillo:237-260` (<3 puntos y cobertura insuficiente); tests `:237,259` |
+> | R5 | IMPLEMENTADO | centro escalar `find_circle.py:64-71`; el orquestador pasa `mejor_centro` (`main_controller.py:298-303,317`); tests `:157,278` |
+> | R6 | IMPLEMENTADO | `find_circle.py:75-86` (`re=None`/`re<=0` → `ValueError` con `segmento_mas_largo`), `segmento_mas_largo:107-183`; tests `:289,297,304,311,323` |
+>
+> **Pendientes:** ninguno.
+> **Divergencias verificadas:** ninguna. La banda `[0.6·r0, r0]` no pertenece a este spec (L8, candidata B falsa) y no se registra.
+> **Inciertos:** R6.4 (equivalencia contra `b350deb`) no se re-ejecutó en esta reverificación; el comportamiento está cubierto por los tests `:311-343`.
+<!-- ESTADO:FIN -->
+
 # Requirements Document — find-circle (etapa ⑧)
 
 ## Introduction

@@ -1,3 +1,19 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/mag-fase.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | IMPLEMENTADO | `mag_fase.py:23`: `np.hypot(GrX, GrY)`; tests `tests/unit/Preprocesamiento/test_etapa2_mag_fase.py:17,37` |
+> | R2 | IMPLEMENTADO | `mag_fase.py:24-26`: división por el máximo solo si > 0; imagen plana queda en ceros; tests `test_etapa2_mag_fase.py:27,37` |
+> | R3 | IMPLEMENTADO | `mag_fase.py:29-30`: `atan2*180/π`, `-180` se mapea a `180`; test `test_etapa2_mag_fase.py:61` |
+> | R4 | IMPLEMENTADO | `mag_fase.py:7`: único import (`numpy`); sin `cv2` ni UI |
+> | R5 | IMPLEMENTADO | `mag_fase.py:19-20`: entrada vacía devuelve tuplas vacías sin excepción de NumPy; test `test_etapa2_mag_fase.py:54` |
+>
+> **Pendientes:** ninguno.
+> **Divergencias verificadas:** R4.1 y R5.1 están desactualizados: describen `import cv2` y el `ValueError` interno de NumPy como defectos vigentes; ambos están corregidos. `design.md:50,64` repite la deuda D1.
+> **Inciertos:** ninguno.
+<!-- ESTADO:FIN -->
+
 # Requirements Document
 
 ## Introduction

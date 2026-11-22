@@ -1,3 +1,24 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/hough-circles.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | IMPLEMENTADO | `hough_circles.py:34-108`; rechazos `:50-58`, entrada vacía `:65-68`; tests `tests/unit/Procesamiento/test_etapa7_hough_circles.py:83,90,97,107,117` |
+> | R2 | IMPLEMENTADO | `main_controller.py:79-96`: radio por barrido o del usuario; sin constante de diámetro; test `:236` |
+> | R3 | IMPLEMENTADO | `estimar_radio` `hough_circles.py:131-184`; `ValueError` de banda `:157-160`; tests `:175,184,191,198` |
+> | R4 | IMPLEMENTADO | `main_controller.py:276` (`r0 = min(alto, ancho)/2`); la banda efectiva es `[0.08·r0, r0]` de R10 (`hough_circles.py:188-268`) |
+> | R5 | IMPLEMENTADO | `hough_circles.py:23-28` (`UMBRAL_AMBIGUEDAD=0.8`, `SEPARACION_AMBIGUEDAD_PX=6.0`); tests `:213,221` |
+> | R6 | IMPLEMENTADO | `main_window.py:186-205` (SpinRow «Diámetro (px)» + botón Auto) y `main_controller.py:35-72`; tests `:353,362,372,383,395,404,415,430` |
+> | R7 | IMPLEMENTADO | test `:251` (cadena con y sin contraste invertido) |
+> | R8 | IMPLEMENTADO | utilidad verificada y funciones eliminadas: 0 definiciones de `houghCircles`/`houghpeaks`/`imregionalmax` en `src/`; registro `.kiro/specs/hough-circles/tasks.md:63-64,80` |
+> | R9 | IMPLEMENTADO | `mejor_centro` `hough_circles.py:111-127` (por votos; `None` sin picos); tests `:139,151,157` |
+> | R10 | IMPLEMENTADO | `estimar_radio_dominante` `hough_circles.py:188-268` (dos escalas, ≥2 candidatos); tests `:288,299,313,319,326` |
+>
+> **Pendientes:** ninguna obligación pendiente. Limitaciones declaradas: top-k de radios para círculos concéntricos (R5.4) y diámetro < 8 % del lado menor del recorte (R10.5).
+> **Divergencias verificadas:** R4 — el docstring `hough_circles.py:144-145` todavía documenta la banda descartada `[0.6*r0, r0]` como la de R4; el barrido real es `[0.08*r0, r0]` (R10.1). R8 — `requirements.md:160-170`, `design.md:26-33` y el docstring `hough_circles.py:16-17` describen `houghCircles`/`houghpeaks`/`imregionalmax` como código muerto presente; en `src/` no quedan definiciones (eliminadas; registro en `tasks.md:63-64,80`).
+> **Inciertos:** las cifras de evidencia medida (R3.3: 427.6 px; R10.4: 428.0 px, 10.9 s) no se re-ejecutaron en esta reverificación; se conservan como evidencia histórica del spec.
+<!-- ESTADO:FIN -->
+
 # Tasks Document — hough-circles (etapa ⑦)
 
 ## Tarea 1: Especificación — hecha
@@ -63,6 +84,7 @@
 - [x] Decisión sobre el código muerto: `houghCircles`, `houghpeaks` e
       `imregionalmax` siguen **sin llamadores** (verificado por grep). No se
       borran en esta tarea: la regla del proyecto exige autorización explícita.
+      <!-- estado superado: las funciones fueron eliminadas despues -->
 - [ ] `MEMORY.md` y commit.
 
 ## Pendientes anotados
@@ -73,3 +95,7 @@
    quedan fuera de la banda (R10.5). Se resuelven declarando el diámetro a mano.
 3. **Costo del barrido holgado**: 10.9 s sobre 10 028 bordes, dominado por la
    convolución de las etapas ①-⑥ (50.7 s en el mismo recorte).
+
+## Correcciones de estado
+
+- Tarea 5 — anterior `[x]`, nota, sin invertir (superada: las funciones fueron eliminadas después); evidencia `.kiro/specs/hough-circles/tasks.md:63` y 0 definiciones de `houghCircles`/`houghpeaks`/`imregionalmax` en `src/`; 2026-11-21.
