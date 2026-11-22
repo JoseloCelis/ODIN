@@ -1,3 +1,20 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/otsu-rosin.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | IMPLEMENTADO | `otsu_rosin.py:19-21,43`: `IG > 0`, 256 bins; vacío → `0.0`; tests `tests/unit/Procesamiento/test_etapa4_otsu_rosin.py:91,105` |
+> | R2 | IMPLEMENTADO | `otsu_rosin.py:57-100`: argmax de `vB`; tests `test_etapa4_otsu_rosin.py:33,57` |
+> | R3 | IMPLEMENTADO | `otsu_rosin.py:98`: argmax determinista dentro de la meseta; test `test_etapa4_otsu_rosin.py:43` (meseta plana) |
+> | R4 | IMPLEMENTADO | `otsu_rosin.py:102-161`: Rosin pico→cola, respaldo a Otsu (`:159`); test `test_etapa4_otsu_rosin.py:114` |
+> | R5 | IMPLEMENTADO | `otsu_rosin.py:29-40,45-52`: un solo bin centrado en el valor real y rescate del caso casi-constante; tests `test_etapa4_otsu_rosin.py:68,76` |
+> | R6 | IMPLEMENTADO | `otsu_rosin.py:9`: solo `numpy`; sin `gi`/`GLib`/matplotlib |
+>
+> **Pendientes:** ninguno.
+> **Divergencias verificadas:** R6.1 está desactualizado: describe la deuda D3 (`GLib.idle_add(dibujar_en_hilo_principal, ...)`) como vigente; el módulo ya no invoca UI (`design.md:80-81,94` lo repite).
+> **Inciertos:** ninguno.
+<!-- ESTADO:FIN -->
+
 # Requirements Document
 
 ## Introduction

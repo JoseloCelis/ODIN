@@ -62,14 +62,32 @@ Documentación únicamente: no se toca código de producción.
   su veredicto y el enlace a la versión ODD. Es el punto de entrada para saber
   qué está vigente sin abrir nueve documentos.
 
-- **S10 — El cuerpo original queda inmutable, y eso se prueba.** Un manifiesto
-  `odd/specs/.originales.sha256` guarda el hash del cuerpo de `requirements.md`
-  y `design.md` de cada spec (todo lo que queda fuera del bloque delimitado).
-  Un test automatizado verifica que cada cuerpo sigue coincidiendo con su hash:
-  si alguien reescribe un requisito, el test falla. `tasks.md` **queda fuera del
-  manifiesto**: sus casillas son estado vivo y deben poder corregirse. El test
-  no lee historia de git ni un commit fijo; compara contra el manifiesto
-  versionado.
+- **S10 — Los tres archivos quedan pinneados con dos hashes, y eso se prueba.**
+  Un manifiesto `odd/specs/.originales.sha256` guarda **dos** hashes por archivo
+  (`requirements.md`, `design.md` y `tasks.md` de cada spec):
+
+  - `cuerpo` — todo lo que queda **fuera** del bloque delimitado. Protege el
+    texto del requisito: si alguien lo reescribe, el test falla nombrando el
+    archivo y la causa. Es lo que le da dientes automáticos a S2.
+  - `archivo` — el archivo **completo**, bloque de estado incluido. Protege la
+    cabecera: si cambia, hay que actualizar el hash en el mismo commit.
+
+  Un solo hash no alcanza: con el bloque adentro no se distingue "actualicé el
+  estado" de "reescribí un requisito", y S2 quedaría sin verificación
+  automática. Con los dos, toda modificación no declarada rompe al menos uno.
+
+  **Cómo convive con S2 y S12:** el manifiesto no prohíbe corregir, exige que la
+  corrección sea visible. Una casilla o un bloque corregido mueve `archivo`; un
+  requisito reescrito mueve también `cuerpo`. El hash se actualiza **en el mismo
+  commit** que la corrección, S12 registra por qué, y el diff muestra qué cambió.
+  El manifiesto no es "estos archivos nunca cambian": es "ningún cambio pasa sin
+  que alguien lo declare, y un requisito reescrito no se puede disfrazar de
+  actualización de estado".
+
+  El test no lee historia de git ni un commit fijo; compara contra el manifiesto
+  versionado. **Orden:** el manifiesto se genera después de T3, porque los
+  bloques de estado cambian `archivo`; generarlo antes haría fallar el test al
+  insertarlos. El hash `cuerpo` de ese momento pasa a ser la referencia de S2.
 
 - **S12 — Toda casilla corregida queda registrada.** Cada corrección de
   `tasks.md` se anota en el bloque de estado de ese archivo con el valor
@@ -90,11 +108,11 @@ Documentación únicamente: no se toca código de producción.
 |----|-------|---------|
 | T1 | S8 | Extender `.gitignore` para versionar `odd/specs/*.md` — **hecho** |
 | T2 | S11 | Re-verificar los 9 veredictos contra el código actual — **hecho**, ver L7 |
-| T3 | S9 | Escribir `odd/specs/README.md` con la tabla de los 9 specs |
-| T4 | S3, S4, S5 | Bloque de estado en los **tres** archivos de cada spec, con evidencia y PENDIENTES |
-| T5 | S6 | Absorber los 7 ABSORB en `odd/specs/<slug>.md` con citas verbatim |
-| T6 | S7 | Marcar los 2 ARCHIVE como superados con su motivo |
-| T7 | S10 | Manifiesto `.originales.sha256` y test que detecte cualquier reescritura del cuerpo |
+| T3 | S3, S4, S5 | Bloque de estado en los **tres** archivos de cada spec, con evidencia y PENDIENTES — **hecho** |
+| T4 | S9 | Escribir `odd/specs/README.md` con la tabla de los 9 specs — **hecho** |
+| T5 | S6 | Absorber los **9** ABSORB en `odd/specs/<slug>.md` con citas verbatim — **hecho** |
+| T6 | S7 | Marcar los ARCHIVE como superados — **sin objeto**: S7 verificó que no hay ninguno |
+| T7 | S10 | Manifiesto con **dos** hashes por archivo (`cuerpo` y `archivo`) y test que distinga un requisito reescrito de una actualización de estado — **hecho** |
 | T8 | S2, S12 | Corregir las casillas falsas de los `tasks.md` y registrar cada corrección |
 
 ## Log
@@ -172,3 +190,53 @@ Documentación únicamente: no se toca código de producción.
   `imregionalmax` dan 0 hits; y el Log del propio
   `odin-startup-structure/tasks.md` dice «Pendiente 12.2», «Pendiente 14» y
   «Pendiente 16» (`:403,406,409`), contradiciendo sus casillas `[x]`.
+
+- **L13 (decisión del usuario, verbatim):** «prefiero que el manifiesto cubra
+  task.md». Cambia S10: el manifiesto cubre los tres archivos, no dos.
+
+- **L14 (por qué L13 mejora el diseño):** dejar `tasks.md` fuera del manifiesto
+  dejaba las correcciones invisibles y la protección a medias. Cubriéndolo, toda
+  corrección mueve el hash y el hash se actualiza en el mismo commit: el diff
+  muestra qué cambió y S12 registra por qué. El manifiesto pasa de "no cambies"
+  a "no cambies sin declararlo", que es una garantía más fuerte y compatible con
+  S2 y S12. Consecuencia de orden: T7 se ejecuta **después** de T3.
+
+- **L15 (decisión del usuario, verbatim):** «si dale con t3, para que los bloques
+  de estado no queden fuera del hash».
+
+- **L16 (por qué son dos hashes y no uno):** meter el bloque en el hash único
+  cumple L15 pero deja el hash incapaz de distinguir una actualización de estado
+  de un requisito reescrito, y S2 perdería su verificación automática. Se usa un
+  hash del `cuerpo` (lo de fuera del bloque) y otro del `archivo` completo: L15
+  queda cumplido y S2 conserva dientes.
+
+- **L17 (T3 y T7 ejecutados):** los 27 archivos de `.kiro/specs/` tienen bloque
+  de estado delimitado (commit `94cae6a`); el manifiesto `.originales.sha256`
+  guarda dos hashes por archivo y `tests/unit/test_kiro_inmutabilidad.py` los
+  verifica (commit `79dff33`). El test se probó en rojo: tocar el cuerpo rompe
+  `cuerpo`, tocar solo el bloque rompe `archivo` y no `cuerpo`.
+
+- **L18 (T5 completado):** los 9 specs absorbidos en `odd/specs/` con
+  `README.md` como índice (commit `696a035`). `tests/unit/test_absorcion_kiro.py`
+  verifica que cada cita sea substring verbatim del original ignorando espaciado.
+
+- **L19 (cuatro citas falsas en los bloques, corregidas en `8640e6c`):** los
+  bloques de T3 citaban líneas equivocadas en cuatro specs: `mag-fase`
+  (`design.md:34,48` → `:50,64`), `otsu-rosin` (`:14,63` → `:80-81,94`, donde la
+  14 era el propio bloque citándose a sí mismo), `hough-circles`
+  (`requirements.md:143-149` y `design.md:11-12` → `:160-170` y `:26-33`) y
+  `kernel-separable` (daba `wr` por inexistente; existe sin usar en
+  `deri_gauss.py:12`). **Lección:** un bloque de estado se audita yendo al
+  archivo citado; leer el bloque no revela sus citas falsas. Las encontraron tres
+  agentes independientes, no su autor.
+
+- **L20 (T6 sin objeto):** no hay specs ARCHIVADOS. Los dos que la auditoría
+  previa marcó (`non-max-sup`, `circulo-simple`) tienen módulo vivo y requisitos
+  accionables, con contradicciones verificadas en R1.1/R2.1 y R1.6.
+
+- **L21 (divergencia agregada por el padre):** `design.md:533` de
+  `odin-startup-structure` declara `MAX_WARN_LEN = 200`; el código trunca todo a
+  `MAX_MSG_LEN = 500` y `MAX_WARN_LEN` no existe en esta rama
+  (`bootstrap.py:24,93`). El worker no la escribió porque no estaba en su lista;
+  S5 obliga a registrarla. Su etiqueta «R5.3» era inventada: ese requisito no
+  existe.

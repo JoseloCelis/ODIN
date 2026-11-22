@@ -1,3 +1,20 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/odin-startup-structure.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | CONTRADICHO | R1.3 (`requirements.md:56`) exige `Gdk.Display.get_name()`; el código usa `type(display).__name__` (`bootstrap.py:291`). R1.1/R1.2/R1.4 sí: validación `:273-289`, mensaje con componente/causa/acción `:283-286`, `sys.exit(1)` `:289`, antes de construir MainWindow (`main_window.py:510-515`) |
+> | R2 | CONTRADICHO | R2.5 (`requirements.md:71`): la cadena `"Preprocesamiento_Suite: OK"` no existe; el loader registra `"Handle_Module: OK"` (`bootstrap.py:243`) y `"Módulos resueltos: ..."` (`:255-258`). R2.1-R2.4 sí (`:221-251`) |
+> | R3 | CONTRADICHO | R3.1 (`requirements.md:81`): `os.uname().release` sin try/except (`bootstrap.py:165`); el criterio exige NATIVE_LINUX si `os.uname()` falla. Resto sí: `_classify:127-133` (dockerenv prioritario), `_resolve_base_path:136-158`, log `:180-184`, warning >200 ms `:173-178` |
+> | R4 | PENDIENTE | `requirements.md:106-107,111` exigen límites de 2 s/3 s con aborto; no existen (solo se loguea la duración en `main_window.py:521-524`). R4.3-R4.5 sí: orden `main_window.py:73-107,238-313`, respaldo `Gtk.Picture` `:238-257`, `present()` `:526` |
+> | R5 | INCIERTO | R5.1-R5.4 y R5.6 verificables (`bootstrap.py:23-24,93-107,109-119`; fallback a stderr + `sys.exit(1)` `:100-107`); R5.5 no: `StartupLogger` usa `sys.stdout` sin codec declarado (`:74-75`), el encoding depende del locale |
+> | R6 | IMPLEMENTADO | `_detect_mode:201-206` (desde `__package__`), logs de modo y módulos `:213-216,255-258`, errores con alias/modo `:234-251`; `main_window.py:487,493`; tests `tests/integration/test_bootstrap_arranque.py:174,186,209` |
+>
+> **Pendientes:** R4.1, R4.2 y R4.6 — límites de 2 s por componente y 3 s de construcción, con aborto y `sys.exit(1)`: nunca implementados; hoy solo se registra la duración (`main_window.py:521-524`).
+> **Divergencias verificadas:** R1.3 (`requirements.md:56` vs `bootstrap.py:291`); R2.5 (`requirements.md:71`; `bootstrap.py:243,255-258`); R3.1 (`requirements.md:81` vs `bootstrap.py:165`).
+> **Inciertos:** R5.5 (`requirements.md:125`): el logger no fija UTF-8 (`bootstrap.py:74-75`).
+<!-- ESTADO:FIN -->
+
 # Design Document: odin-startup-structure
 
 ## Overview

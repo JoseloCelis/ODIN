@@ -1,3 +1,17 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/circulo-simple.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | CONTRADICHO | R1.6: el spec exige `ValueError` para entrada `None`/no array (`requirements.md:52`); el código lanza `TypeError` (`circulo_simple.py:55-57`). Resto verificado: forma/N<3/colinealidad/radicando → `ValueError` (`:61-103,132-135`); orden irrelevante (lstsq) |
+> | R2 | IMPLEMENTADO | `pv = max(|d−r|) − min(|d−r|)` (`circulo_simple.py:138-145`); test `tests/unit/Ajustes/test_etapa9_circulo_simple.py:132` |
+> | R3 | IMPLEMENTADO | `main_controller.py:321-338`: `Circulo_simple` se llama tras `validar_anillo` y el motivo del rechazo se muestra en el diálogo |
+>
+> **Pendientes:** ninguno.
+> **Divergencias verificadas:** R1.6 — `requirements.md:52` exige `ValueError`; `circulo_simple.py:55` lanza `TypeError` para `None`/no ndarray (el propio docstring `:48-51` lo declara así).
+> **Inciertos:** ninguno.
+<!-- ESTADO:FIN -->
+
 # Requirements Document — circulo-simple (etapa ⑨)
 
 ## Introduction
