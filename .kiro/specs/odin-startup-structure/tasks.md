@@ -186,6 +186,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
 
 - [x] 10. Refactorizar src/odin/__init__.py
   - [x] 10.1 Actualizar imports de preprocesamiento
+    <!-- estado: sin evidencia; el archivo no contiene aliases (verificado) -->
     - Reemplazar imports directos por imports desde archivos físicos con alias
     - Cambiar `from .Preprocesamiento import LSC, DoubleTh, ...` por:
       ```python
@@ -203,6 +204,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - _Requisitos: 2.1_
   
   - [x] 10.2 Exportar módulo bootstrap
+    <!-- estado: sin evidencia; el archivo no contiene aliases (verificado) -->
     - Agregar `from . import bootstrap` al inicio (después de imports de preprocesamiento)
     - Agregar `from .bootstrap import BootstrapResult`
     - Actualizar `__all__` para incluir `"bootstrap"` y `"BootstrapResult"`
@@ -242,7 +244,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - Agregar al inicio del constructor: `t0 = time.monotonic()`
     - _Requisitos: 4.1_
   
-  - [x] 12.2 Implementar orden estricto de construcción de widgets
+  - [ ] 12.2 Implementar orden estricto de construcción de widgets
     - Documentar con comentarios el orden: ToolbarView → HeaderBar → NavigationSplitView → sidebar → VisualizadorInteractivo → ViewStack
     - No reorganizar código, solo asegurar que el orden actual se mantiene
     - _Requisitos: 4.3_
@@ -310,7 +312,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
       ```
     - _Requisitos: 4.1, 4.2_
 
-- [x] 14. Checkpoint — Verificar integración completa
+- [ ] 14. Checkpoint — Verificar integración completa
   - Ejecutar `python3 -m src.odin.main` (modo PACKAGE) y verificar que arranca sin errores
   - Ejecutar `python3 src/main.py` (modo SCRIPT) y verificar que arranca sin errores
   - Verificar que el log de arranque contiene las 4 fases en orden
@@ -318,7 +320,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
 
 - [x] 15. Escribir tests de integración end-to-end
   - Nota: 15.1-15.3 (opcionales, `*`) omitidas; 15.4 implementado y verde. El fallo sin display se verificó manualmente: exit 1 + `DISPLAY_VALID | ERROR`.
-  - [ ]* 15.1 Test de arranque exitoso en modo PACKAGE
+  - [x]* 15.1 Test de arranque exitoso en modo PACKAGE
     - Ejecutar `python3 -m src.odin.main --version` (agregar flag --version si no existe, o usar otro método de verificación)
     - Capturar stdout y verificar presencia de las 4 fases en orden
     - Verificar que el proceso termina con código 0
@@ -342,7 +344,7 @@ La implementación se divide en 8 fases principales que construyen progresivamen
     - Verificar que los 8 módulos de Preprocesamiento_Suite aparecen en el orden exacto de PREPROCESAMIENTO_SUITE_ORDER
     - _Requisitos: 2.1, 2.5_
 
-- [x] 16. Checkpoint final — Verificación completa del sistema
+- [ ] 16. Checkpoint final — Verificación completa del sistema
   - Ejecutar todos los tests unitarios y de integración
   - Verificar que las 11 propiedades de corrección pasan
   - Verificar que el tiempo de arranque de MainWindow < 3s en hardware de referencia
@@ -405,6 +407,19 @@ La implementación se divide en 8 fases principales que construyen progresivamen
   VisualizadorInteractivo → ViewStack).
 - Pendiente 14: ejecutar la GUI completa en modo PACKAGE y SCRIPT (requiere pantalla).
 - Pendiente 15.1/15.2: exigen un flag `--version` que no existe todavía.
+  <!-- estado superado en 15.1: `--version` existe en `src/odin/views/main_window.py:480`,
+       con test en `tests/integration/test_bootstrap_arranque.py:287`. El tramo de 15.2
+       (falta el test en modo PACKAGE) sigue vigente y por eso la casilla queda `[ ]`. -->
   Pendiente 15.3: falta el test que ejecute un subproceso sin DISPLAY.
 - Pendiente 16: no se midieron el tiempo de arranque de MainWindow (< 3 s), el de
   detección de entorno (< 200 ms) ni las 11 propiedades de corrección.
+
+## Correcciones de estado
+
+- 12.2 — anterior `[x]`, nuevo `[ ]` (invertida: el Log del propio archivo la declara pendiente); evidencia `.kiro/specs/odin-startup-structure/tasks.md:403`; 2026-11-21.
+- 14 — anterior `[x]`, nuevo `[ ]` (invertida: el Log del propio archivo la declara pendiente); evidencia `.kiro/specs/odin-startup-structure/tasks.md:406`; 2026-11-21.
+- 16 — anterior `[x]`, nuevo `[ ]` (invertida: el Log del propio archivo la declara pendiente); evidencia `.kiro/specs/odin-startup-structure/tasks.md:409`; 2026-11-21.
+- 15.1 — anterior `[ ]`, nuevo `[x]` (invertida: `--version` existe y tiene test); evidencia `src/odin/views/main_window.py:480` y `tests/integration/test_bootstrap_arranque.py:287`; 2026-11-21.
+- Log `:407` — sin reescritura (es registro histórico); se agrega nota de estado superado solo para el tramo 15.1. El tramo 15.2 se mantiene vigente: no hay test en modo PACKAGE; evidencia `src/odin/views/main_window.py:480`; 2026-11-21.
+- 10.1 — anterior `[x]`, nota, sin invertir (sin evidencia de si se hizo y se perdió o nunca se hizo); evidencia `src/odin/__init__.py:1`; 2026-11-21.
+- 10.2 — anterior `[x]`, nota, sin invertir (sin evidencia de si se hizo y se perdió o nunca se hizo); evidencia `src/odin/__init__.py:1`; 2026-11-21.

@@ -22,6 +22,7 @@
 
 - [x] En `dibujar_en_hilo_principal` (DeriGauss.py): columna
   `wc = min(640, nc−1)`; fila `wr` acotada a `[0, nr−1]`.
+  <!-- estado superado: la funcion y el archivo ya no existen -->
 - [x] Verificar AC 6.1/6.2: imagen angosta (100×80) sin `IndexError` — OK.
 
 ## Tarea 5: Cross-check de la etapa completa
@@ -36,3 +37,7 @@
 
 - [x] Commit `fix:` con los tres arreglos + resultado de las baterías.
 - [ ] Actualizar `MEMORY.md`.
+
+## Correcciones de estado
+
+- Tarea 4 — anterior `[x]`, nota, sin invertir (superada: la función y el archivo ya no existen); evidencia `.kiro/specs/kernel-separable/tasks.md:23` y 0 hits de `dibujar_en_hilo_principal` / sin `DeriGauss.py` en `src/`; 2026-11-21.

@@ -63,6 +63,7 @@
 - [x] Decisión sobre el código muerto: `houghCircles`, `houghpeaks` e
       `imregionalmax` siguen **sin llamadores** (verificado por grep). No se
       borran en esta tarea: la regla del proyecto exige autorización explícita.
+      <!-- estado superado: las funciones fueron eliminadas despues -->
 - [ ] `MEMORY.md` y commit.
 
 ## Pendientes anotados
@@ -73,3 +74,7 @@
    quedan fuera de la banda (R10.5). Se resuelven declarando el diámetro a mano.
 3. **Costo del barrido holgado**: 10.9 s sobre 10 028 bordes, dominado por la
    convolución de las etapas ①-⑥ (50.7 s en el mismo recorte).
+
+## Correcciones de estado
+
+- Tarea 5 — anterior `[x]`, nota, sin invertir (superada: las funciones fueron eliminadas después); evidencia `.kiro/specs/hough-circles/tasks.md:63` y 0 definiciones de `houghCircles`/`houghpeaks`/`imregionalmax` en `src/`; 2026-11-21.
