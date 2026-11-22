@@ -57,6 +57,8 @@ odd/tasks/*
 !odd/specs/
 odd/specs/*
 !odd/specs/*.md
+!odd/specs/*.py
+!odd/specs/.originales.sha256
 
 # Configuracion local del hook de revision (Gentleman Guardian Angel)
 .gga
