@@ -108,8 +108,8 @@ Documentación únicamente: no se toca código de producción.
 |----|-------|---------|
 | T1 | S8 | Extender `.gitignore` para versionar `odd/specs/*.md` — **hecho** |
 | T2 | S11 | Re-verificar los 9 veredictos contra el código actual — **hecho**, ver L7 |
-| T3 | S9 | Escribir `odd/specs/README.md` con la tabla de los 9 specs |
-| T4 | S3, S4, S5 | Bloque de estado en los **tres** archivos de cada spec, con evidencia y PENDIENTES |
+| T3 | S3, S4, S5 | Bloque de estado en los **tres** archivos de cada spec, con evidencia y PENDIENTES — **hecho** |
+| T4 | S9 | Escribir `odd/specs/README.md` con la tabla de los 9 specs |
 | T5 | S6 | Absorber los 7 ABSORB en `odd/specs/<slug>.md` con citas verbatim |
 | T6 | S7 | Marcar los 2 ARCHIVE como superados con su motivo |
 | T7 | S10 | Manifiesto con **dos** hashes por archivo (`cuerpo` y `archivo`) y test que distinga un requisito reescrito de una actualización de estado (después de T3) |

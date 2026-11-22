@@ -1,3 +1,20 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/kernel-separable.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | IMPLEMENTADO | `deri_gauss.py:34-42`: `gk` normalizado por su suma; simetría por construcción (`i` en `[-n, n]`) |
+> | R2 | IMPLEMENTADO | `deri_gauss.py:40-43`: `dgk = -(1/σ²)·i·gk`, antisimétrico |
+> | R3 | IMPLEMENTADO | `deri_gauss.py:51-52`; contraste ejecutado en esta reverificación: `sepFilter2D` con correlación sobre `−dgk` y `BORDER_CONSTANT`, y referencia NumPy, discrepancia ≤ 7e-17 (5 casos, σ=1.0–4.0). Sin cross-check automático versionado |
+> | R4 | IMPLEMENTADO | `convolucion.py:25-34`: soporte inclusivo `j ∈ [i−nk, i+nk]` con `j0/j1` recortados (zero-padding); equivalencia con `np.convolve(mode='same')` ≤ 6e-17 en tamaños habituales |
+> | R5 | IMPLEMENTADO | `deri_gauss.py:21-23`: retorno temprano antes de `n = round(3σ)` (`:30`); tests `tests/unit/Preprocesamiento/test_etapa1_kernel_separable.py:17,25` |
+> | R6 | PENDIENTE | no implementado: el módulo es modelo puro sin visualización (`deri_gauss.py:1-8`); no existen `wc = min(640, nc−1)` ni `wr` |
+>
+> **Pendientes:** R6 — visualización de cortes (`wc = min(640, nc−1)`, `wr` acotada a `[0, nr−1]`): nunca implementada; el módulo no contiene código de visualización.
+> **Divergencias verificadas:** R4.2 — el caso literal `n ≤ 2·nk` es inconsistente con la referencia `np.convolve(mode='same')` (p.ej. imagen 5×5 con σ=3: referencia (5,19) vs salida (5,5)); el código calcula la convolución completa centrada con zero-padding. R3/R4 — no hay cross-check automático versionado: `tests/utilidades.py:44-49` define `derivada_gaussiana_referencia` y ningún test la invoca (0 usos).
+> **Inciertos:** ninguno.
+<!-- ESTADO:FIN -->
+
 # Tasks Document — kernel-separable
 
 ## Tarea 1: Escribir la especificación
