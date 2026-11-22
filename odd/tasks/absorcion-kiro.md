@@ -109,10 +109,10 @@ Documentación únicamente: no se toca código de producción.
 | T1 | S8 | Extender `.gitignore` para versionar `odd/specs/*.md` — **hecho** |
 | T2 | S11 | Re-verificar los 9 veredictos contra el código actual — **hecho**, ver L7 |
 | T3 | S3, S4, S5 | Bloque de estado en los **tres** archivos de cada spec, con evidencia y PENDIENTES — **hecho** |
-| T4 | S9 | Escribir `odd/specs/README.md` con la tabla de los 9 specs |
-| T5 | S6 | Absorber los 7 ABSORB en `odd/specs/<slug>.md` con citas verbatim |
-| T6 | S7 | Marcar los 2 ARCHIVE como superados con su motivo |
-| T7 | S10 | Manifiesto con **dos** hashes por archivo (`cuerpo` y `archivo`) y test que distinga un requisito reescrito de una actualización de estado (después de T3) |
+| T4 | S9 | Escribir `odd/specs/README.md` con la tabla de los 9 specs — **hecho** |
+| T5 | S6 | Absorber los **9** ABSORB en `odd/specs/<slug>.md` con citas verbatim — **hecho** |
+| T6 | S7 | Marcar los ARCHIVE como superados — **sin objeto**: S7 verificó que no hay ninguno |
+| T7 | S10 | Manifiesto con **dos** hashes por archivo (`cuerpo` y `archivo`) y test que distinga un requisito reescrito de una actualización de estado — **hecho** |
 | T8 | S2, S12 | Corregir las casillas falsas de los `tasks.md` y registrar cada corrección |
 
 ## Log
@@ -209,3 +209,34 @@ Documentación únicamente: no se toca código de producción.
   de un requisito reescrito, y S2 perdería su verificación automática. Se usa un
   hash del `cuerpo` (lo de fuera del bloque) y otro del `archivo` completo: L15
   queda cumplido y S2 conserva dientes.
+
+- **L17 (T3 y T7 ejecutados):** los 27 archivos de `.kiro/specs/` tienen bloque
+  de estado delimitado (commit `94cae6a`); el manifiesto `.originales.sha256`
+  guarda dos hashes por archivo y `tests/unit/test_kiro_inmutabilidad.py` los
+  verifica (commit `79dff33`). El test se probó en rojo: tocar el cuerpo rompe
+  `cuerpo`, tocar solo el bloque rompe `archivo` y no `cuerpo`.
+
+- **L18 (T5 completado):** los 9 specs absorbidos en `odd/specs/` con
+  `README.md` como índice (commit `696a035`). `tests/unit/test_absorcion_kiro.py`
+  verifica que cada cita sea substring verbatim del original ignorando espaciado.
+
+- **L19 (cuatro citas falsas en los bloques, corregidas en `8640e6c`):** los
+  bloques de T3 citaban líneas equivocadas en cuatro specs: `mag-fase`
+  (`design.md:34,48` → `:50,64`), `otsu-rosin` (`:14,63` → `:80-81,94`, donde la
+  14 era el propio bloque citándose a sí mismo), `hough-circles`
+  (`requirements.md:143-149` y `design.md:11-12` → `:160-170` y `:26-33`) y
+  `kernel-separable` (daba `wr` por inexistente; existe sin usar en
+  `deri_gauss.py:12`). **Lección:** un bloque de estado se audita yendo al
+  archivo citado; leer el bloque no revela sus citas falsas. Las encontraron tres
+  agentes independientes, no su autor.
+
+- **L20 (T6 sin objeto):** no hay specs ARCHIVADOS. Los dos que la auditoría
+  previa marcó (`non-max-sup`, `circulo-simple`) tienen módulo vivo y requisitos
+  accionables, con contradicciones verificadas en R1.1/R2.1 y R1.6.
+
+- **L21 (divergencia agregada por el padre):** `design.md:533` de
+  `odin-startup-structure` declara `MAX_WARN_LEN = 200`; el código trunca todo a
+  `MAX_MSG_LEN = 500` y `MAX_WARN_LEN` no existe en esta rama
+  (`bootstrap.py:24,93`). El worker no la escribió porque no estaba en su lista;
+  S5 obliga a registrarla. Su etiqueta «R5.3» era inventada: ese requisito no
+  existe.
