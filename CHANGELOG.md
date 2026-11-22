@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.3](https://github.com/JoseloCelis/ODIN/compare/v0.1.2...v0.1.3) (2026-11-22)
+
+
+### Documentation
+
+* **odd:** corregir casillas falsas en el lugar y registrar cada correccion ([355215a](https://github.com/JoseloCelis/ODIN/commit/355215aae1273e2402be4802c7100df0b68ad82c))
+* **odd:** corregir veredictos tras reverificar, los 9 specs son absorbibles ([5699702](https://github.com/JoseloCelis/ODIN/commit/5699702a3d7ca16af6fb87a857cd8261b66dcd8e))
+* **odd:** criterios de absorcion de .kiro y versionado de odd/specs ([79a68bb](https://github.com/JoseloCelis/ODIN/commit/79a68bbbee26824cf58bf90d690fa18b129eea27))
+* **odd:** declarar estado en los tres archivos, divergencias verificadas y test de inmutabilidad ([13ed80d](https://github.com/JoseloCelis/ODIN/commit/13ed80d29399e30007bb902ba814630e18f68392))
+* **odd:** registrar el criterio de absorcion de .kiro y versionar odd/specs ([c9400ba](https://github.com/JoseloCelis/ODIN/commit/c9400ba6347004035dd9b76a4a82653e627268a6))
+
 ## [0.1.2](https://github.com/JoseloCelis/ODIN/compare/v0.1.1...v0.1.2) (2026-11-20)
 
 
