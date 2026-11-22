@@ -15,7 +15,7 @@
 > | R10 | IMPLEMENTADO | `estimar_radio_dominante` `hough_circles.py:188-268` (dos escalas, ≥2 candidatos); tests `:288,299,313,319,326` |
 >
 > **Pendientes:** ninguna obligación pendiente. Limitaciones declaradas: top-k de radios para círculos concéntricos (R5.4) y diámetro < 8 % del lado menor del recorte (R10.5).
-> **Divergencias verificadas:** R4 — el docstring `hough_circles.py:144-145` todavía documenta la banda descartada `[0.6*r0, r0]` como la de R4; el barrido real es `[0.08*r0, r0]` (R10.1). R8 — `requirements.md:143-149`, `design.md:11-12` y el docstring `hough_circles.py:16-17` describen `houghCircles`/`houghpeaks`/`imregionalmax` como código muerto presente; en `src/` no quedan definiciones (eliminadas; registro en `tasks.md:63-64,80`).
+> **Divergencias verificadas:** R4 — el docstring `hough_circles.py:144-145` todavía documenta la banda descartada `[0.6*r0, r0]` como la de R4; el barrido real es `[0.08*r0, r0]` (R10.1). R8 — `requirements.md:160-170`, `design.md:26-33` y el docstring `hough_circles.py:16-17` describen `houghCircles`/`houghpeaks`/`imregionalmax` como código muerto presente; en `src/` no quedan definiciones (eliminadas; registro en `tasks.md:63-64,80`).
 > **Inciertos:** las cifras de evidencia medida (R3.3: 427.6 px; R10.4: 428.0 px, 10.9 s) no se re-ejecutaron en esta reverificación; se conservan como evidencia histórica del spec.
 <!-- ESTADO:FIN -->
 

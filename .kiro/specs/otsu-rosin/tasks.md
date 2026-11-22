@@ -11,7 +11,7 @@
 > | R6 | IMPLEMENTADO | `otsu_rosin.py:9`: solo `numpy`; sin `gi`/`GLib`/matplotlib |
 >
 > **Pendientes:** ninguno.
-> **Divergencias verificadas:** R6.1 está desactualizado: describe la deuda D3 (`GLib.idle_add(dibujar_en_hilo_principal, ...)`) como vigente; el módulo ya no invoca UI (`design.md:14,63` lo repite).
+> **Divergencias verificadas:** R6.1 está desactualizado: describe la deuda D3 (`GLib.idle_add(dibujar_en_hilo_principal, ...)`) como vigente; el módulo ya no invoca UI (`design.md:80-81,94` lo repite).
 > **Inciertos:** ninguno.
 <!-- ESTADO:FIN -->
 

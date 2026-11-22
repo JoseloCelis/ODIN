@@ -10,7 +10,7 @@
 > | R5 | IMPLEMENTADO | `mag_fase.py:19-20`: entrada vacía devuelve tuplas vacías sin excepción de NumPy; test `test_etapa2_mag_fase.py:54` |
 >
 > **Pendientes:** ninguno.
-> **Divergencias verificadas:** R4.1 y R5.1 están desactualizados: describen `import cv2` y el `ValueError` interno de NumPy como defectos vigentes; ambos están corregidos. `design.md:34,48` repite la deuda D1.
+> **Divergencias verificadas:** R4.1 y R5.1 están desactualizados: describen `import cv2` y el `ValueError` interno de NumPy como defectos vigentes; ambos están corregidos. `design.md:50,64` repite la deuda D1.
 > **Inciertos:** ninguno.
 <!-- ESTADO:FIN -->
 
