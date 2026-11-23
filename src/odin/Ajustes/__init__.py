@@ -31,6 +31,13 @@ LSC = Circulo_simple
 circuloSimple = Circulo_simple
 circleFilter = find_circle
 
+# T3 - Línea gruesa (trazo)
+from .models import (
+    MedicionTrazo,
+    medir_trazo,
+    separar_orillas,
+)
+
 __all__ = [
     "find_circle",
     "segmento_mas_largo",
@@ -52,4 +59,7 @@ __all__ = [
     "linea_mc",
     "linea_robusta",
     "linea1",
+    "MedicionTrazo",
+    "medir_trazo",
+    "separar_orillas",
 ]

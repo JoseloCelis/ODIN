@@ -35,10 +35,14 @@ def test_ajustes_expone_ajuste_de_recta() -> None:
         linea1,
         linea_mc,
         linea_robusta,
+        medir_trazo,
+        separar_orillas,
+        MedicionTrazo,
     )
 
-    exponibles = (linea_robusta, linea1, dist_p_recta, euc_space, linea_mc)
-    assert all(callable(funcion) for funcion in exponibles)
+    exponibles = (linea_robusta, linea1, dist_p_recta, euc_space, linea_mc, medir_trazo, separar_orillas, MedicionTrazo)
+    assert all(callable(funcion) for funcion in exponibles if funcion is not MedicionTrazo)
+    assert callable(MedicionTrazo)
 
 
 def test_bootstrap_registra_las_etapas_nuevas() -> None:

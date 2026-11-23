@@ -35,7 +35,7 @@ from typing import Optional
 
 import numpy as np
 
-from src.odin.Ajustes.models.linea_robusta import dist_p_recta, linea_mc
+from .linea_robusta import dist_p_recta, linea_mc
 
 
 @dataclass(frozen=True, slots=True)
