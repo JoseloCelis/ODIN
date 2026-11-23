@@ -29,9 +29,9 @@ En vez de las 4 cubetas por signo de Gx/Gy (que asumen trazo casi horizontal o v
 
 | ID | Specs | Ruta | Estado | Commit |
 |----|-------|------|--------|--------|
-| T1 | S1 | `Procesamiento/models/geometria.py` + `tests/unit/Procesamiento/test_geometria.py` | pendiente | — |
-| T2 | S2, S3, S5 | `Ajustes/models/trazo_linea.py` + `tests/unit/Ajustes/test_trazo_linea.py` (+ prop) | pendiente | — |
-| T3 | S2, S4 | `main_controller.py` (`_rama_recta`), alias en `Ajustes/__init__.py`, registro en `bootstrap.py`, test de integración | pendiente | — |
+| T1 | S1 | `Procesamiento/models/geometria.py` + `tests/unit/Procesamiento/test_geometria.py` | hecho | `18d2d1f` |
+| T2 | S2, S3, S5 | `Ajustes/models/trazo_linea.py` + `tests/unit/Ajustes/test_trazo_linea.py` (+ prop) | hecho | `93d9ba7` |
+| T3 | S2, S4 | `main_controller.py` (`_rama_recta`), alias en `Ajustes/__init__.py` + `models/__init__.py`, vista, test de integración | hecho | `e0ab4f3` |
 
 ## Log
 **L1** (usuario): "Tarea 1: corregir el criterio de línea del clasificador. Causa en src/odin/Procesamiento/models/geometria.py: residual_recta = median(|centrado @ normal|) mide distancia al eje principal, y una línea gruesa tiene DOS orillas, así que da ≈ medio ancho. Medido: 26.848px en recorte limpio contra 8.028px reales del ajuste forzado. Arreglo propuesto: medir contra una banda, no contra una recta de grosor cero: median(||signed| - median(|signed|)|). Ojo: un test con dos líneas paralelas perfectas YA pasa en verde (el círculo resulta inadmisible y el residual va a inf). El caso que falla necesita orillas imperfectas. Pedime los puntos reales o acordamos una banda sintética con ruido antes de escribir el test."
@@ -45,3 +45,9 @@ En vez de las 4 cubetas por signo de Gx/Gy (que asumen trazo casi horizontal o v
 **L5** (duda del usuario y resolución): "solo me queda la duda de si con los puntos obtenidos de la linea central ajustas una tercer recta?" — No: no hay puntos en la línea central; el centro es la recta media de las dos orillas (S4).
 
 **L6** (alcance, usuario): "Estas considerando que si proceso la imagen completa en el caso de la 600mm_imag hay 2 trazos viables por encontrar" → "Puede ser ahora por recorte, sin embargo, si se procesa la imagen completa no es solo un trazo." Decisión: **esta tarea mide UN trazo por recorte** (como MATLAB `rta='r'`). `medir_trazo` separa sobre los puntos cercanos a la línea candidata (ρ, θ), dejándolo preparado para iterar sobre todas las candidatas de `candidatas_lineas`. **Multi-trazo en imagen completa queda como tarea aparte.**
+
+**L7** (cierre de T1, 2026-11-23): criterio de banda implementado en `geometria.py`. RED observado: 2 fallas (`test_residual_recta_es_la_mediana_no_la_media` y `test_linea_gruesa_de_dos_orillas_clasifica_recta`). GREEN: suite completa `358 passed, 1 skipped`. Commit `18d2d1f`.
+
+**L8** (T2, 2026-11-23): `trazo_linea.py` entregado por `gentle-ai-worker` (`separar_orillas`, `medir_trazo`, `MedicionTrazo`) con 19 tests (17 unit + 2 Hypothesis). Endurecimiento del orquestador: alinear el signo de las direcciones SVD antes de promediar el centro, para que no se cancelen a (0,0) si salen opuestas. Commit `93d9ba7`.
+
+**L9** (T3, 2026-11-23): `medir_trazo` integrado en `_rama_recta` (mide ancho+centro del trazo grueso; fallback a línea única si `medir_trazo` devuelve `None`). Corrección del worker detectada por el orquestador: (1) el import de `medir_trazo` estaba dentro del método y el test mockeaba `src.odin.Ajustes` en vez de `main_controller`, por el doble import `odin` vs `src.odin` → los tests pasaban en vacío; (2) la conversión rho/theta del centro usaba convención de dirección en vez de Hough. Ambos corregidos: import a nivel de módulo, `rho = x0*dy − y0*dx` y `theta = atan2(−dx, dy)`, y aserciones firmes. Suite completa: 379 passed, 1 skipped. Commit `e0ab4f3`.
