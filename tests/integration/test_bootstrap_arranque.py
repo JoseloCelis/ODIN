@@ -120,6 +120,27 @@ def test_base_path_cae_a_home_si_el_usuario_no_existe():
     assert ruta.is_dir()
 
 
+def test_base_path_prefiere_workspace_odin_cuando_existe(monkeypatch):
+    """Si /workspaces/ODIN existe (devcontainer), se prefiere al home."""
+    existe_original = Path.exists
+    es_dir_original = Path.is_dir
+
+    def _existe(self):
+        return True if str(self) == "/workspaces/ODIN" else existe_original(self)
+
+    def _es_dir(self):
+        return True if str(self) == "/workspaces/ODIN" else es_dir_original(self)
+
+    monkeypatch.setattr(Path, "exists", _existe)
+    monkeypatch.setattr(Path, "is_dir", _es_dir)
+
+    ruta = B.EnvironmentProbe._resolve_base_path(
+        "DOCKER", "usuario_que_no_existe_9f2"
+    )
+
+    assert ruta == Path("/workspaces/ODIN")
+
+
 def test_detect_devuelve_entorno_y_ruta_validos(capsys):
     resultado = B.EnvironmentProbe(B.StartupLogger()).detect()
 
@@ -663,6 +684,7 @@ class TestPropiedadesCorreccion:
 
         candidatos = [
             Path(f"/home/{usuario}/proyectos/ODIN"),
+            Path("/workspaces/ODIN"),
             Path(f"/home/{usuario}"),
             Path.home(),
         ]
