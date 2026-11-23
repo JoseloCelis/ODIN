@@ -34,6 +34,8 @@ PREPROCESAMIENTO_SUITE_ORDER = (
     ("aproxHough", "odin.Procesamiento.models.hough_circles"),
     ("circleFilter", "odin.Ajustes.models.find_circle"),
     ("LSC", "odin.Ajustes.models.circulo_simple"),
+    ("HoughLineas", "odin.Procesamiento.models.hough_lineas"),
+    ("LineaRobusta", "odin.Ajustes.models.linea_robusta"),
 )
 
 
