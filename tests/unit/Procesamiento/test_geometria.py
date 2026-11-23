@@ -51,14 +51,31 @@ def _recta_horizontal(n, y=0.0, x0=-50.0, x1=50.0):
     return np.column_stack([np.linspace(x0, x1, n), np.full(n, float(y))])
 
 
-def _residuales_recta(puntos):
-    """Residuales perpendiculares a la recta PCA y extensión en el marco principal."""
+def _banda_gruesa(n, medio_ancho=20.0, ruido=0.3, semilla=0):
+    """Dos orillas paralelas (banda) con ruido gaussiano perpendicular."""
+    rng = np.random.default_rng(semilla)
+    x = np.linspace(-50.0, 50.0, n)
+    superior = np.column_stack(
+        [x, np.full(n, medio_ancho) + rng.normal(0.0, ruido, n)]
+    )
+    inferior = np.column_stack(
+        [x, np.full(n, -medio_ancho) + rng.normal(0.0, ruido, n)]
+    )
+    return np.vstack([superior, inferior])
+
+
+def _desviaciones_banda(puntos):
+    """Desviaciones a la banda de medio-ancho uniforme (criterio S1).
+
+    `signed` es la distancia perpendicular con signo a la recta media (PCA);
+    `median(|signed|)` es el medio-ancho, y la desviación de cada punto es
+    `||signed| - median(|signed|)|`. El residual de recta es la mediana de
+    estas desviaciones.
+    """
     centrado = puntos - puntos.mean(axis=0)
     _, _, vh = np.linalg.svd(centrado, full_matrices=False)
-    residuales = np.abs(centrado @ vh[-1])
-    rotado = centrado @ vh.T
-    extension = float(np.hypot(np.ptp(rotado[:, 0]), np.ptp(rotado[:, 1])))
-    return residuales, extension
+    signed = centrado @ vh[-1]
+    return np.abs(np.abs(signed) - np.median(np.abs(signed)))
 
 
 # ---------------------------------------------------------------------------
@@ -124,19 +141,41 @@ def test_recta_con_ruido_clasifica_recta():
 
 
 def test_residual_recta_es_la_mediana_no_la_media():
-    """Con un solo punto suelto, la mediana ignora el valor atípico y la media no."""
+    """Con un solo punto suelto, la mediana ignora el valor atípico y la media no.
+
+    El residual de recta es la mediana de las desviaciones a la banda; la
+    media de esas mismas desviaciones se dispara por el atípico.
+    """
     puntos = np.vstack(
         [_recta_horizontal(100, x0=0.0, x1=99.0), np.array([[50.0, 100.0]])]
     )
-    residuales, _ = _residuales_recta(puntos)
-    mediana = float(np.median(residuales))
-    media = float(np.mean(residuales))
+    desviaciones = _desviaciones_banda(puntos)
+    mediana = float(np.median(desviaciones))
+    media = float(np.mean(desviaciones))
     assert mediana < media  # la distribución está sesgada por el atípico
 
     evidencia = clasificar_geometria(puntos)
 
     assert evidencia.residual_recta == pytest.approx(mediana)
     assert evidencia.residual_recta != pytest.approx(media)
+
+
+def test_linea_gruesa_de_dos_orillas_clasifica_recta():
+    """Una línea gruesa (dos orillas con ruido) es una recta, no un círculo.
+
+    El criterio de banda mide la dispersión de las orillas respecto del
+    medio-ancho, no la distancia a una recta de grosor cero: con dos orillas
+    paralelas con ruido, el residual es la dispersión de orilla (~0.2px) y la
+    recta gana con confianza alta, mientras que el criterio anterior daba
+    ≈ medio ancho (20px) y fallaba cerrado.
+    """
+    puntos = _banda_gruesa(120, medio_ancho=20.0, ruido=0.3, semilla=0)
+
+    evidencia = clasificar_geometria(puntos)
+
+    assert evidencia.geometria is Geometria.RECTA
+    assert evidencia.residual_recta < 1.0
+    assert evidencia.confianza > 0.75
 
 
 def test_residual_circulo_es_la_mediana_no_la_media():
