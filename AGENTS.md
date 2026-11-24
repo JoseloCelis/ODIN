@@ -84,8 +84,7 @@ src/
     │       └── __init__.py
     ├── controllers/
     │   ├── __init__.py
-    │   ├── main_controller.py      # Primary orchestrator (load, pipeline, threads)
-    │   └── worker_thread.py        # Threading + GLib.idle_add for UI dispatch
+    │   └── main_controller.py      # Primary orchestrator (load, pipeline, threads)
     ├── Preprocesamiento/           # Domain: stages ①-②
     │   ├── __init__.py             # Public aliases: kernelSeparable, MagnitudGradiente
     │   ├── models/
@@ -166,7 +165,7 @@ Every patch or PR generated or audited by `opecode`, `agy`, or `harness pi` **MU
 * **Render Stability:** Always set `set_hexpand(True)` / `set_expand(True)` on central canvas widgets (`VisualizadorInteractivo`) to prevent 0-pixel collapse.
 
 ### 6.3 Controllers, Threads & Memory
-* **NEVER** call GTK methods from background threads. Run heavy pipelines in `threading.Thread` (`worker_thread.py`) or `asyncio`, and dispatch UI updates strictly via `GLib.idle_add()` or `GLib.timeout_add()`.
+* **NEVER** call GTK methods from background threads. Run heavy pipelines in `threading.Thread` (`main_controller.py`) or `asyncio`, and dispatch UI updates strictly via `GLib.idle_add()` or `GLib.timeout_add()`.
 * Disconnect signals or use weak references (`weakref`) when a widget outlives its controller to prevent memory leaks.
 
 ### 6.4 Conventions, Typing & Git Hygiene
@@ -196,7 +195,6 @@ Every patch or PR generated or audited by `opecode`, `agy`, or `harness pi` **MU
 | Bootstrap & startup | `src/odin/bootstrap.py` |
 | Main window | `src/odin/views/main_window.py` |
 | Main controller | `src/odin/controllers/main_controller.py` |
-| Worker thread (async) | `src/odin/controllers/worker_thread.py` |
 | Preprocesamiento aliases | `src/odin/Preprocesamiento/__init__.py` |
 | Procesamiento aliases | `src/odin/Procesamiento/__init__.py` |
 | Ajustes aliases | `src/odin/Ajustes/__init__.py` |
