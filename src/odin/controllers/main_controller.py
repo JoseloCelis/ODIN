@@ -21,6 +21,7 @@ import numpy as np
 from gi.repository import Gdk, Gio, GLib, Gtk
 
 from ..Procesamiento import EvidenciaGeometria, Geometria, clasificar_geometria
+from ..Ajustes import medir_trazo
 from .plan_geometria import (
     GEOMETRIA_POR_OPCION,
     ORIGEN_AUTOMATICO,
@@ -304,7 +305,7 @@ class OdinController:
             if plan.geometria is Geometria.CIRCULO:
                 completado = self._rama_circulo(DetectedEdges, plan)
             else:
-                completado = self._rama_recta(DetectedEdges, puntos_borde, plan)
+                completado = self._rama_recta(DetectedEdges, Gx, Gy, puntos_borde, plan)
 
             if completado:
                 GLib.idle_add(self.main_window.finalizar_proceso_exitoso)
@@ -354,6 +355,15 @@ class OdinController:
         """Corre en el hilo principal, vía GLib.idle_add."""
         self.main_window.row_geometria.set_subtitle(
             f"recta ajustada con {puntos} puntos; dispersión {r:.3f}px"
+        )
+        return False
+
+    def _mostrar_trazo_resultado(self, ancho: float, centro: np.ndarray) -> bool:
+        """Corre en el hilo principal, vía GLib.idle_add."""
+        rho_centro = centro[0] * centro[3] - centro[1] * centro[2]
+        theta_centro = np.arctan2(-centro[2], centro[3])
+        self.main_window.row_geometria.set_subtitle(
+            f"trazo: ancho {ancho:.2f}px; centro rho {rho_centro:.1f}px theta {theta_centro:.3f}rad"
         )
         return False
 
@@ -434,6 +444,8 @@ class OdinController:
     def _rama_recta(
         self,
         DetectedEdges: np.ndarray,
+        Gx: np.ndarray,
+        Gy: np.ndarray,
         puntos_borde: np.ndarray,
         plan: PlanGeometria,
     ) -> bool:
@@ -446,6 +458,25 @@ class OdinController:
             return False
 
         rho, theta, conteo, masa, desviacion = candidata
+        
+        # Medir trazo grueso (T3)
+        gx = Gx[puntos_borde[:, 1].astype(int), puntos_borde[:, 0].astype(int)]
+        gy = Gy[puntos_borde[:, 1].astype(int), puntos_borde[:, 0].astype(int)]
+        medicion = medir_trazo(puntos_borde, gx, gy, theta)
+        
+        if medicion is not None:
+            # Mostrar ancho y centro del trazo
+            print(
+                f"Trazo: ancho {medicion.ancho:.2f}px; "
+                f"centro rho {medicion.centro[0] * medicion.centro[3] - medicion.centro[1] * medicion.centro[2]:.1f}px "
+                f"theta {np.arctan2(-medicion.centro[2], medicion.centro[3]):.3f}rad"
+            )
+            GLib.idle_add(
+                self._mostrar_trazo_resultado, medicion.ancho, medicion.centro
+            )
+            return True
+        
+        # Fallback: ajuste de una sola recta
         param_inicial = self.LineaRobusta.euc_space(rho, theta)
         try:
             param_final, r, sobrevivientes = self.LineaRobusta.linea_robusta(

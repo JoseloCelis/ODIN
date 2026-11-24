@@ -8,8 +8,10 @@ Criterios de diseño (bloque «T4 — criterios de diseño del clasificador»):
 
 1. Residuales por mediana. La recta se ajusta por PCA/SVD y el círculo por el
    ajuste algebraico de Kåsa consumido por el alias público `odin.Ajustes.LSC`.
-   Se usa la mediana, no la media, para que un puñado de puntos sueltos no
-   decida.
+   El residual de recta es la mediana de las desviaciones a la banda de
+   medio-ancho uniforme (una línea gruesa son dos orillas), no la distancia a
+   una recta de grosor cero. Se usa la mediana, no la media, para que un
+   puñado de puntos sueltos no decida.
 2. Admisibilidad del círculo. Si `radio > factor_radio_max · extensión` o el
    radio no es finito, el residual del círculo pasa a `inf`. Sin este paso
    toda recta es un círculo de radio enorme y el clasificador elegiría
@@ -135,14 +137,20 @@ def clasificar_geometria(
     if motivo is not None:
         return _resultado_degenerado(motivo)
 
-    # Recta por PCA/SVD: el residual es la mediana de las distancias
-    # perpendiculares a la dirección de mínima varianza.
+    # Recta por PCA/SVD: el residual mide la desviación respecto de la banda
+    # de medio-ancho uniforme que define una línea gruesa (dos orillas), no la
+    # distancia a una recta de grosor cero. `signed` es la distancia
+    # perpendicular con signo a la recta media; `median(|signed|)` es el
+    # medio-ancho, y el residual es la dispersión de esas distancias alrededor
+    # del medio-ancho: dos orillas paralelas dan ~0 y un círculo, alto.
     centroide = arreglo.mean(axis=0)
     centrado = arreglo - centroide
     _, _, vh = np.linalg.svd(centrado, full_matrices=False)
     normal = vh[-1]
-    distancias_recta = np.abs(centrado @ normal)
-    residual_recta = float(np.median(distancias_recta))
+    signed = centrado @ normal
+    residual_recta = float(
+        np.median(np.abs(np.abs(signed) - np.median(np.abs(signed))))
+    )
 
     # Extensión invariante ante rotación y reflexión: diagonal de la caja
     # envolvente medida en el marco de componentes principales.
