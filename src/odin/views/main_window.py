@@ -385,7 +385,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
 
     def _registrar_acciones(self) -> None:
         """Inicializa y registra las acciones lógicas de la ventana."""
-        GLib.set_application_name("My App ODIN")
+        GLib.set_application_name("ODIN")
 
         action_cargar = Gio.SimpleAction.new("cargar_imagen", None)
         action_cargar.connect("activate", self.show_openDialog)

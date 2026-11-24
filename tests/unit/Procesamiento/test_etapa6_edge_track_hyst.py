@@ -161,7 +161,7 @@ def test_integracion_con_el_pipeline():
     from src.odin.Preprocesamiento.models import mag_fase as MF
     from src.odin.Procesamiento.models import otsu_rosin as OT
 
-    gx, gy = KS.DerivGauss(imagen, 2, 0, 0, 0)
+    gx, gy = KS.DerivGauss(imagen, 2)
     mg, angulo = MF.MagFase(gx, gy)
     gn = NMS.LinearInterpolation(mg, gx, gy, angulo)
     umbral, _ = OT.umbralRosinYOtsu(gn)

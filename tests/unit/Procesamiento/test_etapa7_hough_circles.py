@@ -263,7 +263,7 @@ def test_cadena_completa_con_y_sin_contraste_invertido(disco_claro):
     fondo, objeto = (0.1, 0.9) if disco_claro else (0.9, 0.1)
     imagen = np.where(d <= r_real, objeto, fondo).astype(float)
 
-    gx, gy = KS.DerivGauss(imagen, 2, 0, 0, 0)
+    gx, gy = KS.DerivGauss(imagen, 2)
     mg, angulo = MF.MagFase(gx, gy)
     gn = NMS.LinearInterpolation(mg, gx, gy, angulo)
     umbral, _ = OT.umbralRosinYOtsu(gn)
