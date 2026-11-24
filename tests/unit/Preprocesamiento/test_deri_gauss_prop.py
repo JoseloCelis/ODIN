@@ -24,7 +24,7 @@ from src.odin.Preprocesamiento import kernelSeparable
 @settings(max_examples=20, deadline=None)
 def test_prop_kernel_separable_shape_y_finito(arr, sigma):
     """Propiedad: salidas mismo shape que la entrada y finitas para sigma > 0."""
-    dx, dy = kernelSeparable(arr, sigma=sigma, wk=0, wConv=0, wr=0)
+    dx, dy = kernelSeparable(arr, sigma=sigma)
 
     assert dx.shape == arr.shape
     assert dy.shape == arr.shape
@@ -46,7 +46,7 @@ def test_prop_kernel_separable_shape_y_finito(arr, sigma):
 @settings(max_examples=10, deadline=None)
 def test_prop_kernel_separable_sigma_no_positivo_devuelve_ceros(arr, sigma):
     """Propiedad: sigma <= 0 produce arreglos de ceros con el mismo shape."""
-    dx, dy = kernelSeparable(arr, sigma=sigma, wk=0, wConv=0, wr=0)
+    dx, dy = kernelSeparable(arr, sigma=sigma)
 
     assert dx.shape == arr.shape
     assert dy.shape == arr.shape

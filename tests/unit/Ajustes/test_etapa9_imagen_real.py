@@ -106,7 +106,7 @@ def test_pipeline_completo_sobre_imagen_real():
     recorte = imagen[cy:cy + LADO_RECORTE, cx:cx + LADO_RECORTE]
 
     # Etapas ①→⑥: bordes.
-    gx, gy = KS.DerivGauss(recorte, 3, 1, 1, 360)
+    gx, gy = KS.DerivGauss(recorte, 3)
     mg, angulo = MF.MagFase(gx, gy)
     gn = NMS.LinearInterpolation(mg, gx, gy, angulo)
     umbral_otsu, _ = OT.umbralRosinYOtsu(gn)
