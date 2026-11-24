@@ -38,7 +38,13 @@ def load_GrayImage(self: Any, path: str) -> tuple[bool, str, np.ndarray | None]:
 
 
 def matriz_a_pixbuf(matriz_numpy: np.ndarray) -> GdkPixbuf.Pixbuf | None:
-    # Convierte una matriz de OpenCV/NumPy (BGR o Grises) a GdkPixbuf.Pixbuf.
+    """Convierte una matriz de OpenCV/NumPy (BGR o grises) en un `GdkPixbuf`.
+
+    Corre en el hilo de fondo del pipeline, así que solo produce un objeto de
+    datos. Un `GdkPixbuf` es un buffer de CPU refcontado y crearlo fuera del
+    hilo principal es seguro; `Gdk.Texture` y `set_paintable` no lo son y se
+    aplican después, en la vista, dentro de `GLib.idle_add` (AGENTS.md §6.3).
+    """
 
     img = matriz_numpy.copy()
     

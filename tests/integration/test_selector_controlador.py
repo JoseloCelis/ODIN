@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 from gi.repository import GdkPixbuf
 
+from src.odin.Ajustes import MedicionTrazo
 from src.odin.Procesamiento import EvidenciaGeometria, Geometria
 from src.odin.controllers import main_controller
 
@@ -129,6 +130,14 @@ class _FakeVentana:
         self.row_diametro = _FakeSpinRow()
         self.alertas: list[tuple[str, str, bool]] = []
         self.exitos = 0
+        # El controlador entrega los resultados por `mostrar_resultados`
+        # (despacho al hilo principal con GLib.idle_add), no tocando las
+        # vistas desde el hilo de fondo. Se registran para poder observarlo.
+        self.resultados_mostrados: list[dict] = []
+
+    def mostrar_resultados(self, imagenes: dict) -> None:
+        """Registra los resultados que el controlador entrega para renderizar."""
+        self.resultados_mostrados.append(imagenes)
 
     def mostrar_alerta(self, titulo: str, mensaje: str, es_error: bool = True) -> None:
         self.alertas.append((titulo, mensaje, es_error))
@@ -404,9 +413,8 @@ def test_t3_trazo_grueso_muestra_ancho_y_centro(monkeypatch):
         lambda puntos: (_ for _ in ()).throw(AssertionError("no se consulta")),
     )
 
-    # Mock medir_trazo para devolver una medición válida
-    from src.odin.Ajustes.models.trazo_linea import MedicionTrazo
-    mock_medicion = MedicionTrazo(
+    # Doble de medir_trazo que devuelve una medición válida.
+    medicion_falsa = MedicionTrazo(
         linea_a=np.array([0.0, 0.0, 1.0, 0.0]),
         linea_b=np.array([0.0, 10.0, 1.0, 0.0]),
         ancho=10.0,
@@ -414,12 +422,12 @@ def test_t3_trazo_grueso_muestra_ancho_y_centro(monkeypatch):
         puntos_a=np.array([[1.0, 1.0]]),
         puntos_b=np.array([[1.0, 9.0]])
     )
-    
-    def _mock_medir_trazo(puntos, gx, gy, theta):
-        return mock_medicion
-    
+
+    def _medir_trazo_falso(puntos, gx, gy, theta) -> MedicionTrazo:
+        return medicion_falsa
+
     # Reemplazar temporalmente la función en el controlador
-    monkeypatch.setattr(main_controller, "medir_trazo", _mock_medir_trazo)
+    monkeypatch.setattr(main_controller, "medir_trazo", _medir_trazo_falso)
 
     controlador._tarea_pesada_computacional()
 
@@ -428,7 +436,7 @@ def test_t3_trazo_grueso_muestra_ancho_y_centro(monkeypatch):
     assert "trazo: ancho 10.00px" in ventana.row_geometria.subtitle
     assert "centro rho -5.0px" in ventana.row_geometria.subtitle
     assert ventana.exitos == 1
-    
+
     # Verificar que no se llamó al fallback
     modulos["LineaRobusta"].linea_robusta.assert_not_called()
 
@@ -487,11 +495,11 @@ def test_t3_trazo_delgado_usa_fallback_linea_unica(monkeypatch):
     )
 
     # Mock medir_trazo para devolver None (línea delgada)
-    def _mock_medir_trazo_none(puntos, gx, gy, theta):
+    def _medir_trazo_falso_none(puntos, gx, gy, theta) -> None:
         return None
-    
+
     # Reemplazar temporalmente la función en el controlador
-    monkeypatch.setattr(main_controller, "medir_trazo", _mock_medir_trazo_none)
+    monkeypatch.setattr(main_controller, "medir_trazo", _medir_trazo_falso_none)
 
     controlador._tarea_pesada_computacional()
 
