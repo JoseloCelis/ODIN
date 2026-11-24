@@ -5,7 +5,10 @@ import cv2 as cv
 import numpy as np
 from gi.repository import Gtk, Gdk, GdkPixbuf, cairo
 
+import logging
 from typing import Any
+
+registro = logging.getLogger(__name__)
 
 
 def load_GrayImage(self: Any, path: str) -> tuple[bool, str, np.ndarray | None]:
@@ -14,11 +17,11 @@ def load_GrayImage(self: Any, path: str) -> tuple[bool, str, np.ndarray | None]:
     if current_image is None or len(current_image) < 2:
         return True, "No se pudo cargar la imagen", None
     else:
-        print("La imagen se cargo correctamente")
+        registro.info("La imagen se cargó correctamente")
     
     # obtener full shape 
     full_shape = current_image.shape
-    print(f"Full shape imagen original: {full_shape}")
+    registro.debug("Full shape imagen original: %s", full_shape)
             
     try:
         if len(current_image.shape) == 3:
@@ -28,7 +31,7 @@ def load_GrayImage(self: Any, path: str) -> tuple[bool, str, np.ndarray | None]:
         
         # Obtenemos dimensiones
         full_shape = grayImage.shape
-        print(f"Full shape imagen gris: {full_shape}")
+        registro.debug("Full shape imagen gris: %s", full_shape)
 
         return False, "Imagen seleccionada cargada correctamente.", grayImage
     
@@ -48,7 +51,7 @@ def matriz_a_pixbuf(matriz_numpy: np.ndarray) -> GdkPixbuf.Pixbuf | None:
 
     img = matriz_numpy.copy()
     
-    print(f"Tipo: {img.dtype} | Dimensiones: {img.shape}")
+    registro.debug("Tipo: %s | Dimensiones: %s", img.dtype, img.shape)
 
     if img.dtype != np.uint8:
         normalized = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
@@ -81,6 +84,17 @@ def recortar_imagen(self: Any) -> np.ndarray | None:
 
         # Si el modo seleccionado es "Imagen Completa" (índice 0), devolvemos todo
         if self.combo_recorte.get_selected() == 0:
+            return self.image_loaded.copy()
+
+        # Las coordenadas del arrastre las crea `on_drag_end`. Sin un arrastre
+        # previo no existen y leerlas reventaba con `AttributeError`.
+        if not all(
+            hasattr(self.image_container, nombre)
+            for nombre in ("x1", "y1", "x2", "y2")
+        ):
+            registro.debug(
+                "Recorte: sin arrastre registrado; se procesa la imagen completa"
+            )
             return self.image_loaded.copy()
 
         # Dimensiones de la matriz original
@@ -124,6 +138,14 @@ def recortar_imagen(self: Any) -> np.ndarray | None:
 
         # ¡Slicing puro de NumPy! Extraemos la submatriz
         submatriz = self.image_loaded[y1:y2, x1:x2]
+        alto_recorte, ancho_recorte = submatriz.shape[:2]
+        registro.info(
+            "Recorte aplicado: %dx%d px en (X:%d, Y:%d)",
+            ancho_recorte,
+            alto_recorte,
+            x1,
+            y1,
+        )
         return submatriz 
 
 class VisualizadorInteractivo(Gtk.Overlay):
@@ -191,15 +213,22 @@ class VisualizadorInteractivo(Gtk.Overlay):
         """Se activa cuando el usuario suelta el botón del ratón."""
         self.arrastrando = False
         
-        # Coordenadas finales calculadas del rectángulo
+        # Coordenadas finales calculadas del rectángulo. Cada eje sale de su
+        # propio eje: mezclarlos torcía la Y con la X del arrastre.
         self.x1 = min(self.inicio_x, self.actual_x)
-        self.y1 = min(self.inicio_y, self.actual_x)
+        self.y1 = min(self.inicio_y, self.actual_y)
         self.x2 = max(self.inicio_x, self.actual_x)
         self.y2 = max(self.inicio_y, self.actual_y)
         ancho = abs(self.actual_x - self.inicio_x)
         alto = abs(self.actual_y - self.inicio_y)
         
-        print(f"Recorte solicitado en coordenadas: X:{self.x1}, Y:{self.y1}, Ancho:{ancho}, Alto:{alto}")
+        registro.debug(
+            "Recorte solicitado en coordenadas: X:%s, Y:%s, Ancho:%s, Alto:%s",
+            self.x1,
+            self.y1,
+            ancho,
+            alto,
+        )
         # TODO: Aquí mandas estas coordenadas a tu función de OpenCV/NumPy para recortar la matriz
         
         # Limpiamos el rectángulo de la pantalla al terminar
@@ -218,7 +247,6 @@ class VisualizadorInteractivo(Gtk.Overlay):
             y = min(self.inicio_y, self.actual_y)
             ancho = abs(self.actual_x - self.inicio_x)
             alto = abs(self.actual_y - self.inicio_y)
-            print (width,height,alto, ancho)
             
             # 1. Pintamos un fondo semi-transparente azul dentro del cuadro
             cr.set_source_rgba(0.0, 0.4, 1.0, 0.15) # Azul Libadwaita con 15% opacidad
