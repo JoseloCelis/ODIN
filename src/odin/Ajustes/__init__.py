@@ -36,6 +36,7 @@ from .models import (
     MedicionTrazo,
     medir_trazo,
     separar_orillas,
+    refinar_bordes_subpixel,
 )
 
 __all__ = [
@@ -62,4 +63,5 @@ __all__ = [
     "MedicionTrazo",
     "medir_trazo",
     "separar_orillas",
+    "refinar_bordes_subpixel",
 ]

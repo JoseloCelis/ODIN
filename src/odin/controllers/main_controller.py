@@ -285,7 +285,7 @@ class OdinController:
             if plan.geometria is Geometria.CIRCULO:
                 completado = self._rama_circulo(DetectedEdges, plan)
             else:
-                completado = self._rama_recta(DetectedEdges, Gx, Gy, puntos_borde, plan)
+                completado = self._rama_recta(DetectedEdges, Gx, Gy, MG, puntos_borde, plan)
 
             if completado:
                 GLib.idle_add(self.main_window.finalizar_proceso_exitoso)
@@ -426,6 +426,7 @@ class OdinController:
         DetectedEdges: np.ndarray,
         Gx: np.ndarray,
         Gy: np.ndarray,
+        MG: np.ndarray,  # Magnitud del gradiente
         puntos_borde: np.ndarray,
         plan: PlanGeometria,
     ) -> bool:
@@ -442,7 +443,12 @@ class OdinController:
         # Medir trazo grueso (T3)
         gx = Gx[puntos_borde[:, 1].astype(int), puntos_borde[:, 0].astype(int)]
         gy = Gy[puntos_borde[:, 1].astype(int), puntos_borde[:, 0].astype(int)]
-        medicion = medir_trazo(puntos_borde, gx, gy, theta)
+        # Refinar bordes con interpolación parabólica
+        from odin.Ajustes import refinar_bordes_subpixel
+        puntos_refinados = refinar_bordes_subpixel(puntos_borde, gx, gy, MG)
+        
+        # Usar puntos refinados para la medición
+        medicion = medir_trazo(puntos_refinados, gx, gy, theta)
         
         if medicion is not None:
             # Mostrar ancho y centro del trazo

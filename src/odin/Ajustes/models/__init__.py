@@ -26,6 +26,7 @@ from .trazo_linea import (
     MedicionTrazo,
     medir_trazo,
     separar_orillas,
+    refinar_bordes_subpixel,
 )
 from .circulo_simple import (
     Circulo_simple,
@@ -50,4 +51,5 @@ __all__ = [
     "linea_mc",
     "linea_robusta",
     "linea1",
+    "refinar_bordes_subpixel",
 ]
