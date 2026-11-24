@@ -11,10 +11,6 @@ Funciones activas (en producción):
     - estimar_radio_dominante(im_binary, r0, fraccion_min,
                               paso_grueso_rel, candidatos, paso_fino,
                               thres, dist)
-
-Código muerto del módulo (R8, no movido, pendiente autorización para borrar):
-    - houghCircles (traducción MATLAB con bucles Python)
-    - houghpeaks, imregionalmax (solo usadas por houghCircles)
 """
 
 import numpy as np
@@ -50,13 +46,13 @@ def hough_circles_vectorizado(im_binary: np.ndarray, r: float, thres: float = 0.
         accumulator (numpy.ndarray): Matriz de votación del espacio de Hough.
     """
     if dist < 10:
-        raise ValueError("HOUGHCIRCLE:: Distance value must be bigger or equal to 10 px")
+        raise ValueError("HOUGHCIRCLE:: dist debe ser mayor o igual a 10 px")
 
     if thres < 0.5:
-        raise ValueError("HOUGHCIRCLE:: Treshold value must be bigger or equal to 0.5")
+        raise ValueError("HOUGHCIRCLE:: thres debe ser mayor o igual a 0.5")
 
     if r <= 0:
-        raise ValueError("HOUGHCIRCLE:: Radius value must be bigger than 0 px")
+        raise ValueError("HOUGHCIRCLE:: el radio debe ser mayor que 0 px")
 
     # Asegurarnos de que sea una matriz booleana
     im_binary = np.asarray(im_binary, dtype=bool)
@@ -142,7 +138,7 @@ def estimar_radio(im_binary: np.ndarray, r_min: float, r_max: float, paso: float
       distintos: son el mismo pico repartido por la discretización.
 
     La banda la deriva el llamador del recorte: `r0 = min(alto, ancho) / 2`
-    y `[0.6 * r0, r0]` (spec hough-circles, R4).
+    y `[0.08 * r0, r0]` (spec hough-circles, R10.1).
 
     Limitación conocida: el pico bruto crece con el radio (más puntos de
     borde), así que un círculo grande domina a uno mucho más chico y la

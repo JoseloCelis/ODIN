@@ -22,7 +22,7 @@ def _rectangulo():
 def test_pipeline_etapas_1_a_5():
     imagen = _rectangulo()
 
-    gx, gy = KS.DerivGauss(imagen, 2, 0, 0, 0)
+    gx, gy = KS.DerivGauss(imagen, 2)
     mg, angulo = MF.MagFase(gx, gy)
     gn = NMS.LinearInterpolation(mg, gx, gy, angulo)
     umbral_otsu, umbral_rosin = OT.umbralRosinYOtsu(gn)
