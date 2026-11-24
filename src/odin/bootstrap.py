@@ -141,9 +141,12 @@ class EnvironmentProbe:
         Nota: `env_type` se conserva en la firma (API pública, tests la usan
         posicional), pero no altera la cascada: es un placeholder.
         """
-        # Todas las rutas usan /home/ (Linux nativo) por rendimiento en WSL2
+        # Todas las rutas usan /home/ (Linux nativo) por rendimiento en WSL2.
+        # /workspaces/ODIN es el workspace canónico del devcontainer (DOCKER),
+        # donde la imagen monta el repo y no existe /home/<usuario>.
         candidatos = [
             Path(f"/home/{username}/proyectos/ODIN"),
+            Path("/workspaces/ODIN"),
             Path(f"/home/{username}"),
             Path.home(),
         ]

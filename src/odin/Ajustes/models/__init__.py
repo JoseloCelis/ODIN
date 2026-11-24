@@ -22,6 +22,11 @@ from .linea_robusta import (
     linea_robusta,
     linea1,
 )
+from .trazo_linea import (
+    MedicionTrazo,
+    medir_trazo,
+    separar_orillas,
+)
 from .circulo_simple import (
     Circulo_simple,
     UMBRAL_CONDICION_NORMALIZADA,

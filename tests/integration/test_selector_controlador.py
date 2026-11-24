@@ -390,6 +390,48 @@ def test_criterio_4_recta_ejecuta_las_etapas_10_y_11(monkeypatch):
     modulos["circleFilter"].find_circle.assert_not_called()
     assert ventana.exitos == 1
 
+# T3 - Tests para medir_trazo integration
+
+def test_t3_trazo_grueso_muestra_ancho_y_centro(monkeypatch):
+    ventana = _FakeVentana()
+    controlador, modulos, bordes = _controlador(ventana)
+    _instalar_idle_sincrono(monkeypatch)
+
+    controlador.establecer_geometria(1)  # Recta
+    monkeypatch.setattr(
+        main_controller,
+        "clasificar_geometria",
+        lambda puntos: (_ for _ in ()).throw(AssertionError("no se consulta")),
+    )
+
+    # Mock medir_trazo para devolver una medición válida
+    from src.odin.Ajustes.models.trazo_linea import MedicionTrazo
+    mock_medicion = MedicionTrazo(
+        linea_a=np.array([0.0, 0.0, 1.0, 0.0]),
+        linea_b=np.array([0.0, 10.0, 1.0, 0.0]),
+        ancho=10.0,
+        centro=np.array([0.0, 5.0, 1.0, 0.0]),
+        puntos_a=np.array([[1.0, 1.0]]),
+        puntos_b=np.array([[1.0, 9.0]])
+    )
+    
+    def _mock_medir_trazo(puntos, gx, gy, theta):
+        return mock_medicion
+    
+    # Reemplazar temporalmente la función en el controlador
+    monkeypatch.setattr(main_controller, "medir_trazo", _mock_medir_trazo)
+
+    controlador._tarea_pesada_computacional()
+
+    # Verificar que se muestra el resultado del trazo
+    assert ventana.row_geometria.subtitle is not None
+    assert "trazo: ancho 10.00px" in ventana.row_geometria.subtitle
+    assert "centro rho -5.0px" in ventana.row_geometria.subtitle
+    assert ventana.exitos == 1
+    
+    # Verificar que no se llamó al fallback
+    modulos["LineaRobusta"].linea_robusta.assert_not_called()
+
 
 def test_criterio_3_el_fallo_de_circulo_se_reporta_sin_excepcion(monkeypatch):
     """El antiguo `ValueError` de círculo ausente ahora es un reporte con evidencia."""
@@ -429,4 +471,30 @@ def test_criterio_4_circulo_ejecuta_las_etapas_7_8_9(monkeypatch):
     modulos["circleFilter"].find_circle.assert_called_once()
     modulos["LSC"].Circulo_simple.assert_called_once()
     modulos["HoughLineas"].hough_lineas.assert_not_called()
+    assert ventana.exitos == 1
+
+
+def test_t3_trazo_delgado_usa_fallback_linea_unica(monkeypatch):
+    ventana = _FakeVentana()
+    controlador, modulos, bordes = _controlador(ventana)
+    _instalar_idle_sincrono(monkeypatch)
+
+    controlador.establecer_geometria(1)  # Recta
+    monkeypatch.setattr(
+        main_controller,
+        "clasificar_geometria",
+        lambda puntos: (_ for _ in ()).throw(AssertionError("no se consulta")),
+    )
+
+    # Mock medir_trazo para devolver None (línea delgada)
+    def _mock_medir_trazo_none(puntos, gx, gy, theta):
+        return None
+    
+    # Reemplazar temporalmente la función en el controlador
+    monkeypatch.setattr(main_controller, "medir_trazo", _mock_medir_trazo_none)
+
+    controlador._tarea_pesada_computacional()
+
+    # Verificar que se hizo fallback a ajuste de recta única
+    modulos["LineaRobusta"].linea_robusta.assert_called_once()
     assert ventana.exitos == 1
