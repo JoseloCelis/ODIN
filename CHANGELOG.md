@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.2.0](https://github.com/JoseloCelis/ODIN/compare/v0.1.4...v0.2.0) (2026-11-24)
+
+
+### Features
+
+* **ajustes:** agregar ajuste robusto de recta con poda iterativa ([71a767f](https://github.com/JoseloCelis/ODIN/commit/71a767f6f6fa5fa5321c42c181c7ab93ca56213a))
+* **ajustes:** agregar medición de ancho y centro del trazo grueso ([93d9ba7](https://github.com/JoseloCelis/ODIN/commit/93d9ba781eda4af330862f5d68795dbc2b4daec7))
+* **ajustes:** ajuste robusto de recta y alias de etapas 10-11 (2/4) ([f7113ff](https://github.com/JoseloCelis/ODIN/commit/f7113ff7061373b1db1d318c5cf1b58f52d33f4b))
+* **ajustes:** medir ancho y centro del trazo grueso y corregir el criterio de linea ([eb2f50c](https://github.com/JoseloCelis/ODIN/commit/eb2f50c0e4cac3dae4c66e02801394fd8de3e195))
+* **controlador:** medir ancho y centro del trazo en la rama de recta ([e0ab4f3](https://github.com/JoseloCelis/ODIN/commit/e0ab4f390957fa55684ad92aa562fe2cb2628e25))
+* **controlador:** seleccionar geometria circulo o recta en el pipeline ([d10da64](https://github.com/JoseloCelis/ODIN/commit/d10da64b92f7c8aeaa3396ad49de24e9ec41f4e3))
+* **controlador:** selector de geometria en el pipeline (4/4) ([6f7f725](https://github.com/JoseloCelis/ODIN/commit/6f7f725814332a24faf282770b5cce62c799e297))
+* **dominios:** exponer las etapas 10 y 11 por los alias publicos ([a45bbc0](https://github.com/JoseloCelis/ODIN/commit/a45bbc0495c8dce42b757e3c2c8605749fc74803))
+* **procesamiento:** agregar contrato de estrategia de deteccion ([0ab8d99](https://github.com/JoseloCelis/ODIN/commit/0ab8d99a37c23c47fa3c036b7cc545872a19ce65))
+* **procesamiento:** agregar transformada de Hough para líneas ([8253b5b](https://github.com/JoseloCelis/ODIN/commit/8253b5bc1a5366dbf0734447c8115e469a1ef955))
+* **procesamiento:** clasificador de geometria y contrato de estrategia (3/4) ([5a2940e](https://github.com/JoseloCelis/ODIN/commit/5a2940ece33af13842b4718a4634a4dbcdf09e1b))
+* **procesamiento:** clasificar geometria con evidencia y falla cerrado ([2413e3e](https://github.com/JoseloCelis/ODIN/commit/2413e3eeb2e05e1f70190782cbc93db6703e7645))
+* **procesamiento:** transformada de Hough para lineas (1/4) ([39d06db](https://github.com/JoseloCelis/ODIN/commit/39d06db4f4b50adcdfd0b023b15896026af58d7b))
+
+
+### Bug Fixes
+
+* **bootstrap:** preferir el workspace del devcontainer al resolver base_path ([d584740](https://github.com/JoseloCelis/ODIN/commit/d584740bc50ad68b8cdbeed199f70ae0a826962c))
+* **procesamiento:** medir el residual de recta contra una banda de dos orillas ([18d2d1f](https://github.com/JoseloCelis/ODIN/commit/18d2d1f7a1374b189cfdbb0373c1fddf5a6c550f))
+
+
+### Documentation
+
+* **odd:** actualizar el barrido del pipeline al estado verificado ([18a7641](https://github.com/JoseloCelis/ODIN/commit/18a7641f47b5eb35788b8aa4331cafd5d3bb3540))
+* **odd:** cerrar la tarea de linea gruesa con la verificacion en contenedor ([196d8a9](https://github.com/JoseloCelis/ODIN/commit/196d8a940b66a9726963354e5964036325fabe85))
+* **odd:** cerrar T3 y registrar la corrección de la integración ([d3b896a](https://github.com/JoseloCelis/ODIN/commit/d3b896aeb6ec0c17c896f73b12a51a2dcc8f7d72))
+* **odd:** cerrar T5 y registrar la deuda y la forma de entrega ([fd669ca](https://github.com/JoseloCelis/ODIN/commit/fd669ca251326ec1841520372a976b55d9202678))
+* **odd:** registrar el cierre de T3 y los alias de las etapas 10 y 11 ([ac39fa4](https://github.com/JoseloCelis/ODIN/commit/ac39fa4dd113390e6e1b89a17f8ad46b1e13e348))
+* **odd:** registrar la entrega del slice como cuarto eslabon de la cadena ([f5fccfb](https://github.com/JoseloCelis/ODIN/commit/f5fccfbc3603582b8b2b4e7689f2d3a503a8b277))
+* **odd:** registrar la fase 1 de migracion de lineas y geometria ([c441da1](https://github.com/JoseloCelis/ODIN/commit/c441da1079860c988bed34d023a203fa3498a09e))
+* **odd:** registrar T4, el criterio de colinealidad y el hallazgo de invariancia ([7f89f93](https://github.com/JoseloCelis/ODIN/commit/7f89f93e9f06bde712d90149aad60b0ef23a5c51))
+* **odd:** registrar T6, autorizar T5 y fijar el contrato del selector ([dddaec2](https://github.com/JoseloCelis/ODIN/commit/dddaec2b8db07f6b2ba1bf3a306ecb5cf45400d4))
+
 ## [0.1.4](https://github.com/JoseloCelis/ODIN/compare/v0.1.3...v0.1.4) (2026-11-22)
 
 
