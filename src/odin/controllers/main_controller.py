@@ -20,6 +20,15 @@ gi.require_version('Gdk', '4.0')
 import numpy as np
 from gi.repository import Gdk, Gio, GLib, Gtk
 
+from ..Procesamiento import EvidenciaGeometria, Geometria, clasificar_geometria
+from .plan_geometria import (
+    GEOMETRIA_POR_OPCION,
+    ORIGEN_AUTOMATICO,
+    PlanGeometria,
+    plan_de_etapas,
+    puntos_de_borde,
+)
+
 if TYPE_CHECKING:
     from odin.bootstrap import BootstrapResult
     from odin.views.main_window import OdinMainWindow
@@ -120,6 +129,8 @@ class OdinController:
         self.aproxHough = preproc["aproxHough"]
         self.circleFilter = preproc["circleFilter"]
         self.LSC = preproc["LSC"]
+        self.HoughLineas = preproc["HoughLineas"]
+        self.LineaRobusta = preproc["LineaRobusta"]
         self.handle = handle_mod
 
         # Variables de control
@@ -127,6 +138,8 @@ class OdinController:
         self.image_loaded = None
         self.estado_diametro = EstadoDiametro()
         self._actualizando_diametro = False
+        # Selector de geometría (T5): `None` es automático.
+        self.geometria_seleccionada: Geometria | None = None
 
         # Timing para WINDOW_INIT
         self._t0_window = None
@@ -271,63 +284,30 @@ class OdinController:
                 Gdk.Texture.new_for_pixbuf(resultadosProcesamiento["bordes"])
             )
 
-            # Etapa 7: el radio no es una constante (spec hough-circles, R2).
-            alto, ancho = DetectedEdges.shape[:2]
-            r0 = min(alto, ancho) / 2
-            radio, pico, ambiguedad, origen = resolver_radio(
-                self.estado_diametro.diametro_para_procesar(),
-                DetectedEdges,
-                r0,
-                self.aproxHough,
-            )
-            if radio <= 0:
-                raise ValueError(
-                    "No se pudo estimar el radio del circulo en el recorte."
-                )
+            puntos_borde = puntos_de_borde(DetectedEdges)
+            plan, _evidencia = self._decidir_plan(puntos_borde)
+            print(f"Geometría: {plan.detalle}")
 
-            if origen == "automatico":
+            # Criterio 3: sin decisión el pipeline se detiene mostrando ambos
+            # candidatos con la confianza y la evidencia numérica.
+            if plan.geometria is None:
                 GLib.idle_add(
-                    self._mostrar_diametro_detectado,
-                    2 * radio,
-                    ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD,
+                    self._mostrar_geometria_indeterminada, plan.detalle
                 )
+                GLib.idle_add(self.main_window.btn_procesar.set_sensitive, True)
+                return
 
-            xRecortada, yRecortada, _n, accumulador = (
-                self.aproxHough.hough_circles_vectorizado(DetectedEdges, radio, 0.8)
-            )
-            centro = self.aproxHough.mejor_centro(
-                xRecortada, yRecortada, accumulador
-            )
-            if centro is None:
-                raise ValueError(
-                    "La transformada de Hough no encontro centros."
-                )
+            if plan.origen == ORIGEN_AUTOMATICO:
+                GLib.idle_add(self._mostrar_geometria_propuesta, plan.detalle)
 
-            aviso = (
-                " (revisar: hay otro candidato parecido)"
-                if ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD
-                else ""
-            )
-            print(
-                f"Radio {radio:.1f} px (diametro {2 * radio:.1f}) [{origen}], "
-                f"pico {pico}, ambiguedad {ambiguedad:.2f}{aviso}"
-            )
+            # Criterio 4: las dos geometrías son ramas del mismo selector.
+            if plan.geometria is Geometria.CIRCULO:
+                completado = self._rama_circulo(DetectedEdges, plan)
+            else:
+                completado = self._rama_recta(DetectedEdges, puntos_borde, plan)
 
-            puntosFiltrados = self.circleFilter.find_circle(
-                DetectedEdges, radio, (centro[0], centro[1])
-            )
-
-            # Etapa 8: la selección tiene que RODEAR el círculo.
-            anillo_ok, motivo = self.circleFilter.validar_anillo(
-                puntosFiltrados, (centro[0], centro[1])
-            )
-            if not anillo_ok:
-                raise ValueError(f"No se puede medir el circulo: {motivo}.")
-
-            x, y, _r, _pv = self.LSC.Circulo_simple(puntosFiltrados)
-            x = self.main_window.xRecorte + x
-            y = self.main_window.yRecorte + y
-            GLib.idle_add(self.main_window.finalizar_proceso_exitoso)
+            if completado:
+                GLib.idle_add(self.main_window.finalizar_proceso_exitoso)
 
         except (ValueError, GLib.Error) as e:
             GLib.idle_add(
@@ -337,6 +317,154 @@ class OdinController:
                 True,
             )
             GLib.idle_add(self.main_window.btn_procesar.set_sensitive, True)
+
+    def establecer_geometria(self, indice: int) -> None:
+        """Fija la geometría a medir desde el selector de la vista.
+
+        `indice` es la posición en `OPCIONES_GEOMETRIA`; `None` (automático)
+        deja la decisión al clasificador.
+        """
+        self.geometria_seleccionada = GEOMETRIA_POR_OPCION[indice]
+
+    def _decidir_plan(
+        self, puntos_borde: np.ndarray
+    ) -> tuple[PlanGeometria, EvidenciaGeometria | None]:
+        """Decide la geometría: la fija el operador o la propone el clasificador.
+
+        En automático se consulta `clasificar_geometria` sobre los puntos de
+        borde ya detectados (etapas ①–⑥) y la propuesta se usa solo si el
+        clasificador decidió (criterio 2).
+        """
+        if self.geometria_seleccionada is not None:
+            return plan_de_etapas(self.geometria_seleccionada), None
+        evidencia = clasificar_geometria(puntos_borde)
+        return plan_de_etapas(None, evidencia), evidencia
+
+    def _mostrar_geometria_propuesta(self, detalle: str) -> bool:
+        """Corre en el hilo principal, vía GLib.idle_add."""
+        self.main_window.row_geometria.set_subtitle(detalle)
+        return False
+
+    def _mostrar_geometria_indeterminada(self, detalle: str) -> bool:
+        """Corre en el hilo principal, vía GLib.idle_add."""
+        self.main_window.row_geometria.set_subtitle(detalle)
+        return False
+
+    def _mostrar_recta_resultado(self, r: float, puntos: int) -> bool:
+        """Corre en el hilo principal, vía GLib.idle_add."""
+        self.main_window.row_geometria.set_subtitle(
+            f"recta ajustada con {puntos} puntos; dispersión {r:.3f}px"
+        )
+        return False
+
+    def _reportar_fallo(self, plan: PlanGeometria, motivo: str) -> None:
+        """Detiene el pipeline mostrando el motivo y la evidencia (criterio 3)."""
+        GLib.idle_add(
+            self.main_window.mostrar_alerta,
+            "No se pudo procesar la imagen",
+            f"{motivo}. {plan.detalle}",
+            True,
+        )
+        GLib.idle_add(self.main_window.btn_procesar.set_sensitive, True)
+
+    def _rama_circulo(
+        self, DetectedEdges: np.ndarray, plan: PlanGeometria
+    ) -> bool:
+        """Etapas ⑦→⑧→⑨: centro aproximado, anillo y ajuste de círculo."""
+        alto, ancho = DetectedEdges.shape[:2]
+        r0 = min(alto, ancho) / 2
+        radio, pico, ambiguedad, origen = resolver_radio(
+            self.estado_diametro.diametro_para_procesar(),
+            DetectedEdges,
+            r0,
+            self.aproxHough,
+        )
+        if radio <= 0:
+            self._reportar_fallo(
+                plan, "No se pudo estimar el radio del círculo en el recorte."
+            )
+            return False
+
+        if origen == "automatico":
+            GLib.idle_add(
+                self._mostrar_diametro_detectado,
+                2 * radio,
+                ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD,
+            )
+
+        xRecortada, yRecortada, _n, accumulador = (
+            self.aproxHough.hough_circles_vectorizado(DetectedEdges, radio, 0.8)
+        )
+        centro = self.aproxHough.mejor_centro(
+            xRecortada, yRecortada, accumulador
+        )
+        if centro is None:
+            self._reportar_fallo(
+                plan, "La transformada de Hough no encontró centros."
+            )
+            return False
+
+        aviso = (
+            " (revisar: hay otro candidato parecido)"
+            if ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD
+            else ""
+        )
+        print(
+            f"Radio {radio:.1f} px (diametro {2 * radio:.1f}) [{origen}], "
+            f"pico {pico}, ambiguedad {ambiguedad:.2f}{aviso}"
+        )
+
+        puntosFiltrados = self.circleFilter.find_circle(
+            DetectedEdges, radio, (centro[0], centro[1])
+        )
+
+        # Etapa 8: la selección tiene que RODEAR el círculo.
+        anillo_ok, motivo = self.circleFilter.validar_anillo(
+            puntosFiltrados, (centro[0], centro[1])
+        )
+        if not anillo_ok:
+            self._reportar_fallo(plan, f"No se puede medir el círculo: {motivo}")
+            return False
+
+        x, y, _r, _pv = self.LSC.Circulo_simple(puntosFiltrados)
+        x = self.main_window.xRecorte + x
+        y = self.main_window.yRecorte + y
+        return True
+
+    def _rama_recta(
+        self,
+        DetectedEdges: np.ndarray,
+        puntos_borde: np.ndarray,
+        plan: PlanGeometria,
+    ) -> bool:
+        """Etapas ⑩→⑪: Hough de rectas y ajuste robusto."""
+        candidata = self.HoughLineas.hough_lineas(puntos_borde, DetectedEdges)
+        if candidata is None:
+            self._reportar_fallo(
+                plan, "La transformada de Hough no encontró rectas candidatas."
+            )
+            return False
+
+        rho, theta, conteo, masa, desviacion = candidata
+        param_inicial = self.LineaRobusta.euc_space(rho, theta)
+        try:
+            param_final, r, sobrevivientes = self.LineaRobusta.linea_robusta(
+                puntos_borde, param_inicial
+            )
+        except ValueError as error:
+            self._reportar_fallo(plan, f"No se pudo ajustar la recta: {error}")
+            return False
+
+        print(
+            f"Recta rho {rho:.1f}px, theta {theta:.3f} rad "
+            f"[{conteo} picos, masa {masa}, desviación {desviacion:.2f}px]; "
+            f"dirección ({param_final[2]:.3f}, {param_final[3]:.3f}), "
+            f"{sobrevivientes.shape[0]} puntos, dispersión {r:.3f}px"
+        )
+        GLib.idle_add(
+            self._mostrar_recta_resultado, r, int(sobrevivientes.shape[0])
+        )
+        return True
 
     def _mostrar_diametro_detectado(self, diametro: float, ambiguo: bool) -> bool:
         """Corre en el hilo principal, vía GLib.idle_add."""
