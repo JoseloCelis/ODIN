@@ -55,7 +55,7 @@ Toda corrección del caso 2 debe venir acompañada de la prueba de que el caso 1
 | T2 | S2, S5, S6, S7 | `src/odin/Ajustes/models/linea_robusta.py` + tests | hecho | `aac7292` |
 | T3 | S6 | Aliases en `Procesamiento/__init__.py`, `Ajustes/__init__.py` y registro en `bootstrap.py` | hecho | `f4f4c8a` |
 | T4 | S4 | `Procesamiento/models/geometria.py` — clasificador puro con evidencia | pendiente | — |
-| T5 | S4 | Selector explícito en controlador y vista; retiro del supuesto círculo-only | pendiente | — |
+| T5 | S4 | Selector explícito en controlador y vista; retiro del supuesto círculo-only | hecho | `d489985` |
 | T6 | L6 | `Procesamiento/models/strategies/base_strategy.py` — contrato de estrategia | hecho | `115b3bc` |
 
 ### T4 — criterios de diseño del clasificador
@@ -136,3 +136,11 @@ Lección de proceso: un `| tail` me devolvió exit `0` con la suite en rojo. Las
 **L15** (T6, 2026-11-21): se creó `Procesamiento/models/strategies/base_strategy.py` con `DeteccionStrategy` y su `strategies/__init__.py`, cumpliendo L6. Test-first: RED observado como `ModuleNotFoundError: No module named 'src.odin.Procesamiento.models.strategies'` (exit 2, error de colección); GREEN `4 passed`. Cubre que la base y una subclase sin `detectar` no se instancian, que una concreta devuelve la máscara con la forma de la entrada, y que los `kwargs` llegan a la estrategia. Suite completa: **317 passed, 1 skipped**. Commit `115b3bc`.
 
 **L16** (autorización, 2026-11-21): el usuario autorizó explícitamente **T5 completo, controlador y vista**, que es la primera modificación de código existente en esta fase y por eso requería permiso según AGENTS.md. Se escribió el bloque «T5 — criterios de diseño del selector» antes de delegar, por la misma razón que en T4: sin criterio explícito el writer habría inventado el contrato del pipeline y de la UI.
+
+**L17** (T5, 2026-11-21): implementado el selector de geometría por `gentle-ai-worker`. Módulo puro nuevo `src/odin/controllers/plan_geometria.py` (`PlanGeometria`, `plan_de_etapas`, `puntos_de_borde`, `ETAPAS_CIRCULO=(7,8,9)`, `ETAPAS_RECTA=(10,11)`); el controlador recibe la geometría como entrada explícita, en automático consulta `clasificar_geometria` sobre los puntos de borde, se detiene con ambos candidatos cuando no hay decisión y despacha una u otra rama; la vista agrega el selector con Automático por defecto y una fila de resumen.
+
+Verificación del orquestador, no solo el reporte del writer: `git status` muestra únicamente las superficies autorizadas; `plan_geometria.py` no importa `gi`/`Gtk`/`Gdk`/`Adw`/`cairo`; los dos `ValueError` que quedan en `main_controller.py` son cláusulas `except`, no lanzamientos; la vista crea el `Adw.ComboRow` con Automático preseleccionado (índice 2). Suite completa: **352 passed, 1 skipped** (baseline 317, +35 nuevos: 19 del plan puro, 9 de controlador, 7 de vista).
+
+Deuda detectada y **no** tocada, por la regla de cambios mínimos: `controllers/worker_thread.py:109-152` conserva la suposición círculo-only y sus tres `ValueError`, y **nadie lo importa** — es código muerto. Además, el hilo de trabajo llama `set_paintable` / `Gdk.Texture.new_for_pixbuf` directo (`main_controller.py` ~250-285), violando AGENTS.md §6.3 desde antes de T5. Las dos cosas necesitan decisión aparte: eliminar el módulo muerto y mover la publicación de imagen a `GLib.idle_add`.
+
+**L18** (forma de entrega, 2026-11-21): la rama acumula **11 commits y 4377 líneas** sobre `main`, muy por encima de la rebanada de revisión de ~400 líneas. Los commits ya son unidades revisables por sí mismas (T1, T2, T3, T4, T6, T5 y sus documentos), así que la entrega natural es una **cadena de PRs**, no un PR único: un PR de 4377 líneas no se revisa, se aprueba. La forma final es decisión del usuario al publicar; nada se mergea sin que lo pida.
