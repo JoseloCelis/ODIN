@@ -92,10 +92,10 @@ def resolver_radio(diametro_usuario: float | None, bordes: np.ndarray, r0: float
     barrido (spec hough-circles, R6.2). Sin diámetro, se estima en dos
     escalas (R3, R10).
 
-    `aprox_hough` es el módulo `houghCircles` (alias `aproxHough`): se pasa
-    como dependencia porque `main.py` no importa `Preprocesamiento` en nivel
-    de módulo (spec odin-startup-structure, el arranque lo carga vía
-    `bootstrap_result.modules.preprocesamiento`).
+    `aprox_hough` es el módulo `hough_circles` (cargado por el `ModuleLoader`
+    del bootstrap bajo la clave `aproxHough`): se inyecta desde
+    `bootstrap_result.modules.preprocesamiento` (spec odin-startup-structure)
+    en lugar de que el controlador importe el módulo de algoritmo directamente.
     """
     if diametro_usuario is not None and float(diametro_usuario) > 0:
         return float(diametro_usuario) / 2.0, 0, 0.0, "usuario"
@@ -147,7 +147,7 @@ class OdinController:
 
     def registrar_acciones(self) -> None:
         """Registra las acciones lógicas de la ventana."""
-        self.logger.set_application_name("My App ODIN")
+        self.logger.set_application_name("ODIN")
 
         action_cargar = Gio.SimpleAction.new("cargar_imagen", None)
         action_cargar.connect("activate", self.on_open_dialog)
