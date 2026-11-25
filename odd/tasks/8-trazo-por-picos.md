@@ -309,3 +309,22 @@ estricto: es una violación de propiedad real que solo se manifiesta cuando el g
 del log es la más sólida de las dos y **volverá a aparecer** en cuanto se genere un mensaje `WARNING` de más
 de 200 caracteres, porque la propiedad P1 exige la forma exacta y `bootstrap.py:97` trunca. Consignar
 «1 falla preexistente» o «2» sin decir en qué entorno se midió es impreciso; decir el entorno es parte del dato.
+
+L23. **Cadena mergeada también en GitHub (2026-11-25), y cierre de la entrega.** PR **#42** (`c231d57`),
+**#43** re-apuntado a `main` (`22b3fcb`), **#41** re-apuntado a `main` (`10616aa`). Sin borrar ramas y con el
+mismo orden que en Azure. `github/main` = **`10616aa`**, `azure/main` = **`d706b76`**: la única diferencia de
+árbol entre remotos son 32 líneas de `CHANGELOG.md`, de Release Please, como siempre.
+
+Verificación por contenido en worktree limpio de `github/main`: **434 passed, 5 skipped, 1 falla**
+(`test_geometria_prop.py`).
+
+L24. **La falla de geometría es INTERMITENTE, medida.** Mismo contenido, mismo entorno limpio: `azure/main`
+dio 0 fallas y `github/main` dio 1. Barrido con semillas distintas y sin base de ejemplos
+(`--hypothesis-seed`, borrando `.hypothesis/` entre corridas): semilla 1 → 5 passed, **2 → 1 failed**,
+**3 → 1 failed**, 4 → 5 passed. Falla aproximadamente la mitad de las corridas.
+
+Consecuencia para el punto 3: **no es «una falla preexistente de `main`» ni un artefacto de entorno**. Es una
+violación real de la propiedad de invariancia que el generador encuentra en la mitad de las corridas, y por eso
+aparece y desaparece según la semilla. Sigue esperando la decisión de contrato del usuario: (a) rechazar
+entradas degeneradas explícitamente, o (b) endurecer el cálculo de confianza para que un empate no se rompa por
+ruido de coma flotante.
