@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.0](https://github.com/JoseloCelis/ODIN/compare/v0.3.1...v0.4.0) (2026-11-25)
+
+
+### Features
+
+* **procesamiento:** acotar la medicion del trazo a las orillas de su par ([910424e](https://github.com/JoseloCelis/ODIN/commit/910424e04b1ef5185abcd90dbc3484d56390a27b))
+* **procesamiento:** medir el trazo entre las orillas de su par de picos ([c231d57](https://github.com/JoseloCelis/ODIN/commit/c231d574e07c4bd11f49d5b5d9490a0d2d7519c1))
+
+
+### Bug Fixes
+
+* **procesamiento:** elegir el trazo por la intensidad de su franja ([10616aa](https://github.com/JoseloCelis/ODIN/commit/10616aaaba0218ca23591a1197efecd66f59ba67))
+* **procesamiento:** elegir el trazo por la intensidad de su franja ([87acfa9](https://github.com/JoseloCelis/ODIN/commit/87acfa9fad2b510e41e42076857cb58eb7e24043))
+* **procesamiento:** medir el trazo entre sus orillas reales ([e9b705a](https://github.com/JoseloCelis/ODIN/commit/e9b705a872ae84f7a55683f7bc2a9bd7a372ec8f))
+
+
+### Documentation
+
+* **odd:** cerrar la entrega y medir la intermitencia de la propiedad de geometria ([b58fb0f](https://github.com/JoseloCelis/ODIN/commit/b58fb0f47d42809a3a9e707e20001e58a69e58e9))
+* **odd:** cerrar la entrega y medir la intermitencia de la propiedad de geometria ([438cf4e](https://github.com/JoseloCelis/ODIN/commit/438cf4e8170c5a1f99991590bc212c5006f1dacc))
+* **odd:** corregir la verdad de terreno del trazo (58 px, franjas oscuras) ([c393adc](https://github.com/JoseloCelis/ODIN/commit/c393adcf096479f308683b74e53659ffab9e1ea0))
+* **odd:** registrar el merge de la cadena en Azure y matizar las fallas de propiedad ([0ad78c2](https://github.com/JoseloCelis/ODIN/commit/0ad78c28cc0d5a6af1248edf091aeb7aeb2f3277))
+* **odd:** registrar la cadena de PRs y las dos fallas preexistentes ([5478963](https://github.com/JoseloCelis/ODIN/commit/54789638bcce718f009a3d980cfad186f428180c))
+* **odd:** validar el par de orillas contra el perfil de intensidad ([a8ecd25](https://github.com/JoseloCelis/ODIN/commit/a8ecd25ff889664ca2beadee88c282e24af0e574))
+
 ## [0.3.1](https://github.com/JoseloCelis/ODIN/compare/v0.3.0...v0.3.1) (2026-11-25)
 
 
