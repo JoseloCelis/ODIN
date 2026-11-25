@@ -413,6 +413,91 @@ def test_la_traslacion_que_colapsa_puntos_se_reporta_degenerada():
     assert movido.geometria is Geometria.RECTA
 
 
+def test_un_empate_a_nivel_de_ruido_falla_cerrado_y_no_decide():
+    """Criterio 3 — un empate por debajo de la resolución del cálculo no decide.
+
+    Los dos contraejemplos son los que Hypothesis redujo en las semillas 2 y 3
+    de `test_prop_invariancia_rotacion_y_reflexion`. En ambos los dos modelos
+    ajustan a nivel de ruido de máquina (residuales `0` y `~1e-16`), así que la
+    confianza no comparaba geometrías sino redondeo, y una transformación rígida
+    la hacía cruzar el umbral.
+
+    Fijado aquí: cuando la diferencia de residuales no supera el ruido del
+    propio cálculo, no hay evidencia de geometría y se falla cerrado con
+    confianza `0`, de forma determinista e invariante.
+    """
+    # Semilla 3: triángulo rectángulo de catetos 2px. Tres puntos determinan una
+    # circunferencia exacta, así que el residual del círculo es idénticamente 0.
+    triangulo = np.array([[2.0, 0.0], [0.0, 2.0], [0.0, 0.0]])
+    coseno, seno = math.cos(1.0), math.sin(1.0)
+    rotado = triangulo @ np.array([[coseno, -seno], [seno, coseno]]).T
+
+    for etiqueta, puntos in (("base", triangulo), ("rotado", rotado)):
+        evidencia = clasificar_geometria(puntos)
+        assert evidencia.geometria is None, etiqueta
+        assert evidencia.confianza == pytest.approx(0.0, abs=1e-12), etiqueta
+        assert evidencia.candidatos == (Geometria.CIRCULO, Geometria.RECTA), etiqueta
+
+
+def test_la_traslacion_pura_no_decide_por_redondeo_sobre_puntos_duplicados():
+    """El mismo empate no puede decidirse por una traslación de (1, 1).
+
+    Semilla 2: cinco puntos con tres copias de uno de ellos. La mediana de las
+    desviaciones quedaba decidida por las copias y el residual de banda daba `0`
+    exacto; desplazar la nube cambiaba el último bit y con él la decisión, de
+    `RECTA` con confianza `1.0` a ninguna decisión.
+    """
+    base = np.array([[3.0, 0.0], [0.0, 2.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]])
+    desplazado = base + np.array([1.0, 1.0])
+
+    for etiqueta, puntos in (("base", base), ("desplazado", desplazado)):
+        evidencia = clasificar_geometria(puntos)
+        assert evidencia.geometria is None, etiqueta
+        assert evidencia.confianza == pytest.approx(0.0, abs=1e-12), etiqueta
+
+
+def test_la_colinealidad_exacta_sigue_siendo_una_recta_limpia():
+    """El piso de ruido no alcanza a la colinealidad: ahí el círculo es `inf`.
+
+    Tres puntos colineales son la evidencia más limpia de una recta (L13): el
+    ajuste de Kåsa no puede dar radio y el residual del círculo es infinito, así
+    que la separación de residuales es total y no un empate.
+    """
+    evidencia = clasificar_geometria(np.array([[3.0, 0.0], [0.5, 0.0], [0.0, 0.0]]))
+
+    assert evidencia.geometria is Geometria.RECTA
+    assert evidencia.confianza == pytest.approx(1.0)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "Defecto conocido y distinto del empate: con covarianza isotrópica "
+        "(cuadrado, polígono regular) la dirección principal del SVD es "
+        "arbitraria, así que el residual de banda depende de la rotación "
+        "(0.000 px en el cuadrado alineado, 0.434 px rotado 0.449 rad) y la "
+        "decisión cambia de ninguna a CIRCULO. Requiere decidir qué residual "
+        "de recta es invariante cuando el eigenvalor es degenerado."
+    ),
+)
+def test_un_conjunto_con_covarianza_isotropica_deberia_ser_invariante():
+    """Limitación medida: el residual de recta no es invariante en simetría exacta.
+
+    El piso de ruido resuelve el empate cuando los dos residuales son ruido,
+    pero acá el residual de recta rotado ya no es ruido: la recta de PCA de un
+    cuadrado tiene dirección arbitraria porque los dos eigenvalores son iguales.
+    """
+    cuadrado = np.array([[1.0, 1.0], [1.0, -1.0], [-1.0, -1.0], [-1.0, 1.0]])
+    coseno, seno = math.cos(math.pi / 7), math.sin(math.pi / 7)
+    rotado = cuadrado @ np.array([[coseno, -seno], [seno, coseno]]).T + np.array([3.0, -7.0])
+
+    base = clasificar_geometria(cuadrado)
+    movido = clasificar_geometria(rotado)
+
+    assert movido.geometria is base.geometria
+    assert movido.confianza == pytest.approx(base.confianza, rel=1e-6, abs=1e-7)
+
+
 def test_un_circulo_lejos_del_origen_sigue_siendo_un_circulo():
     """El ajuste algebraico usa coordenadas absolutas: centrarlo lo estabiliza.
 

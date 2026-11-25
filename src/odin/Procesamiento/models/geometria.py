@@ -17,7 +17,12 @@ Criterios de diseño (bloque «T4 — criterios de diseño del clasificador»):
    toda recta es un círculo de radio enorme y el clasificador elegiría
    círculo siempre.
 3. Confianza `(peor - mejor) / peor`, con `1.0` cuando el peor es infinito y
-   `0.0` cuando ambos lo son.
+   `0.0` cuando la diferencia no supera el ruido del propio cálculo. Sin ese
+   piso, un conjunto que los dos modelos ajustan a nivel de redondeo decide por
+   cuál residual quedó en `0`, y una transformación rígida cambia la decisión:
+   tres puntos no colineales determinan una circunferencia exacta, así que el
+   residual del círculo es idénticamente `0` y la confianza deja de comparar
+   geometrías.
 4. Falla cerrado. `confianza < umbral_confianza` ⇒ `geometria=None` y se
    exponen ambos candidatos para que el operador decida.
 5. Degenerados no lanzan. Menos de 3 puntos, valores no finitos o duplicados
@@ -47,6 +52,13 @@ from odin.Ajustes import LSC, cobertura_angular
 UMBRAL_CONFIANZA: Final = 0.75
 TOLERANCIA_PX: Final = 2.0
 FACTOR_RADIO_MAX: Final = 4.0
+
+# Cuántos ulps de la extensión se consideran indistinguibles de cero. Los dos
+# residuales son longitudes medidas a la escala de la extensión, y se calculan
+# con un centrado, un SVD, las ecuaciones normales del ajuste algebraico y dos
+# medianas: el error acumulado es de un puñado de ulps, no de uno. Por debajo de
+# esa diferencia dos residuales son el mismo número en esta aritmética.
+ULPS_DE_RUIDO: Final = 8
 
 
 class Geometria(Enum):
@@ -86,6 +98,11 @@ def _motivo_degenerado(arreglo: np.ndarray) -> str | None:
     if np.unique(arreglo, axis=0).shape[0] < 3:
         return "la entrada tiene menos de 3 puntos distintos (duplicados)"
     return None
+
+
+def _piso_de_ruido(extension: float) -> float:
+    """Diferencia de residuales por debajo de la cual son el mismo número."""
+    return ULPS_DE_RUIDO * float(np.spacing(extension))
 
 
 def _resultado_degenerado(motivo: str) -> EvidenciaGeometria:
@@ -188,14 +205,17 @@ def clasificar_geometria(
     if radio is None or not math.isfinite(radio) or radio > factor_radio_max * extension:
         residual_circulo = math.inf
 
-    # Criterio 3: confianza como separación relativa de residuales.
+    # Criterio 3: confianza como separación relativa de residuales. Una
+    # diferencia por debajo del ruido del cálculo no es una diferencia: los dos
+    # modelos empatan y no hay evidencia para decidir (ver `ULPS_DE_RUIDO`).
     mejor = min(residual_recta, residual_circulo)
     peor = max(residual_recta, residual_circulo)
+    piso_ruido = _piso_de_ruido(extension)
     if math.isinf(peor) and math.isinf(mejor):
         confianza = 0.0
     elif math.isinf(peor):
         confianza = 1.0
-    elif peor <= 0.0:
+    elif peor - mejor <= piso_ruido:
         confianza = 0.0
     else:
         confianza = (peor - mejor) / peor
