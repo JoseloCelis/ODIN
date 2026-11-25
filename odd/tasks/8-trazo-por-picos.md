@@ -108,3 +108,29 @@ de Voronoi no puede rechazar porque no hay otro pico cerca. `medir_trazo` ajusta
 pico — la semianchura a media altura (HWHM) del perfil de rho que sostiene a esa orilla. Es
 s data-driven, no un número en px: un borde nítido tiene HWHM de 1-2 px y uno inclinado se ensancha
 solo; cumple S1 sin introducir una cota fija.
+
+L7. **Verdad de terreno corregida por el usuario (autoritativa).** Los trazos son las franjas
+**oscuras**; el fondo claro lo confundí con el trazo en L6. Anchos reales, medidos a ojo sobre la
+imagen a resolución de píxel:
+
+| Trazo | Orilla izquierda | Orilla derecha | Ancho |
+|---|---|---|---|
+| 1.º | 276 px | 334 px | 58 px |
+| 2.º | 432 px | 490 px | 58 px |
+
+Los picos 168 y 587/588 **no son orillas de trazo**: son los bordes exteriores de las zonas claras.
+El "rim" de L6 queda retirado como explicación.
+
+L8. **El defecto es anterior a esta feature.** Con el par correcto (276, 335) —el de mayor
+evidencia, 457— `medir_trazo` devuelve 41.97 px y ajusta las orillas en 303.6 y 322.3, o sea dentro
+de la franja. La baseline de 41.80 px está a 0.17 px de ese valor: el pipeline ya venía midiendo
+~42 px donde el trazo mide 58. La ventana de `separar_orillas`/`medir_trazo` nunca llegó al borde.
+
+L9. **Dos correcciones necesarias, en este orden:** (1) elegir el par por evidencia y no anclando
+en la candidata principal de `hough_lineas`, que puede ser un borde exterior; (2) acotar la
+pertenencia al ancho del pico (HWHM) para que cada máscara sea una orilla fina y no media franja.
+Sin (2), `medir_trazo` converge al centro de masa de la media franja.
+
+L10. **Hipótesis abierta del usuario:** analizar la inversión de tonos de la imagen. Relevante
+porque `separar_orillas` separa por signo del gradiente y los trazos oscuros sobre fondo claro
+pueden invertir qué orilla cae en cada grupo; conviene verificarlo antes de tocar la ventana.
