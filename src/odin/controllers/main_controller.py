@@ -21,6 +21,7 @@ from gi.repository import Gio, GLib, Gtk
 
 from ..Procesamiento import EvidenciaGeometria, Geometria, clasificar_geometria
 from ..Procesamiento import emparejar_orillas, asignar_puntos_a_orillas
+from ..Procesamiento import seleccionar_trazo_por_intensidad
 from ..Ajustes import medir_trazo
 from .plan_geometria import (
     GEOMETRIA_POR_OPCION,
@@ -463,7 +464,25 @@ class OdinController:
         # relativo que usa Hough para elegir candidata, y evita anclar en un
         # borde exterior que no es orilla de trazo.
         pares = emparejar_orillas(rhos_picos, thetas_picos, conteos_picos)
-        par = pares[0] if pares else None
+        # S9: la evidencia de Hough mide alineación, no intensidad, así que no
+        # distingue una franja oscura de una clara —en 600mm todos los pares
+        # consecutivos son franjas—. El trazo se elige por el contraste de su
+        # interior contra el fondo, y la polaridad sale de la propia imagen: con
+        # trazo claro sobre fondo oscuro gana la franja clara. Si ninguna franja
+        # se aparta del fondo, el criterio se abstiene y manda la evidencia.
+        par: tuple[int, int] | None = None
+        if pares:
+            par = seleccionar_trazo_por_intensidad(
+                self.current_image,
+                puntos_refinados,
+                rhos_picos,
+                thetas_picos,
+                pares,
+                conteos_picos,
+                semianchuras,
+            )
+            if par is None:
+                par = pares[0]
 
         if par is not None:
             mascara_a, mascara_b = asignar_puntos_a_orillas(
