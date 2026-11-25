@@ -261,3 +261,34 @@ En `600mm` la familia elegida es la oscura y dentro de ella gana el segundo traz
 (1030 contra 819 del primero): mide **58.37 px**, el mismo ancho que el par (276.23, 334.78) de la
 tabla de L12 porque los dos trazos son simétricos. Las orillas ajustadas caen en 432.49 y 490.97,
 contra la verdad de terreno 432 y 490.
+
+L19. **Entrega elegida por el usuario: PRs encadenados, no un PR de 1600 líneas.** Tres eslabones, cada
+uno verde y revisable por separado; los cortes se hicieron sobre commits ya existentes, sin reescribir
+historia publicada:
+
+| Eslabón | Rama | Cabeza | Contenido | Tamaño |
+|---|---|---|---|---|
+| L1 | `feat/trazo-orillas-picos` | `e9b705a` | orillas por picos + medición real + validación (T1-T5) | 779 líneas |
+| L2 | `feat/trazo-propiedades` | `815d2d6` | propiedades de Hypothesis (T2) | 191 líneas |
+| L3 | `feat/trazo-por-picos-hough` | `87acfa9` | semianchura + selección por intensidad (T6-T8) | 476 líneas |
+
+`e9b705a` va en L1 y no en L2 a propósito: corrige el cableado que hacía que la feature **nunca se
+ejecutara** (`max_dist_px=5.0` lanzaba `ValueError` y el `except` lo convertía en «sin candidatas»).
+Un eslabón que pasa tests sin ejecutar la feature no es revisable, y era el riesgo real de cortar por
+fecha de commit en vez de por unidad de comportamiento.
+
+Estado por remoto: **Azure completo** — PR **27** (`feat/trazo-orillas-picos` → `main`), PR **28**
+(`feat/trazo-propiedades` → `feat/trazo-orillas-picos`), PR **26** re-apuntado a
+`feat/trazo-propiedades` y retitulado. **GitHub pendiente**: la creación y el re-apuntado de PR están
+caídos por una indisponibilidad mayor del servicio (`Pull Requests major_outage` en la status page),
+no por permisos ni por contenido. Pendiente allí: crear los PR de L1 (base `main`) y L2 (base
+`feat/trazo-orillas-picos`) y re-apuntar el **#41** a `feat/trazo-propiedades`.
+
+L20. **Segunda falla preexistente descubierta al verificar los cortes.** Además de
+`test_geometria_prop.py::test_prop_invariancia_rotacion_y_reflexion`, falla
+`tests/integration/test_bootstrap_arranque.py::TestPropiedadesCorreccion::test_propiedad_1_formato_canonico_log`:
+`bootstrap.py:97` trunca los mensajes de nivel `WARNING` a `MAX_WARN_LEN = 200` y la propiedad P1 exige
+la forma exacta `[ODIN] fase | nivel | mensaje`. La propiedad y el truncado de R5.3 se contradicen.
+Verificado que falla igual en `azure/main` (`1793861`), así que no viene de esta rama. Apareció al
+repetir la suite porque Hypothesis guarda el ejemplo falsador en su base de datos: desde entonces falla
+siempre en esta máquina. Deuda abierta, ajena a los tres eslabones.
