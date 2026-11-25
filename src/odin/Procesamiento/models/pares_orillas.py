@@ -68,11 +68,15 @@ def picos_de_rho(
 
     Retorna:
         tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]: `rhos`, `conteos` y
-        `semianchuras` de cada máximo local, ordenados por `rho` ascendente. La
-        semianchura es la mitad del ancho del pico a media altura (HWHM) en px,
-        es decir el soporte real de esa orilla en el perfil; es lo que permite
-        rechazar la textura que no sostiene ningún pico sin fijar una cota.
-        Vacíos si el perfil no tiene máximos por encima del umbral.
+        `semianchuras` de cada orilla, ordenados por `rho` ascendente. Una orilla
+        es una región conexa del perfil por encima del umbral, no un máximo
+        local: así un borde desenfocado, que reparte su gradiente en una rampa y
+        produce varios máximos locales, cuenta como la orilla única que es. `rho`
+        es el centroide de la región ponderado por votos, en px. La semianchura
+        es la mitad del ancho de la región a media altura de su propio pico, en
+        px: mide el desenfoque de esa orilla y es la ventana con la que se decide
+        qué puntos le pertenecen, sin ninguna cota fija. Vacíos si el perfil no
+        tiene regiones por encima del umbral.
     """
     puntos = np.asarray(puntos, dtype=float)
     if puntos.ndim != 2 or puntos.shape[1] != 2:
@@ -88,50 +92,67 @@ def picos_de_rho(
     desplazamiento = int(indices.min())
     perfil = np.bincount(indices - desplazamiento).astype(float)
 
-    # Se rellena con un bin nulo a cada lado para que el primer y el último bin
-    # del perfil también puedan ser máximos locales: si no, se perdería la
-    # orilla que coincide con el extremo del rango de rho.
-    extendido = np.concatenate(([0.0], perfil, [0.0]))
+    # Una orilla no es un máximo local: es una región conexa por encima del
+    # umbral de ruido. Un borde nítido ocupa un bin; uno desenfocado ocupa una
+    # rampa entera y produce varios máximos locales que son la MISMA orilla
+    # (medido sobre 500mm_Imag0000.bmp, cuyas dos transiciones dan cinco picos
+    # cada una). Agrupar por región y no por máximo local evita inventar orillas
+    # donde solo hay desenfoque.
+    # Un bin nulo entre dos bins con densidad no es un hueco del dato: los puntos
+    # de borde tienen coordenadas enteras y el bin mide `paso`, así que la malla
+    # de los puntos puede no coincidir con la del acumulador y dejar bins vacíos
+    # alternados (sobre 500mm_Imag0000.bmp ocurre en todo el perfil). La densidad
+    # es continua, así que ese bin se interpola con sus vecinos.
+    hueco = np.zeros(perfil.size, dtype=bool)
+    if perfil.size >= 3:
+        hueco[1:-1] = (perfil[1:-1] == 0.0) & (perfil[:-2] > 0.0) & (perfil[2:] > 0.0)
+        if np.any(hueco):
+            perfil[hueco] = 0.5 * (perfil[:-2][hueco[1:-1]] + perfil[2:][hueco[1:-1]])
+
     umbral = percent * float(perfil.max())
-    es_pico = (
-        (extendido[1:-1] > extendido[:-2])
-        & (extendido[1:-1] >= extendido[2:])
-        & (extendido[1:-1] >= umbral)
-    )
-    if not np.any(es_pico):
+    es_soporte = np.concatenate(([False], perfil >= umbral, [False]))
+    cambios = np.flatnonzero(np.diff(es_soporte.astype(np.int8)))
+    if cambios.size == 0:
         vacio = np.empty(0, dtype=float)
         return vacio, vacio.copy(), vacio.copy()
 
-    # Un borde real puede partirse en dos bins contiguos por la cuantización
-    # del voto; se conserva el de mayor conteo para no contar la misma orilla
-    # dos veces.
-    posiciones: list[int] = []
-    for posicion in np.flatnonzero(es_pico).tolist():
-        if posiciones and posicion == posiciones[-1] + 1:
-            if perfil[posicion] > perfil[posiciones[-1]]:
-                posiciones[-1] = posicion
-            continue
-        posiciones.append(posicion)
+    inicios = cambios[0::2]
+    finales = cambios[1::2] - 1
 
-    arreglo = np.asarray(posiciones, dtype=np.int64)
+    # Posición de cada orilla: centroide de su región ponderado por votos, que es
+    # subpíxel y no depende de dónde cayó el bin más alto.
+    posiciones = np.empty(inicios.size, dtype=float)
+    conteos = np.empty(inicios.size, dtype=float)
+    semianchuras = np.empty(inicios.size, dtype=float)
+    for indice, (inicio, final) in enumerate(zip(inicios.tolist(), finales.tolist())):
+        pesos = perfil[inicio:final + 1]
+        bins = np.arange(inicio, final + 1, dtype=float)
+        centro = float(np.dot(bins, pesos) / pesos.sum())
+        posiciones[indice] = centro
+        conteos[indice] = float(pesos.sum())
 
-    # Semianchura a media altura de cada pico: se camina desde el pico mientras el
-    # perfil no baje de la mitad de su altura. Un borde nítido da una semianchura
-    # de un bin; un borde inclinado o desenfocado la da mayor, así que la ventana
-    # se adapta a cada orilla y a cada imagen sin constantes en px.
-    semianchuras = np.empty(arreglo.size, dtype=float)
-    for indice, posicion in enumerate(arreglo.tolist()):
-        mitad = perfil[posicion] / 2.0
-        izquierda = posicion
-        while izquierda > 0 and perfil[izquierda - 1] >= mitad:
+        # Semianchura a media altura del pico propio de la orilla, y no del global:
+        # así cada una mide su desenfoque. Nítida: un bin. Desenfocada: la rampa
+        # entera, y esa amplitud es la incertidumbre real del ancho. Se expande
+        # fuera de la región del umbral de ruido, porque el desenfoque está
+        # justamente en los bins que ese umbral deja afuera; se detiene al caer de
+        # media altura o al empezar a subir, que es el valle entre dos orillas.
+        mitad = 0.5 * float(pesos.max())
+        desde = inicio + int(np.argmax(pesos))
+        izquierda = desde
+        while izquierda > 0 and perfil[izquierda - 1] >= mitad and perfil[izquierda - 1] <= perfil[izquierda]:
             izquierda -= 1
-        derecha = posicion
-        while derecha < perfil.size - 1 and perfil[derecha + 1] >= mitad:
+        derecha = desde
+        while (
+            derecha < perfil.size - 1
+            and perfil[derecha + 1] >= mitad
+            and perfil[derecha + 1] <= perfil[derecha]
+        ):
             derecha += 1
-        semianchuras[indice] = max(posicion - izquierda, derecha - posicion, 1) * paso
+        semianchuras[indice] = max(centro - izquierda, derecha - centro, 1.0) * paso
 
-    rhos = (arreglo + desplazamiento) * paso
-    return rhos, perfil[arreglo], semianchuras
+    rhos = (posiciones + desplazamiento) * paso
+    return rhos, conteos, semianchuras
 
 
 def distancias_perpendiculares(
@@ -295,3 +316,178 @@ def asignar_puntos_a_orillas(
         mascara_b = mascara_b & (distancia_b <= semianchuras[indice_b])
 
     return mascara_a, mascara_b
+
+
+def _muestrear_bilineal(
+    imagen: np.ndarray, x: np.ndarray, y: np.ndarray
+) -> np.ndarray:
+    """Interpola la imagen en coordenadas continuas `(x, y)`.
+
+    Recorta a los bordes de la imagen, que es el comportamiento correcto para el
+    muestreo de una franja que puede empezar o terminar en el límite del recorte.
+    """
+    alto, ancho = imagen.shape
+    x = np.clip(np.asarray(x, dtype=float), 0.0, ancho - 1.0)
+    y = np.clip(np.asarray(y, dtype=float), 0.0, alto - 1.0)
+
+    x0 = np.floor(x).astype(np.int64)
+    y0 = np.floor(y).astype(np.int64)
+    x1 = np.minimum(x0 + 1, ancho - 1)
+    y1 = np.minimum(y0 + 1, alto - 1)
+    peso_x = x - x0
+    peso_y = y - y0
+
+    return (
+        imagen[y0, x0] * (1.0 - peso_x) * (1.0 - peso_y)
+        + imagen[y0, x1] * peso_x * (1.0 - peso_y)
+        + imagen[y1, x0] * (1.0 - peso_x) * peso_y
+        + imagen[y1, x1] * peso_x * peso_y
+    )
+
+
+def intensidad_interior(
+    imagen: np.ndarray,
+    puntos: np.ndarray,
+    rhos: np.ndarray,
+    thetas: np.ndarray,
+    par: tuple[int, int],
+    semianchuras: np.ndarray | None = None,
+) -> float:
+    """Intensidad mediana del interior de una franja, en unidades de la imagen.
+
+    El interior de un par de orillas es la línea media entre las dos: `rho_m` es
+    el promedio de los dos `rho` y la posición de muestreo es
+    `rho_m·n + t·d`, con `n = (cos θ, sin θ)` la normal y `d = (−sin θ, cos θ)` la
+    dirección. Los valores de `t` no se inventan: son las proyecciones de los
+    puntos que el par tiene asignados, o sea las posiciones donde el dato existe.
+    Muestrear sobre esos `t` mide la franja solo donde hay borde que la sostenga.
+
+    Parámetros:
+        imagen (numpy.ndarray): Matriz `(H, W)` con la intensidad de la escena.
+        puntos (numpy.ndarray): Matriz `(N, 2)` con las coordenadas `(x, y)`.
+        rhos (numpy.ndarray): `(K,)` rho de cada orilla, en px.
+        thetas (numpy.ndarray): `(K,)` theta de cada orilla, en rad.
+        par (tuple[int, int]): Índices de las dos orillas de la franja.
+        semianchuras (numpy.ndarray | None): `(K,)` semianchura de cada pico; si se
+            pasa, acota la pertenencia igual que en `asignar_puntos_a_orillas`.
+
+    Retorna:
+        float: Mediana de la intensidad muestreada, o `nan` si el par no tiene
+        puntos asignados y por lo tanto no hay interior que medir.
+    """
+    imagen = np.asarray(imagen, dtype=float)
+    if imagen.ndim != 2:
+        raise ValueError("pares_orillas:: imagen debe ser 2D (intensidad)")
+
+    mascara_a, mascara_b = asignar_puntos_a_orillas(
+        puntos, rhos, thetas, par, semianchuras
+    )
+    del_par = mascara_a | mascara_b
+    if not np.any(del_par):
+        return float("nan")
+
+    indice_a, indice_b = int(par[0]), int(par[1])
+    theta = 0.5 * (float(thetas[indice_a]) + float(thetas[indice_b]))
+    rho_medio = 0.5 * (float(rhos[indice_a]) + float(rhos[indice_b]))
+
+    normal = np.array([np.cos(theta), np.sin(theta)], dtype=float)
+    direccion = np.array([-np.sin(theta), np.cos(theta)], dtype=float)
+    sobre_la_franja = np.asarray(puntos, dtype=float)[del_par]
+    parametro = sobre_la_franja @ direccion
+
+    base = rho_medio * normal
+    posiciones = base[None, :] + parametro[:, None] * direccion[None, :]
+    muestras = _muestrear_bilineal(imagen, posiciones[:, 0], posiciones[:, 1])
+    return float(np.median(muestras))
+
+
+def seleccionar_trazo_por_intensidad(
+    imagen: np.ndarray,
+    puntos: np.ndarray,
+    rhos: np.ndarray,
+    thetas: np.ndarray,
+    pares: list[tuple[int, int]],
+    conteos: np.ndarray | None = None,
+    semianchuras: np.ndarray | None = None,
+) -> tuple[int, int] | None:
+    """Elige el par de orillas que corresponde a un trazo, mirando la imagen (S9).
+
+    La evidencia de Hough mide alineación de bordes, no intensidad, así que no
+    distingue una franja oscura de una clara: en `600mm_Imag0000.bmp` todos los
+    pares consecutivos de orillas son franjas y el par de mayor evidencia resultó
+    ser una franja clara intermedia (96.69 px) en vez del trazo (58.37 px).
+
+    Criterio: se mide la intensidad del interior de cada par y se compara con la
+    mediana de la escena, que es el fondo. Las franjas se agrupan en dos familias
+    por el lado del fondo en que caen —más oscuras o más claras—, cada familia se
+    identifica por su miembro más contrastado, y gana la familia que más se aparta
+    del fondo. Dentro de esa familia manda la evidencia, como en `emparejar_orillas`.
+
+    La polaridad se **deriva** de la imagen y no se supone: con un trazo claro
+    sobre fondo oscuro la familia ganadora es la clara, sin intervención del
+    operador. Si ninguna franja se aparta del fondo, el criterio se abstiene
+    (`None`) y el llamador conserva la evidencia de Hough: no hay base para
+    descartarla.
+
+    Parámetros:
+        imagen (numpy.ndarray): Matriz `(H, W)` con la intensidad de la escena.
+        puntos (numpy.ndarray): Matriz `(N, 2)` con las coordenadas `(x, y)`.
+        rhos (numpy.ndarray): `(K,)` rho de cada orilla, en px.
+        thetas (numpy.ndarray): `(K,)` theta de cada orilla, en rad.
+        pares (list[tuple[int, int]]): Pares de orillas candidatos.
+        conteos (numpy.ndarray | None): `(K,)` evidencia de cada orilla.
+        semianchuras (numpy.ndarray | None): `(K,)` semianchura de cada pico.
+
+    Retorna:
+        tuple[int, int] | None: El par del trazo, o `None` si no hay pares o si
+        ninguna franja se aparta del fondo.
+    """
+    rhos = _como_array(rhos, "rhos")
+    thetas = _como_array(thetas, "thetas")
+    if rhos.shape != thetas.shape:
+        raise ValueError("pares_orillas:: rhos y thetas deben tener la misma longitud")
+    if conteos is not None:
+        conteos = _como_array(conteos, "conteos")
+        if conteos.shape != rhos.shape:
+            raise ValueError("pares_orillas:: conteos debe tener la longitud de rhos")
+    candidatos = list(pares)
+    if not candidatos:
+        return None
+
+    mediana_escena = float(np.median(np.asarray(imagen, dtype=float)))
+
+    desviaciones = np.empty(len(candidatos), dtype=float)
+    for indice, par in enumerate(candidatos):
+        interior = intensidad_interior(
+            imagen, puntos, rhos, thetas, par, semianchuras
+        )
+        desviaciones[indice] = interior - mediana_escena
+
+    medibles = np.isfinite(desviaciones)
+    if not np.any(medibles):
+        return None
+
+    # Dos familias: las franjas más oscuras que el fondo y las más claras. El
+    # signo lo pone la imagen, no una convención de polaridad.
+    mas_oscura = medibles & (desviaciones < 0.0)
+    mas_clara = medibles & (desviaciones > 0.0)
+
+    def contraste(familia: np.ndarray) -> float:
+        """Contraste de la familia: el de su miembro más apartado del fondo."""
+        return float(np.max(np.abs(desviaciones[familia]))) if np.any(familia) else -1.0
+
+    # Empate exacto: se prefiere el lado oscuro, que es el caso nominal del
+    # proyecto (trazo oscuro sobre fondo claro) cuando la escena no desempata.
+    familia = mas_oscura if contraste(mas_oscura) >= contraste(mas_clara) else mas_clara
+    indices_familia = np.flatnonzero(familia)
+    if indices_familia.size == 0:
+        return None
+
+    def clave(indice: int) -> tuple[float, float]:
+        """Evidencia del par; el rho menor desempata de forma estable (S8)."""
+        par = candidatos[int(indice)]
+        evidencia = float(conteos[par[0]] + conteos[par[1]]) if conteos is not None else 0.0
+        return (evidencia, -float(min(rhos[par[0]], rhos[par[1]])))
+
+    elegido = max(indices_familia.tolist(), key=clave)
+    return candidatos[int(elegido)]

@@ -18,7 +18,9 @@ from .models.pares_orillas import (
     SEPARACION_MINIMA,
     emparejar_orillas,
     asignar_puntos_a_orillas,
+    intensidad_interior,
     picos_de_rho,
+    seleccionar_trazo_por_intensidad,
 )
 from .models import (
     NonMaxSup,
