@@ -9,7 +9,10 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf, cairo
 
+import logging
 from typing import Any
+
+registro = logging.getLogger(__name__)
 
 
 class VisualizadorInteractivo(Gtk.Overlay):
@@ -71,9 +74,12 @@ class VisualizadorInteractivo(Gtk.Overlay):
         ancho = abs(self.actual_x - self.inicio_x)
         alto = abs(self.actual_y - self.inicio_y)
 
-        print(
-            f"Recorte solicitado en coordenadas: "
-            f"X:{self.x1}, Y:{self.y1}, Ancho:{ancho}, Alto:{alto}"
+        registro.debug(
+            "Recorte solicitado en coordenadas: X:%s, Y:%s, Ancho:%s, Alto:%s",
+            self.x1,
+            self.y1,
+            ancho,
+            alto,
         )
 
         self.inicio_x = self.inicio_y = self.actual_x = self.actual_y = 0
@@ -86,7 +92,6 @@ class VisualizadorInteractivo(Gtk.Overlay):
             y = min(self.inicio_y, self.actual_y)
             ancho = abs(self.actual_x - self.inicio_x)
             alto = abs(self.actual_y - self.inicio_y)
-            print(width, height, alto, ancho)
 
             cr.set_source_rgba(0.0, 0.4, 1.0, 0.15)
             cr.rectangle(x, y, ancho, alto)
