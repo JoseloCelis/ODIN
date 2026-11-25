@@ -42,15 +42,14 @@ def test_el_ancho_medido_es_el_del_trazo_y_no_el_de_la_escena():
     """S4: con dos trazos en la imagen, se mide el ancho de uno, no la distancia."""
     puntos, gx, gy = _escena_dos_trazos()
     theta = 0.0
-    rhos_picos, conteos_picos = picos_de_rho(puntos, theta)
+    rhos_picos, conteos_picos, semianchuras = picos_de_rho(puntos, theta)
     thetas_picos = np.full(rhos_picos.shape, theta)
     pares = emparejar_orillas(rhos_picos, thetas_picos, conteos_picos)
     assert pares, "el sintético debe producir al menos un par de orillas"
 
-    # Se mide el trazo que contiene la candidata principal (rho = 0).
-    principal = int(np.argmin(np.abs(rhos_picos - 0.0)))
-    par = next(p for p in pares if principal in p)
-    mascara_a, mascara_b = asignar_puntos_a_orillas(puntos, rhos_picos, thetas_picos, par)
+    # El trazo principal es el par de mayor evidencia.
+    par = pares[0]
+    mascara_a, mascara_b = asignar_puntos_a_orillas(puntos, rhos_picos, thetas_picos, par, semianchuras)
     mascara_par = mascara_a | mascara_b
     assert np.count_nonzero(mascara_par) >= 2
 
@@ -73,13 +72,13 @@ def test_el_centro_medido_cae_en_el_trazo_del_par():
     """S4: el centro medido está entre las dos orillas del trazo, no en la escena."""
     puntos, gx, gy = _escena_dos_trazos()
     theta = 0.0
-    rhos_picos, conteos_picos = picos_de_rho(puntos, theta)
+    rhos_picos, conteos_picos, semianchuras = picos_de_rho(puntos, theta)
     thetas_picos = np.full(rhos_picos.shape, theta)
     pares = emparejar_orillas(rhos_picos, thetas_picos, conteos_picos)
     principal = int(np.argmin(np.abs(rhos_picos - 0.0)))
     par = next(p for p in pares if principal in p)
     mascara = np.zeros(puntos.shape[0], dtype=bool)
-    for mascara_orilla in asignar_puntos_a_orillas(puntos, rhos_picos, thetas_picos, par):
+    for mascara_orilla in asignar_puntos_a_orillas(puntos, rhos_picos, thetas_picos, par, semianchuras):
         mascara |= mascara_orilla
 
     medicion = medir_trazo(puntos[mascara], gx[mascara], gy[mascara], theta)

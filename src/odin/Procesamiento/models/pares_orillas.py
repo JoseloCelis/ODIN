@@ -8,6 +8,12 @@ Las dos orillas de un trazo son dos candidatas casi paralelas (misma theta) y
 separadas en `rho`. Este módulo empareja esas candidatas y asigna cada punto de
 borde a la orilla más cercana de su par, sin cotas de distancia en px: la
 pertenencia la decide el vecino más cercano entre las candidatas ya detectadas.
+
+No se supone nada sobre los trazos: cuántos hay, cuánto miden y cómo se separan
+cambia de una imagen a otra y entre trazos de la misma imagen. El ancho de un
+trazo es justamente lo que se quiere medir, así que ninguna constante en px
+puede describirlo; la única ventana admisible es la que aporta el propio dato
+(la semianchura del pico de cada orilla).
 """
 
 from __future__ import annotations
@@ -61,9 +67,12 @@ def picos_de_rho(
             `[0.6, 0.9]`; el mismo criterio relativo que usa `candidatas_lineas`.
 
     Retorna:
-        tuple[numpy.ndarray, numpy.ndarray]: `rhos` y `conteos` de cada máximo
-        local, ordenados por `rho` ascendente. Vacíos si el perfil no tiene
-        máximos por encima del umbral.
+        tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]: `rhos`, `conteos` y
+        `semianchuras` de cada máximo local, ordenados por `rho` ascendente. La
+        semianchura es la mitad del ancho del pico a media altura (HWHM) en px,
+        es decir el soporte real de esa orilla en el perfil; es lo que permite
+        rechazar la textura que no sostiene ningún pico sin fijar una cota.
+        Vacíos si el perfil no tiene máximos por encima del umbral.
     """
     puntos = np.asarray(puntos, dtype=float)
     if puntos.ndim != 2 or puntos.shape[1] != 2:
@@ -71,7 +80,8 @@ def picos_de_rho(
     if not 0.6 <= percent <= 0.9:
         raise ValueError("pares_orillas:: percent debe estar en [0.6, 0.9]")
     if puntos.shape[0] == 0:
-        return np.empty(0, dtype=float), np.empty(0, dtype=float)
+        vacio = np.empty(0, dtype=float)
+        return vacio, vacio.copy(), vacio.copy()
 
     proyeccion = puntos[:, 0] * np.cos(theta) + puntos[:, 1] * np.sin(theta)
     indices = np.rint(proyeccion / paso).astype(np.int64)
@@ -89,7 +99,8 @@ def picos_de_rho(
         & (extendido[1:-1] >= umbral)
     )
     if not np.any(es_pico):
-        return np.empty(0, dtype=float), np.empty(0, dtype=float)
+        vacio = np.empty(0, dtype=float)
+        return vacio, vacio.copy(), vacio.copy()
 
     # Un borde real puede partirse en dos bins contiguos por la cuantización
     # del voto; se conserva el de mayor conteo para no contar la misma orilla
@@ -103,8 +114,24 @@ def picos_de_rho(
         posiciones.append(posicion)
 
     arreglo = np.asarray(posiciones, dtype=np.int64)
+
+    # Semianchura a media altura de cada pico: se camina desde el pico mientras el
+    # perfil no baje de la mitad de su altura. Un borde nítido da una semianchura
+    # de un bin; un borde inclinado o desenfocado la da mayor, así que la ventana
+    # se adapta a cada orilla y a cada imagen sin constantes en px.
+    semianchuras = np.empty(arreglo.size, dtype=float)
+    for indice, posicion in enumerate(arreglo.tolist()):
+        mitad = perfil[posicion] / 2.0
+        izquierda = posicion
+        while izquierda > 0 and perfil[izquierda - 1] >= mitad:
+            izquierda -= 1
+        derecha = posicion
+        while derecha < perfil.size - 1 and perfil[derecha + 1] >= mitad:
+            derecha += 1
+        semianchuras[indice] = max(posicion - izquierda, derecha - posicion, 1) * paso
+
     rhos = (arreglo + desplazamiento) * paso
-    return rhos, perfil[arreglo]
+    return rhos, perfil[arreglo], semianchuras
 
 
 def distancias_perpendiculares(
@@ -213,6 +240,7 @@ def asignar_puntos_a_orillas(
     rhos: np.ndarray,
     thetas: np.ndarray,
     par: tuple[int, int],
+    semianchuras: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Asigna cada punto de borde a una de las dos orillas del par.
 
@@ -226,6 +254,10 @@ def asignar_puntos_a_orillas(
         rhos (numpy.ndarray): `(K,)` rho de todas las candidatas, en px.
         thetas (numpy.ndarray): `(K,)` theta de todas las candidatas, en rad.
         par (tuple[int, int]): Índices de las dos orillas.
+        semianchuras (numpy.ndarray | None): `(K,)` semianchura a media altura de
+            cada pico, en px. Si se pasa, un punto pertenece a una orilla solo si
+            su distancia perpendicular no supera esa semianchura: así se descarta
+            la textura que no sostiene el pico. Si es `None` no se acota.
 
     Retorna:
         tuple[numpy.ndarray, numpy.ndarray]: Dos máscaras booleanas de longitud
@@ -252,4 +284,12 @@ def asignar_puntos_a_orillas(
     distancia_b = distancias[:, indice_b]
     mascara_a = en_par & (distancia_a <= distancia_b)
     mascara_b = en_par & (distancia_b < distancia_a)
+
+    if semianchuras is not None:
+        semianchuras = _como_array(semianchuras, "semianchuras")
+        if semianchuras.shape != rhos.shape:
+            raise ValueError("pares_orillas:: semianchuras debe tener la longitud de rhos")
+        mascara_a = mascara_a & (distancia_a <= semianchuras[indice_a])
+        mascara_b = mascara_b & (distancia_b <= semianchuras[indice_b])
+
     return mascara_a, mascara_b

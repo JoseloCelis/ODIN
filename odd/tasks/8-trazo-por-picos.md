@@ -32,6 +32,16 @@ ambos.
 S5. **No regresión.** `hough_lineas` conserva firma y resultado. Si no hay par válido, el camino
 actual sigue funcionando sin excepción.
 
+S7. **Nada constante sobre los trazos.** Los anchos cambian entre trazos de una misma imagen y
+entre imágenes: el número de trazos, sus anchos y su separación son datos, no supuestos. Prohibido
+cualquier valor fijo en px, cualquier cantidad esperada de trazos y cualquier igualdad entre ellos.
+La ventana de pertenencia sale del propio pico (su semianchura a media altura), con un piso de un
+bin del acumulador, que es la resolución del dato y no una cota elegida.
+
+S8. **Trazo principal = par de mayor evidencia.** Se mide el par con más votos sumados, que es el
+mismo criterio relativo de Hough. Anclar en la candidata principal de `hough_lineas` es incorrecto:
+esa candidata puede ser el borde exterior de la zona clara y no una orilla de trazo.
+
 S6. **Modelo puro.** Sin `gi`, `Gtk`, `Gdk`, `Adw` ni `cairo`; sin bucles anidados por píxel.
 Identificadores, comentarios y docstrings en español. Tipado en todas las firmas.
 
@@ -134,3 +144,22 @@ Sin (2), `medir_trazo` converge al centro de masa de la media franja.
 L10. **Hipótesis abierta del usuario:** analizar la inversión de tonos de la imagen. Relevante
 porque `separar_orillas` separa por signo del gradiente y los trazos oscuros sobre fondo claro
 pueden invertir qué orilla cae en cada grupo; conviene verificarlo antes de tocar la ventana.
+
+L11. **Corregido y medido.** (1) El par se elige por evidencia; (2) la pertenencia se acota con la
+semianchura a media altura de cada pico (`picos_de_rho` la devuelve, `asignar_puntos_a_orillas` la
+aplica). No hay bug de polaridad: en el trazo oscuro la orilla 276 cae en el grupo B y la 335 en el
+A, que es el orden esperado y simétrico para el ancho.
+
+| Par (rho) | Ancho medido | Orillas ajustadas | Verdad de terreno |
+|---|---|---|---|
+| (276, 335) — 1.º | **58.77 px** | 276.0 / 334.7 | 276 / 334 (58 px) |
+| (432, 491) — 2.º | **58.91 px** | 432.1 / 491.0 | 432 / 490 (58 px) |
+| (433, 491) | 58.02 px | 432.9 / 491.0 | 432 / 490 |
+| nube completa (antes) | 114.878 px | 352.4 / 389.0 | — |
+
+Las ocho semianchuras medidas son de un bin (0.50 px) porque las orillas de esta imagen son nítidas
+de un solo píxel; en un borde inclinado o desenfocado crecen solas, y hay test que lo fija.
+
+**Retirado:** la hipótesis de invertir los tonos no hace falta. Verificado sobre `separar_orillas`:
+la separación por signo del gradiente ya asigna correctamente las dos orillas de un trazo oscuro
+sobre fondo claro.

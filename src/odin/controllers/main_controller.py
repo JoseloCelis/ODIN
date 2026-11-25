@@ -457,17 +457,17 @@ class OdinController:
 
         # Orillas del trazo: máximos locales del perfil de rho en la dirección
         # de la candidata principal, a resolución de bin del acumulador.
-        rhos_picos, conteos_picos = picos_de_rho(puntos_borde, theta)
+        rhos_picos, conteos_picos, semianchuras = picos_de_rho(puntos_borde, theta)
         thetas_picos = np.full(rhos_picos.shape, theta)
+        # El par de mayor evidencia es el trazo principal: es el mismo criterio
+        # relativo que usa Hough para elegir candidata, y evita anclar en un
+        # borde exterior que no es orilla de trazo.
         pares = emparejar_orillas(rhos_picos, thetas_picos, conteos_picos)
-        par = None
-        if pares:
-            principal = int(np.argmin(np.abs(rhos_picos - rho)))
-            par = next((p for p in pares if principal in p), None)
+        par = pares[0] if pares else None
 
         if par is not None:
             mascara_a, mascara_b = asignar_puntos_a_orillas(
-                puntos_refinados, rhos_picos, thetas_picos, par
+                puntos_refinados, rhos_picos, thetas_picos, par, semianchuras
             )
             # Ambas orillas del mismo trazo alimentan la medición; `medir_trazo`
             # las vuelve a separar por signo del gradiente.

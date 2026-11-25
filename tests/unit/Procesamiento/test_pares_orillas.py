@@ -65,7 +65,7 @@ def test_picos_de_rho_no_parte_un_borde_en_dos_bins_contiguos():
     """S2: un borde que cae entre dos bins se reporta como un solo pico."""
     ys = np.arange(60, dtype=float)
     puntos = np.stack([np.full_like(ys, 10.4), ys], axis=1)
-    rhos, conteos = picos_de_rho(puntos, 0.0)
+    rhos, conteos, _ = picos_de_rho(puntos, 0.0)
     assert rhos.size == 1
     assert abs(rhos[0] - 10.4) <= 0.5
     assert int(conteos[0]) == 60
@@ -78,9 +78,44 @@ def test_picos_de_rho_separa_las_dos_orillas_de_un_trazo():
         np.stack([np.full_like(ys, 0.0), ys], axis=1),
         np.stack([np.full_like(ys, 20.5), ys], axis=1),
     ])
-    rhos, _ = picos_de_rho(puntos, 0.0)
+    rhos, _, _ = picos_de_rho(puntos, 0.0)
     assert rhos.size == 2
     assert abs(rhos[1] - rhos[0] - 20.5) <= 0.5
+
+
+def test_semianchura_descarta_la_textura_que_no_sostiene_el_pico():
+    """S1: con la semianchura del pico, la textura interior queda fuera del par."""
+    ys = np.arange(50, dtype=float)
+    orilla_a = np.stack([np.full_like(ys, 0.0), ys], axis=1)
+    orilla_b = np.stack([np.full_like(ys, 20.0), ys], axis=1)
+    # Textura dispersa entre las dos orillas: reparte pocos votos por bin, así
+    # que no sostiene ningún pico del perfil.
+    xs_textura = np.tile(np.arange(1.0, 20.0), 2)
+    textura = np.stack([xs_textura, np.arange(xs_textura.size, dtype=float)], axis=1)
+    puntos = np.vstack([orilla_a, orilla_b, textura])
+    inicio_textura = orilla_a.shape[0] + orilla_b.shape[0]
+
+    rhos, _, semianchuras = picos_de_rho(puntos, 0.0)
+    mascara_a, mascara_b = asignar_puntos_a_orillas(
+        puntos, rhos, np.zeros(rhos.size), (0, 1), semianchuras
+    )
+
+    assert not np.any(mascara_a[inicio_textura:])
+    assert not np.any(mascara_b[inicio_textura:])
+    assert np.count_nonzero(mascara_a) == 50
+    assert np.count_nonzero(mascara_b) == 50
+
+
+def test_semianchura_crece_con_un_borde_desenfocado():
+    """S1: la ventana se adapta; no es una constante en px."""
+    ys = np.arange(200, dtype=float)
+    nitido = np.stack([np.full_like(ys, 10.0), ys], axis=1)
+    _, _, semianchura_nitida = picos_de_rho(nitido, 0.0)
+    # Borde inclinado 2 px a lo largo de 200 filas: su pico se ensancha.
+    inclinado = np.stack([10.0 + 2.0 * ys / 200.0, ys], axis=1)
+    _, _, semianchura_inclinada = picos_de_rho(inclinado, 0.0)
+
+    assert semianchura_inclinada[0] > semianchura_nitida[0]
 
 
 def test_asignar_devuelve_mascaras_complementarias():
