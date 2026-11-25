@@ -292,3 +292,20 @@ la forma exacta `[ODIN] fase | nivel | mensaje`. La propiedad y el truncado de R
 Verificado que falla igual en `azure/main` (`1793861`), así que no viene de esta rama. Apareció al
 repetir la suite porque Hypothesis guarda el ejemplo falsador en su base de datos: desde entonces falla
 siempre en esta máquina. Deuda abierta, ajena a los tres eslabones.
+
+L21. **Cadena mergeada en Azure (2026-11-25), en orden y sin borrar ramas.** PR **27** (`6f7fdd0`), luego
+PR **28** re-apuntado a `main` (`3d18075`), luego PR **26** re-apuntado a `main` (`21cf36a`). Cada hijo se
+re-apuntó **después** de que su base entrara: sin eso el merge aterriza en la rama intermedia y `main` no
+recibe el contenido (lección ya pagada en esta cadena, ahora aplicada a propósito). Ninguna rama borrada.
+
+Verificación por contenido, no por estado del PR: en un worktree limpio de `azure/main` (`21cf36a`) la
+suite da **435 passed, 5 skipped, 0 fallas**, `pares_orillas.py` contiene `seleccionar_trazo_por_intensidad`,
+`test_pares_orillas_prop.py` está presente y el log llega hasta L21.
+
+L22. **Refinamiento de L20: las dos fallas no son deterministas, dependen de la base de ejemplos de
+Hypothesis.** En el worktree limpio **no fallan**; en el repo local sí, porque Hypothesis guarda el ejemplo
+falsador en `.hypothesis/` y lo reproduce al inicio de cada corrida. No es «una falla de `main`» en sentido
+estricto: es una violación de propiedad real que solo se manifiesta cuando el generador produce el caso. La
+del log es la más sólida de las dos y **volverá a aparecer** en cuanto se genere un mensaje `WARNING` de más
+de 200 caracteres, porque la propiedad P1 exige la forma exacta y `bootstrap.py:97` trunca. Consignar
+«1 falla preexistente» o «2» sin decir en qué entorno se midió es impreciso; decir el entorno es parte del dato.
