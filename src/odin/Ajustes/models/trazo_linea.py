@@ -320,6 +320,13 @@ def refinar_bordes_subpixel(
     mascara_valida_offset = mascara_denom & ~mascara_constante
     with np.errstate(divide='ignore', invalid='ignore'):
         d = np.where(mascara_valida_offset, 0.5 * (m0 - m2) / denom, 0.0)
+
+    # Cota: el vértice de una parábola de tres muestras solo es fiable dentro
+    # del intervalo que ellas definen ([-1, 1] px). Fuera de él la vecindad no
+    # describe un pico único —plateau, borde de imagen o una segunda orilla— y
+    # el vértice se dispara: en `600mm_Imag0000.bmp` llega a 125 px y arrastra
+    # el ajuste SVD de la orilla.
+    d = np.clip(d, -0.5, 0.5)
     
     # Aplicar desplazamiento solo donde es significativo
     dx = d * nx
