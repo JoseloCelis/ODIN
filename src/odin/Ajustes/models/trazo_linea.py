@@ -278,7 +278,7 @@ def refinar_bordes_subpixel(
     
     # Muestrear magnitud en los tres puntos usando interpolación bilineal
     def interpolar(img, px, py):
-        """Interpolación bilineal con clipping a bordes de imagen."""
+        """Interpolación bilineal con recorte a los bordes de la imagen."""
         alto, ancho = img.shape
         px = np.clip(px, 0, ancho - 1)
         py = np.clip(py, 0, alto - 1)
@@ -321,11 +321,15 @@ def refinar_bordes_subpixel(
     with np.errstate(divide='ignore', invalid='ignore'):
         d = np.where(mascara_valida_offset, 0.5 * (m0 - m2) / denom, 0.0)
 
-    # Cota: el vértice de una parábola de tres muestras solo es fiable dentro
-    # del intervalo que ellas definen ([-1, 1] px). Fuera de él la vecindad no
-    # describe un pico único —plateau, borde de imagen o una segunda orilla— y
-    # el vértice se dispara: en `600mm_Imag0000.bmp` llega a 125 px y arrastra
-    # el ajuste SVD de la orilla.
+    # Cota: con muestras en -1, 0 y +1, la parábola m(x) = M - a(x - d)^2 tiene
+    # a m1 = m(0) como máximo de las tres exactamente cuando |d| <= 0.5
+    # (m(0) >= m(+1) <=> d <= 0.5 y m(0) >= m(-1) <=> d >= -0.5). Fuera de ese
+    # rango la muestra central NO es el máximo, así que la vecindad no describe
+    # un pico único —plateau, borde de imagen o una segunda orilla— y el vértice
+    # se dispara: en `600mm_Imag0000.bmp` llega a 125 px y arrastra el ajuste
+    # SVD de la orilla. ±0.5 px es entonces el dominio de validez del ajuste y,
+    # a la vez, la mitad del espaciado de muestreo: lo máximo que el dato
+    # sostiene cuando no hay pico que refinar.
     d = np.clip(d, -0.5, 0.5)
     
     # Aplicar desplazamiento solo donde es significativo
