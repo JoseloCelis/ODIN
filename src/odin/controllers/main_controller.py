@@ -20,6 +20,7 @@ import numpy as np
 from gi.repository import Gio, GLib, Gtk
 
 from ..Procesamiento import EvidenciaGeometria, Geometria, clasificar_geometria
+from ..Procesamiento import emparejar_orillas, asignar_puntos_a_orillas
 from ..Ajustes import medir_trazo
 from .plan_geometria import (
     GEOMETRIA_POR_OPCION,
@@ -439,16 +440,45 @@ class OdinController:
             return False
 
         rho, theta, conteo, masa, desviacion = candidata
-        
-        # Medir trazo grueso (T3)
+
+        # Medir trazo grueso (T3): las orillas del trazo son dos picos casi
+        # paralelos de Hough; se mide solo entre los puntos de ese par.
         gx = Gx[puntos_borde[:, 1].astype(int), puntos_borde[:, 0].astype(int)]
         gy = Gy[puntos_borde[:, 1].astype(int), puntos_borde[:, 0].astype(int)]
-        # Refinar bordes con interpolación parabólica
         from odin.Ajustes import refinar_bordes_subpixel
         puntos_refinados = refinar_bordes_subpixel(puntos_borde, gx, gy, MG)
-        
-        # Usar puntos refinados para la medición
-        medicion = medir_trazo(puntos_refinados, gx, gy, theta)
+
+        puntos_para_medir = puntos_refinados
+        gx_para_medir = gx
+        gy_para_medir = gy
+        theta_para_medir = theta
+
+        from ..Procesamiento import picos_de_rho
+
+        # Orillas del trazo: máximos locales del perfil de rho en la dirección
+        # de la candidata principal, a resolución de bin del acumulador.
+        rhos_picos, conteos_picos, semianchuras = picos_de_rho(puntos_borde, theta)
+        thetas_picos = np.full(rhos_picos.shape, theta)
+        # El par de mayor evidencia es el trazo principal: es el mismo criterio
+        # relativo que usa Hough para elegir candidata, y evita anclar en un
+        # borde exterior que no es orilla de trazo.
+        pares = emparejar_orillas(rhos_picos, thetas_picos, conteos_picos)
+        par = pares[0] if pares else None
+
+        if par is not None:
+            mascara_a, mascara_b = asignar_puntos_a_orillas(
+                puntos_refinados, rhos_picos, thetas_picos, par, semianchuras
+            )
+            # Ambas orillas del mismo trazo alimentan la medición; `medir_trazo`
+            # las vuelve a separar por signo del gradiente.
+            mascara_par = mascara_a | mascara_b
+            if np.count_nonzero(mascara_par) >= 2:
+                puntos_para_medir = puntos_refinados[mascara_par]
+                gx_para_medir = gx[mascara_par]
+                gy_para_medir = gy[mascara_par]
+                theta_para_medir = theta
+
+        medicion = medir_trazo(puntos_para_medir, gx_para_medir, gy_para_medir, theta_para_medir)
         
         if medicion is not None:
             # Mostrar ancho y centro del trazo
