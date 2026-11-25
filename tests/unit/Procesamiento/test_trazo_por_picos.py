@@ -7,6 +7,7 @@ from src.odin.Procesamiento.models.pares_orillas import (
     asignar_puntos_a_orillas,
     emparejar_orillas,
     picos_de_rho,
+    seleccionar_trazo_por_intensidad,
 )
 
 ANCHO_TRAZO = 20.5
@@ -99,3 +100,120 @@ def test_sin_los_picos_el_centro_cae_entre_los_trazos():
     assert medicion is not None
     # Centro esperado del par: 10.25 px. Sin acotar cae cerca de 110 px.
     assert _rho_medio(medicion) > 100.0
+
+
+# ---------------------------------------------------------------------------
+# S9: la franja es trazo por su intensidad, no por la evidencia de Hough
+# ---------------------------------------------------------------------------
+
+FONDO_CLARO = 240.0
+FONDO_OSCURO = 40.0
+ALTO_ESCENA = 60
+ANCHO_ESCENA = 140
+
+
+def _imagen_con_franjas(
+    fondo: float, franjas: list[tuple[int, int, float]]
+) -> np.ndarray:
+    """Imagen sintética con franjas verticales: `(x_inicio, x_fin, intensidad)`."""
+    imagen = np.full((ALTO_ESCENA, ANCHO_ESCENA), fondo, dtype=float)
+    for inicio, fin, valor in franjas:
+        imagen[:, inicio:fin] = valor
+    return imagen
+
+
+def _puntos_de_franja(x_inicio: int, x_fin: int, votos: int) -> np.ndarray:
+    """Puntos de borde de las dos orillas de una franja vertical."""
+    ys = np.arange(votos, dtype=float)
+    izquierda = np.stack([np.full_like(ys, float(x_inicio)), ys], axis=1)
+    derecha = np.stack([np.full_like(ys, float(x_fin)), ys], axis=1)
+    return np.vstack([izquierda, derecha])
+
+
+def _candidatas_verticales(
+    puntos: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[tuple[int, int]], np.ndarray]:
+    """Picos, semianchuras y pares para franjas verticales (theta = 0 ⇒ rho = x)."""
+    rhos, conteos, semianchuras = picos_de_rho(puntos, 0.0)
+    thetas = np.zeros(rhos.shape, dtype=float)
+    pares = emparejar_orillas(rhos, thetas, conteos)
+    return rhos, thetas, conteos, pares, semianchuras
+
+
+def _rhos_del_par(rhos: np.ndarray, par: tuple[int, int]) -> tuple[float, float]:
+    """Las dos posiciones del par, redondeadas a la resolución subpíxel."""
+    return tuple(sorted((round(float(rhos[par[0]]), 1), round(float(rhos[par[1]]), 1))))
+
+
+def test_s9_prefiere_la_franja_oscura_sobre_la_de_mas_evidencia() -> None:
+    """El trazo es la franja oscura aunque la franja clara tenga más votos."""
+    imagen = _imagen_con_franjas(
+        FONDO_CLARO, [(40, 60, FONDO_OSCURO), (90, 110, 250.0)]
+    )
+    # La franja clara aporta más puntos de borde: por evidencia sola ganaría ella.
+    puntos = np.vstack(
+        [_puntos_de_franja(40, 60, 30), _puntos_de_franja(90, 110, 40)]
+    )
+    rhos, thetas, conteos, pares, semianchuras = _candidatas_verticales(puntos)
+    assert _rhos_del_par(rhos, pares[0]) == (90.0, 110.0), (
+        "la evidencia sola debería elegir la franja clara, que es el defecto que S9 corrige"
+    )
+
+    par = seleccionar_trazo_por_intensidad(
+        imagen, puntos, rhos, thetas, pares, conteos, semianchuras
+    )
+
+    assert par is not None
+    assert _rhos_del_par(rhos, par) == (40.0, 60.0)
+
+
+def test_s9_deriva_la_polaridad_de_la_imagen() -> None:
+    """Con la escena invertida el trazo es la franja clara, sin intervención."""
+    imagen = _imagen_con_franjas(
+        FONDO_OSCURO, [(40, 60, FONDO_CLARO), (90, 110, 30.0)]
+    )
+    puntos = np.vstack(
+        [_puntos_de_franja(40, 60, 30), _puntos_de_franja(90, 110, 40)]
+    )
+    rhos, thetas, conteos, pares, semianchuras = _candidatas_verticales(puntos)
+    assert _rhos_del_par(rhos, pares[0]) == (90.0, 110.0), (
+        "la franja oscura es la de más votos: con polaridad supuesta ganaría el lado equivocado"
+    )
+
+    par = seleccionar_trazo_por_intensidad(
+        imagen, puntos, rhos, thetas, pares, conteos, semianchuras
+    )
+
+    assert par is not None
+    assert _rhos_del_par(rhos, par) == (40.0, 60.0)
+
+
+def test_s9_se_abstiene_si_ninguna_franja_se_aparta_del_fondo() -> None:
+    """Sin contraste contra el fondo el criterio no adivina: la escena es uniforme."""
+    imagen = _imagen_con_franjas(
+        FONDO_CLARO,
+        [(40, 60, FONDO_CLARO), (90, 110, FONDO_CLARO)],
+    )
+    puntos = np.vstack(
+        [_puntos_de_franja(40, 60, 30), _puntos_de_franja(90, 110, 40)]
+    )
+    rhos, thetas, conteos, pares, semianchuras = _candidatas_verticales(puntos)
+
+    par = seleccionar_trazo_por_intensidad(
+        imagen, puntos, rhos, thetas, pares, conteos, semianchuras
+    )
+
+    assert par is None
+
+
+def test_s9_sin_pares_no_hay_trazo() -> None:
+    """Sin pares de orillas no hay franja que juzgar."""
+    imagen = _imagen_con_franjas(FONDO_CLARO, [(40, 60, FONDO_OSCURO)])
+    puntos = _puntos_de_franja(40, 60, 30)
+    rhos, thetas, conteos, _pares, semianchuras = _candidatas_verticales(puntos)
+
+    par = seleccionar_trazo_por_intensidad(
+        imagen, puntos, rhos, thetas, [], conteos, semianchuras
+    )
+
+    assert par is None
