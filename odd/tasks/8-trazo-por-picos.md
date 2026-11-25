@@ -80,3 +80,31 @@ Picos de rho medidos: 168, 276, 335, 432, 433, 491, 587, 588. El par elegido par
 principal (`rho=587.5`) fue (491, 587), a **96 px**: implausible como un solo trazo con baseline
 ~42 px. El mecanismo está validado en el sintético (20.5 px exactos, ±0.2), pero **la elección del
 par en la imagen real no está validada** contra la verdad de terreno. Esa es la tarea abierta.
+
+L6. **T5 validado con la verdad de terreno de la imagen.** El perfil de intensidad por columna
+confirma que los picos de Hough **son** las orillas reales: los saltos fuertes de intensidad caen
+exactamente en 168, 276, 335, 432, 491 y 587. La imagen tiene tres bandas claras separadas por
+huecos oscuros:
+
+| Banda | Columnas | Ancho |
+|---|---|---|
+| 1 | 168 → 276 | 108 px |
+| 2 | 335 → 432 | 97 px |
+| 3 | 491 → 587 | 96 px |
+
+Huecos: 276→335 y 432→491 (59 px cada uno). Por tanto **el par (491, 587) sí es un trazo** y su
+ancho verdadero es **96 px**, no 42. La baseline de 41.80/44.03 px del operador no corresponde al
+ancho de banda: mide otra magnitud (probablemente el rim brillante interno, con un pico local de
+188.6 en x=170 contra ~135 del resto de la banda).
+
+**El defecto restante no es el emparejamiento sino la pertenencia.** Con el par correcto, las
+máscaras reparten los puntos en el punto medio (539): orilla A cubre x∈[462, 539] (693 puntos, de
+los cuales 474 sí están en el borde 491) y orilla B x∈[539, 587.5] (596 puntos, de los cuales 189
+sí están en 587). El resto son bordes espurios de textura **dentro** de la banda, que la partición
+de Voronoi no puede rechazar porque no hay otro pico cerca. `medir_trazo` ajusta entonces en
+511.6 y 557.9 en lugar de 491 y 587, y reporta 49.390 px en vez de 96.
+
+**Corrección propuesta (pendiente de autorización):** acotar la pertenencia al ancho del propio
+pico — la semianchura a media altura (HWHM) del perfil de rho que sostiene a esa orilla. Es
+s data-driven, no un número en px: un borde nítido tiene HWHM de 1-2 px y uno inclinado se ensancha
+solo; cumple S1 sin introducir una cota fija.
