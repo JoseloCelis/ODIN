@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/JoseloCelis/ODIN/compare/v0.4.1...v0.4.2) (2026-11-25)
+
+
+### Documentation
+
+* **odd:** registrar la deuda de registro cerrada en 037db96 ([cba557d](https://github.com/JoseloCelis/ODIN/commit/cba557d3474ddbfdd6894c12e68be0d8e76fff64))
+
 ## [0.4.1](https://github.com/JoseloCelis/ODIN/compare/v0.4.0...v0.4.1) (2026-11-25)
 
 
