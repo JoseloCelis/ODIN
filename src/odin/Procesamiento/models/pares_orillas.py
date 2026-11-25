@@ -219,7 +219,9 @@ def emparejar_orillas(
         ]
         if not compatibles:
             continue
-        j = min(compatibles, key=lambda k: abs(rhos[i] - rhos[k]))
+        # El desempate es por rho y no por índice: así el emparejamiento depende
+        # solo de las distancias y no del orden en que llegaron las candidatas.
+        j = min(compatibles, key=lambda k: (abs(rhos[i] - rhos[k]), rhos[k]))
         par = (min(i, j), max(i, j))
         if par in vistos:
             continue
