@@ -12,11 +12,14 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Gdk', '4.0')
 
+import argparse
+import logging
 import os
 import sys
 import time
-import argparse
 from pathlib import Path
+
+registro = logging.getLogger(__name__)
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
@@ -333,7 +336,7 @@ class OdinMainWindow(Adw.ApplicationWindow):
     # --- Métodos de la ventana (delegan al controlador) ---
 
     def slider_changed(self, spinRow: Adw.SpinRow) -> None:
-        print(spinRow.get_value())
+        registro.debug("Valor del ajuste: %s", spinRow.get_value())
         self.sigma = int(spinRow.get_value())
 
     def _diametro_cambiado(self, ajuste: Gtk.Adjustment) -> None:
@@ -551,7 +554,7 @@ def main(argv: list[str] | None = None) -> int:
         result = run_bootstrap(__package__)
         validator = DisplayValidator(result.logger)
         validator.validate()
-        print("ODIN 1.0")
+        result.logger.log("DISPLAY_VALID", "INFO", "ODIN 1.0")
         return 0
 
     result = run_bootstrap(__package__)

@@ -7,6 +7,7 @@ widgets GTK.
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from pathlib import Path
@@ -34,6 +35,11 @@ from .plan_geometria import (
 if TYPE_CHECKING:
     from odin.bootstrap import BootstrapResult
     from odin.views.main_window import OdinMainWindow
+
+# Convención de registro del proyecto: `logging.getLogger(__name__)`, igual que
+# `utils/handleImage.py`. Las trazas van al registro configurado en `bootstrap.py`
+# y no a stdout, que en una app GTK no tiene lector.
+registro = logging.getLogger(__name__)
 
 
 class EstadoDiametro:
@@ -189,7 +195,7 @@ class OdinController:
             file = dialog.open_finish(response)
             if file:
                 self.ruta_imagen = file.get_path()
-                print(f"Ruta del archivo: {file.get_path()}")
+                registro.info("Ruta del archivo: %s", file.get_path())
                 is_error, message, self.image_loaded = self.handle.load_GrayImage(
                     self, self.ruta_imagen
                 )
@@ -203,7 +209,7 @@ class OdinController:
                         self.ruta_imagen
                     )
         except GLib.Error as error:
-            print(f"Error al abrir el archivo: {error.message}")
+            registro.error("Error al abrir el archivo: %s", error.message)
 
     def on_process_clicked(self, button: Gtk.Button) -> None:
         if self.ruta_imagen:
@@ -226,7 +232,7 @@ class OdinController:
     def _tarea_pesada_computacional(self) -> None:
         """Ejecuta la matemática pesada en un hilo de fondo."""
         try:
-            print("Hilo secundario: Iniciando convoluciones...")
+            registro.debug("Hilo secundario: Iniciando convoluciones...")
             resultadosProcesamiento = {}
             resultadosProcesamiento["inicial"] = self.handle.matriz_a_pixbuf(
                 self.current_image
@@ -239,10 +245,11 @@ class OdinController:
             uOtsu, _uRosin = self.Otsu.umbralRosinYOtsu(GNMaxS, histo=True)
             HighE, LowE = self.NonMaxSup.DobleThreshold(GNMaxS, uOtsu)
             DetectedEdges = self.DoubleTh.EdgeTrack_Hyst(HighE, LowE)
-            print(
-                f"Bordes: {np.sum(HighE > 0)} fuertes, "
-                f"{np.sum(LowE > 0)} débiles, "
-                f"{np.sum(DetectedEdges > 0)} tras histéresis"
+            registro.info(
+                "Bordes: %d fuertes, %d débiles, %d tras histéresis",
+                int(np.sum(HighE > 0)),
+                int(np.sum(LowE > 0)),
+                int(np.sum(DetectedEdges > 0)),
             )
 
             resultadosProcesamiento["gx"] = self.handle.matriz_a_pixbuf(Gx)
@@ -269,7 +276,7 @@ class OdinController:
 
             puntos_borde = puntos_de_borde(DetectedEdges)
             plan, _evidencia = self._decidir_plan(puntos_borde)
-            print(f"Geometría: {plan.detalle}")
+            registro.info("Geometría: %s", plan.detalle)
 
             # Criterio 3: sin decisión el pipeline se detiene mostrando ambos
             # candidatos con la confianza y la evidencia numérica.
@@ -401,9 +408,14 @@ class OdinController:
             if ambiguedad >= self.aproxHough.UMBRAL_AMBIGUEDAD
             else ""
         )
-        print(
-            f"Radio {radio:.1f} px (diametro {2 * radio:.1f}) [{origen}], "
-            f"pico {pico}, ambiguedad {ambiguedad:.2f}{aviso}"
+        registro.info(
+            "Radio %.1f px (diámetro %.1f) [%s], pico %s, ambiguedad %.2f%s",
+            radio,
+            2 * radio,
+            origen,
+            pico,
+            ambiguedad,
+            aviso,
         )
 
         puntosFiltrados = self.circleFilter.find_circle(
@@ -501,10 +513,12 @@ class OdinController:
         
         if medicion is not None:
             # Mostrar ancho y centro del trazo
-            print(
-                f"Trazo: ancho {medicion.ancho:.2f}px; "
-                f"centro rho {medicion.centro[0] * medicion.centro[3] - medicion.centro[1] * medicion.centro[2]:.1f}px "
-                f"theta {np.arctan2(-medicion.centro[2], medicion.centro[3]):.3f}rad"
+            registro.info(
+                "Trazo: ancho %.2f px; centro rho %.1f px theta %.3f rad",
+                medicion.ancho,
+                medicion.centro[0] * medicion.centro[3]
+                - medicion.centro[1] * medicion.centro[2],
+                float(np.arctan2(-medicion.centro[2], medicion.centro[3])),
             )
             GLib.idle_add(
                 self._mostrar_trazo_resultado, medicion.ancho, medicion.centro
@@ -521,11 +535,18 @@ class OdinController:
             self._reportar_fallo(plan, f"No se pudo ajustar la recta: {error}")
             return False
 
-        print(
-            f"Recta rho {rho:.1f}px, theta {theta:.3f} rad "
-            f"[{conteo} picos, masa {masa}, desviación {desviacion:.2f}px]; "
-            f"dirección ({param_final[2]:.3f}, {param_final[3]:.3f}), "
-            f"{sobrevivientes.shape[0]} puntos, dispersión {r:.3f}px"
+        registro.info(
+            "Recta rho %.1f px, theta %.3f rad [%s picos, masa %s, desviación %.2f px]; "
+            "dirección (%.3f, %.3f), %d puntos, dispersión %.3f px",
+            rho,
+            theta,
+            conteo,
+            masa,
+            desviacion,
+            param_final[2],
+            param_final[3],
+            int(sobrevivientes.shape[0]),
+            r,
         )
         GLib.idle_add(
             self._mostrar_recta_resultado, r, int(sobrevivientes.shape[0])
