@@ -1,5 +1,62 @@
 # Changelog
 
+## [0.4.0](https://github.com/JoseloCelis/ODIN/compare/v0.3.1...v0.4.0) (2026-11-25)
+
+
+### Features
+
+* **procesamiento:** acotar la medicion del trazo a las orillas de su par ([910424e](https://github.com/JoseloCelis/ODIN/commit/910424e04b1ef5185abcd90dbc3484d56390a27b))
+* **procesamiento:** medir el trazo entre las orillas de su par de picos ([c231d57](https://github.com/JoseloCelis/ODIN/commit/c231d574e07c4bd11f49d5b5d9490a0d2d7519c1))
+
+
+### Bug Fixes
+
+* **procesamiento:** elegir el trazo por la intensidad de su franja ([10616aa](https://github.com/JoseloCelis/ODIN/commit/10616aaaba0218ca23591a1197efecd66f59ba67))
+* **procesamiento:** elegir el trazo por la intensidad de su franja ([87acfa9](https://github.com/JoseloCelis/ODIN/commit/87acfa9fad2b510e41e42076857cb58eb7e24043))
+* **procesamiento:** medir el trazo entre sus orillas reales ([e9b705a](https://github.com/JoseloCelis/ODIN/commit/e9b705a872ae84f7a55683f7bc2a9bd7a372ec8f))
+
+
+### Documentation
+
+* **odd:** cerrar la entrega y medir la intermitencia de la propiedad de geometria ([b58fb0f](https://github.com/JoseloCelis/ODIN/commit/b58fb0f47d42809a3a9e707e20001e58a69e58e9))
+* **odd:** cerrar la entrega y medir la intermitencia de la propiedad de geometria ([438cf4e](https://github.com/JoseloCelis/ODIN/commit/438cf4e8170c5a1f99991590bc212c5006f1dacc))
+* **odd:** corregir la verdad de terreno del trazo (58 px, franjas oscuras) ([c393adc](https://github.com/JoseloCelis/ODIN/commit/c393adcf096479f308683b74e53659ffab9e1ea0))
+* **odd:** registrar el merge de la cadena en Azure y matizar las fallas de propiedad ([0ad78c2](https://github.com/JoseloCelis/ODIN/commit/0ad78c28cc0d5a6af1248edf091aeb7aeb2f3277))
+* **odd:** registrar la cadena de PRs y las dos fallas preexistentes ([5478963](https://github.com/JoseloCelis/ODIN/commit/54789638bcce718f009a3d980cfad186f428180c))
+* **odd:** validar el par de orillas contra el perfil de intensidad ([a8ecd25](https://github.com/JoseloCelis/ODIN/commit/a8ecd25ff889664ca2beadee88c282e24af0e574))
+
+## [0.3.1](https://github.com/JoseloCelis/ODIN/compare/v0.3.0...v0.3.1) (2026-11-25)
+
+
+### Documentation
+
+* **ajustes:** justificar la cota de ±0.5 px del vértice parabólico ([0c7fd18](https://github.com/JoseloCelis/ODIN/commit/0c7fd184a2d74f4ea130aed39e2a4bca8825e6b2))
+* **ajustes:** justificar la cota de ±0.5 px y quitar el anglicismo 'clipping' ([75f1217](https://github.com/JoseloCelis/ODIN/commit/75f1217e5c0cd85accf78236f7e655f4ec943b10))
+
+## [0.3.0](https://github.com/JoseloCelis/ODIN/compare/v0.2.0...v0.3.0) (2026-11-25)
+
+
+### Features
+
+* **ajustes:** añadir refinamiento subpíxel de orillas del trazo ([d4f65cb](https://github.com/JoseloCelis/ODIN/commit/d4f65cbca3497aa29d10d72bd36ddd2f5ae5f438)), closes [#28](https://github.com/JoseloCelis/ODIN/issues/28)
+* **ajustes:** resolución subpíxel de las orillas del trazo ([0651c4d](https://github.com/JoseloCelis/ODIN/commit/0651c4d4c03675c8040070aff9d811208282304e))
+
+
+### Bug Fixes
+
+* **bootstrap:** proteger os.uname y acotar advertencias a 200 caracteres ([5f51596](https://github.com/JoseloCelis/ODIN/commit/5f5159679a96e6a64f109493f75fe5d3d7649a77))
+* **imagen:** registrar por logging y evitar el AttributeError del recorte sin arrastre ([ff28b98](https://github.com/JoseloCelis/ODIN/commit/ff28b984ac590d379575f7c76444d072621a6f64))
+* **imagen:** registrar por logging y evitar el AttributeError del recorte sin arrastre ([2c75ec1](https://github.com/JoseloCelis/ODIN/commit/2c75ec1835705c40a65f9f4acc5210d29ade4a02))
+* **procesamiento:** corregir docstrings falsos y quitar parámetros muertos de DerivGauss ([61396f2](https://github.com/JoseloCelis/ODIN/commit/61396f227918ea8061c692c336876b410531d02b))
+* **procesamiento:** corregir docstrings falsos y traducir textos de interfaz al español ([0c637f0](https://github.com/JoseloCelis/ODIN/commit/0c637f06eb9d0df3855e0f99c43205f083441652))
+
+
+### Documentation
+
+* **odd:** registrar el merge de la cadena y la release 0.2.0 ([6acc161](https://github.com/JoseloCelis/ODIN/commit/6acc161a0d6e8911baf5cffebcbb114af7ed781b))
+* **odd:** registrar el merge de la cadena y la release 0.2.0 ([0259d08](https://github.com/JoseloCelis/ODIN/commit/0259d08dc95504b11bd953b71a7265d93eef31ee))
+* **odd:** registrar evidencia de la tarea 9-defectos-kiro ([0760313](https://github.com/JoseloCelis/ODIN/commit/07603132ccd82938ec2e6822ee52bf8fe05e7b50))
+
 ## [0.2.0](https://github.com/JoseloCelis/ODIN/compare/v0.1.4...v0.2.0) (2026-11-24)
 
 
