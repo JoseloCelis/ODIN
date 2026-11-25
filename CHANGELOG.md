@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.3.0](https://github.com/JoseloCelis/ODIN/compare/v0.2.0...v0.3.0) (2026-11-25)
+
+
+### Features
+
+* **ajustes:** añadir refinamiento subpíxel de orillas del trazo ([d4f65cb](https://github.com/JoseloCelis/ODIN/commit/d4f65cbca3497aa29d10d72bd36ddd2f5ae5f438)), closes [#28](https://github.com/JoseloCelis/ODIN/issues/28)
+* **ajustes:** resolución subpíxel de las orillas del trazo ([0651c4d](https://github.com/JoseloCelis/ODIN/commit/0651c4d4c03675c8040070aff9d811208282304e))
+
+
+### Bug Fixes
+
+* **bootstrap:** proteger os.uname y acotar advertencias a 200 caracteres ([5f51596](https://github.com/JoseloCelis/ODIN/commit/5f5159679a96e6a64f109493f75fe5d3d7649a77))
+* **imagen:** registrar por logging y evitar el AttributeError del recorte sin arrastre ([ff28b98](https://github.com/JoseloCelis/ODIN/commit/ff28b984ac590d379575f7c76444d072621a6f64))
+* **imagen:** registrar por logging y evitar el AttributeError del recorte sin arrastre ([2c75ec1](https://github.com/JoseloCelis/ODIN/commit/2c75ec1835705c40a65f9f4acc5210d29ade4a02))
+* **procesamiento:** corregir docstrings falsos y quitar parámetros muertos de DerivGauss ([61396f2](https://github.com/JoseloCelis/ODIN/commit/61396f227918ea8061c692c336876b410531d02b))
+* **procesamiento:** corregir docstrings falsos y traducir textos de interfaz al español ([0c637f0](https://github.com/JoseloCelis/ODIN/commit/0c637f06eb9d0df3855e0f99c43205f083441652))
+
+
+### Documentation
+
+* **odd:** registrar el merge de la cadena y la release 0.2.0 ([6acc161](https://github.com/JoseloCelis/ODIN/commit/6acc161a0d6e8911baf5cffebcbb114af7ed781b))
+* **odd:** registrar el merge de la cadena y la release 0.2.0 ([0259d08](https://github.com/JoseloCelis/ODIN/commit/0259d08dc95504b11bd953b71a7265d93eef31ee))
+* **odd:** registrar evidencia de la tarea 9-defectos-kiro ([0760313](https://github.com/JoseloCelis/ODIN/commit/07603132ccd82938ec2e6822ee52bf8fe05e7b50))
+
 ## [0.2.0](https://github.com/JoseloCelis/ODIN/compare/v0.1.4...v0.2.0) (2026-11-24)
 
 
