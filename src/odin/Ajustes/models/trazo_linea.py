@@ -214,3 +214,127 @@ def medir_trazo(
     centro = np.array([centro_x, centro_y, centro_dir[0], centro_dir[1]])
 
     return MedicionTrazo(linea_a, linea_b, ancho, centro, puntos_a, puntos_b)
+
+
+def refinar_bordes_subpixel(
+    puntos: np.ndarray,
+    gx: np.ndarray,
+    gy: np.ndarray,
+    magnitud: np.ndarray,
+) -> np.ndarray:
+    """Refina la posición de los bordes mediante interpolación parabólica.
+
+    Para cada punto (x, y) con gradiente (gx_i, gy_i), se calcula la normal
+    n = (gx, gy)/|g| y se muestrea la magnitud en tres puntos a lo largo de
+    esta dirección: p0 = p - n, p1 = p, p2 = p + n. Luego se ajusta una
+    parábola y se encuentra el desplazamiento subpíxel óptimo.
+
+    Args:
+        puntos (np.ndarray): Coordenadas enteras (N, 2) de los puntos de borde.
+        gx (np.ndarray): Componente X del gradiente en cada punto (N,).
+        gy (np.ndarray): Componente Y del gradiente en cada punto (N,).
+        magnitud (np.ndarray): Imagen 2D de magnitud del gradiente.
+
+    Returns:
+        np.ndarray: Puntos refinados (N, 2) con coordenadas subpíxel.
+    """
+    puntos = _como_puntos(puntos, "refinar_bordes_subpixel")
+    gx = _como_gradientes(gx, "refinar_bordes_subpixel")
+    gy = _como_gradientes(gy, "refinar_bordes_subpixel")
+
+    if not (gx.shape == gy.shape == (puntos.shape[0],)):
+        raise ValueError(
+            "refinar_bordes_subpixel:: gx y gy deben tener la misma longitud que puntos"
+        )
+
+    if magnitud.ndim != 2:
+        raise ValueError("refinar_bordes_subpixel:: magnitud debe ser una imagen 2D")
+
+    # Calcular la norma del gradiente
+    norma_g = np.hypot(gx, gy)
+    
+    # Inicializar puntos refinados como copia de los originales
+    puntos_refinados = puntos.copy()
+    
+    # Crear máscara para gradientes válidos (no nulos)
+    mascara_valida = norma_g > 1e-12
+    
+    # Procesar solo los puntos con gradiente significativo
+    gx_validos = gx[mascara_valida]
+    gy_validos = gy[mascara_valida]
+    norma_validos = norma_g[mascara_valida]
+    puntos_validos = puntos[mascara_valida]
+    
+    if len(puntos_validos) == 0:
+        return puntos_refinados
+    
+    # Calcular dirección normal unitaria
+    nx = gx_validos / norma_validos
+    ny = gy_validos / norma_validos
+    
+    # Coordenadas de los puntos válidos
+    x = puntos_validos[:, 0]
+    y = puntos_validos[:, 1]
+    
+    # Muestrear magnitud en los tres puntos usando interpolación bilineal
+    def interpolar(img, px, py):
+        """Interpolación bilineal con clipping a bordes de imagen."""
+        alto, ancho = img.shape
+        px = np.clip(px, 0, ancho - 1)
+        py = np.clip(py, 0, alto - 1)
+        
+        x0 = np.floor(px).astype(int)
+        x1 = np.minimum(x0 + 1, ancho - 1)
+        y0 = np.floor(py).astype(int)
+        y1 = np.minimum(y0 + 1, alto - 1)
+        
+        wa = (x1 - px) * (y1 - py)
+        wb = (px - x0) * (y1 - py)
+        wc = (x1 - px) * (py - y0)
+        wd = (px - x0) * (py - y0)
+        
+        return (wa * img[y0, x0] +
+                wb * img[y0, x1] +
+                wc * img[y1, x0] +
+                wd * img[y1, x1])
+    
+    # Puntos para muestreo
+    p0_x = x - nx
+    p0_y = y - ny
+    p1_x = x
+    p1_y = y
+    p2_x = x + nx
+    p2_y = y + ny
+    
+    # Obtener valores de magnitud
+    m0 = interpolar(magnitud, p0_x, p0_y)
+    m1 = interpolar(magnitud, p1_x, p1_y)
+    m2 = interpolar(magnitud, p2_x, p2_y)
+    
+    # Calcular desplazamiento parabólico
+    denom = m0 - 2 * m1 + m2
+    # Evitar división por cero o valores muy pequeños
+    mascara_denom = np.abs(denom) > 1e-12
+    # También evitar cuando todos los valores son iguales (picos planos)
+    mascara_constante = (np.abs(m0 - m1) < 1e-12) & (np.abs(m1 - m2) < 1e-12)
+    mascara_valida_offset = mascara_denom & ~mascara_constante
+    with np.errstate(divide='ignore', invalid='ignore'):
+        d = np.where(mascara_valida_offset, 0.5 * (m0 - m2) / denom, 0.0)
+
+    # Cota: el vértice de una parábola de tres muestras solo es fiable dentro
+    # del intervalo que ellas definen ([-1, 1] px). Fuera de él la vecindad no
+    # describe un pico único —plateau, borde de imagen o una segunda orilla— y
+    # el vértice se dispara: en `600mm_Imag0000.bmp` llega a 125 px y arrastra
+    # el ajuste SVD de la orilla.
+    d = np.clip(d, -0.5, 0.5)
+    
+    # Aplicar desplazamiento solo donde es significativo
+    dx = d * nx
+    dy = d * ny
+    
+    # Actualizar coordenadas refinadas
+    indices_validos = np.where(mascara_valida)[0]
+    puntos_refinados[indices_validos, 0] += dx
+    puntos_refinados[indices_validos, 1] += dy
+    
+    return puntos_refinados
