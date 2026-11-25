@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/JoseloCelis/ODIN/compare/v0.3.0...v0.3.1) (2026-11-25)
+
+
+### Documentation
+
+* **ajustes:** justificar la cota de ±0.5 px del vértice parabólico ([0c7fd18](https://github.com/JoseloCelis/ODIN/commit/0c7fd184a2d74f4ea130aed39e2a4bca8825e6b2))
+* **ajustes:** justificar la cota de ±0.5 px y quitar el anglicismo 'clipping' ([75f1217](https://github.com/JoseloCelis/ODIN/commit/75f1217e5c0cd85accf78236f7e655f4ec943b10))
+
 ## [0.3.0](https://github.com/JoseloCelis/ODIN/compare/v0.2.0...v0.3.0) (2026-11-25)
 
 
