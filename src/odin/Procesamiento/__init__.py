@@ -13,6 +13,13 @@ Alias públicos (según AGENTS.md §4):
     Geometria, EvidenciaGeometria, clasificar_geometria
 """
 
+from .models.pares_orillas import (
+    TOLERANCIA_THETA,
+    SEPARACION_MINIMA,
+    emparejar_orillas,
+    asignar_puntos_a_orillas,
+    picos_de_rho,
+)
 from .models import (
     NonMaxSup,
     LinearInterpolation,
@@ -45,6 +52,11 @@ from .models import (
 )
 
 __all__ = [
+    "TOLERANCIA_THETA",
+    "SEPARACION_MINIMA",
+    "emparejar_orillas",
+    "asignar_puntos_a_orillas",
+    "picos_de_rho",
     "NonMaxSup",
     "LinearInterpolation",
     "DobleThreshold",
