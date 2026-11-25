@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/JoseloCelis/ODIN/compare/v0.4.0...v0.4.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **procesamiento:** no decidir la geometria por ruido de redondeo ([fbe96bb](https://github.com/JoseloCelis/ODIN/commit/fbe96bb21b1c32009c36e1838b104d6750aea82c))
+* **procesamiento:** no decidir la geometria por ruido de redondeo ([01d2f65](https://github.com/JoseloCelis/ODIN/commit/01d2f6584bdd23f5b517951dbc343ed50579b46a))
+
 ## [0.4.0](https://github.com/JoseloCelis/ODIN/compare/v0.3.1...v0.4.0) (2026-11-25)
 
 
