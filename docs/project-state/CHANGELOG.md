@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/JoseloCelis/ODIN/compare/v0.4.2...v0.4.3) (2026-11-26)
+
+
+### Documentation
+
+* versionar docs/ para Azure Wiki ([5cef2a4](https://github.com/JoseloCelis/ODIN/commit/5cef2a4f141a0a9d07c71f60df00a98badc98765))
+
 ## [0.4.2](https://github.com/JoseloCelis/ODIN/compare/v0.4.1...v0.4.2) (2026-11-25)
 
 
