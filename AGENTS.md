@@ -174,7 +174,7 @@ Every patch or PR generated or audited by `opecode`, `agy`, or `harness pi` **MU
   > **Note:** This `AGENTS.md` is the sole technical document maintained in English per user decision.
 * **Strict Typing & Anti-Blob Rule:** Enforce Python Type Hinting across all functions, parameters, and event callbacks. Never rewrite entire files for localized fixes.
 * **System Telemetry:** Enabled via native MCP servers (Shell execution logs, Filesystem graphs, REPL runtimes) for automated RDD verification cycles.
-* **Repository & Files:** Azure DevOps remote (`git@ssh.dev.azure.com:v3/JoseloCelis/ODIN/ODIN`; long-lived branches: `master` as origin HEAD, `main`, `rama`, `rama-Hybrida`). Keep `requirements.txt` in **UTF-8**. Never commit `core.*` crash dumps. Specs live in `.kiro/specs/`.
+* **Repository & Files:** GitHub is the source of truth (`git@github.com:JoseloCelis/ODIN.git`), with **`main` as the only long-lived branch**. Azure DevOps (`git@ssh.dev.azure.com:v3/JoseloCelis/ODIN/ODIN`) is a **read-only mirror** kept in sync by `.github/workflows/mirror-azure.yml`, which pushes with `git push --mirror --force`: it recreates Azure as an exact copy of GitHub, so **every Azure branch not present in GitHub is deleted on each run**. Do not host work, long-lived branches, or PRs on Azure. Keep `requirements.txt` in **UTF-8**. Never commit `core.*` crash dumps. Specs live in `.kiro/specs/`.
 
 ---
 
@@ -211,7 +211,7 @@ Every patch or PR generated or audited by `opecode`, `agy`, or `harness pi` **MU
 * **Language (Code/UI/Commits):** Spanish (this document is the only English exception).
 * **Encoding:** `requirements.txt` in **UTF-8**.
 * **Commits:** Conventional Commits `<type>[<scope>]: <desc>` (`feat`, `fix`, `refactor`, `docs`, `test`, ...). No AI attribution.
-* **Remote:** Azure DevOps (`git@ssh.dev.azure.com:v3/JoseloCelis/ODIN/ODIN`); long-lived branches `master`, `main`, `rama`, `rama-Hybrida`.
+* **Remotes:** GitHub (`github`, `git@github.com:JoseloCelis/ODIN.git`) is the source of truth and the only place where branches, PRs and releases live; `main` is the only long-lived branch. The Azure DevOps remote (`origin`/`azure`, `git@ssh.dev.azure.com:v3/JoseloCelis/ODIN/ODIN`) is a mirror written **only** by the `mirror-azure` workflow. Its `--mirror --force` push deletes any Azure branch missing from GitHub, so nothing durable may live there.
 * **Memory:** Engram = primary source; `MEMORY.md` = concise ledger of *current* state (~50 lines max), rewritten not appended. Conflict → ask user.
 * **Sensitive Data:** Never store keys, tokens, or personal info.
 * **Core Dumps:** `core.*` files must not be committed; add to `.gitignore` or delete.
