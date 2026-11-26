@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/JoseloCelis/ODIN/compare/v0.4.3...v0.4.4) (2026-11-26)
+
+
+### Documentation
+
+* **agentes:** Azure es espejo, main la unica rama de largo plazo ([#54](https://github.com/JoseloCelis/ODIN/issues/54)) ([4e34d0c](https://github.com/JoseloCelis/ODIN/commit/4e34d0ca94c46013f1f8fe7b98b233d2924a6aae))
+
 ## [0.4.3](https://github.com/JoseloCelis/ODIN/compare/v0.4.2...v0.4.3) (2026-11-26)
 
 
