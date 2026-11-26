@@ -19,26 +19,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Generate docs/ (derived, not in GitHub repo)
-        run: |
-          python3 scripts/sync_docs.py --verbose
-
-      - name: Configure Git for Azure push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote add azure "https://${{ secrets.AZURE_DEVOPS_PAT }}@dev.azure.com/${{ secrets.AZURE_ORG }}/${{ secrets.AZURE_PROJECT }}/_git/${{ secrets.AZURE_REPO }}"
-
-      - name: Push to Azure (force mirror, includes generated docs/)
-        run: |
-          git push azure --mirror --force
+      - name: Configure SSH and Push to Azure Repos
         env:
-          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
-          AZURE_ORG: ${{ secrets.AZURE_ORG }}
-          AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
-          AZURE_REPO: ${{ secrets.AZURE_REPO }}
+          SSH_PRIVATE_KEY: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
+          AZURE_SSH_URL: ${{ secrets.AZURE_REPO_SSH_URL }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          cat <<EOF > ~/.ssh/config
+          Host ssh.dev.azure.com
+            HostName ssh.dev.azure.com
+            IdentityFile ~/.ssh/id_rsa
+            IdentitiesOnly yes
+            HostkeyAlgorithms +ssh-rsa
+            PubkeyAcceptedAlgorithms +ssh-rsa
+          EOF
+
+          ssh-keyscan -t rsa ssh.dev.azure.com >> ~/.ssh/known_hosts
+
+          git push "$AZURE_SSH_URL" --mirror --force
