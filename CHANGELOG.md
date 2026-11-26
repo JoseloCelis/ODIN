@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/JoseloCelis/ODIN/compare/v0.4.4...v0.4.5) (2026-11-26)
+
+
+### Bug Fixes
+
+* **ci:** usar PAT en el auto-merge para que el push a main dispare Release-Please ([#56](https://github.com/JoseloCelis/ODIN/issues/56)) ([2067f7f](https://github.com/JoseloCelis/ODIN/commit/2067f7ffb95f033ee1e472b335bd272590738594))
+
 ## [0.4.4](https://github.com/JoseloCelis/ODIN/compare/v0.4.3...v0.4.4) (2026-11-26)
 
 
