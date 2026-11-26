@@ -1,0 +1,42 @@
+name: Mirror to Azure Repos (full repo + docs for Wiki)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Mirror to Azure (with docs/)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout GitHub repo (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure SSH and Push to Azure Repos
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
+          AZURE_SSH_URL: ${{ secrets.AZURE_REPO_SSH_URL }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          cat <<EOF > ~/.ssh/config
+          Host ssh.dev.azure.com
+            HostName ssh.dev.azure.com
+            IdentityFile ~/.ssh/id_rsa
+            IdentitiesOnly yes
+            HostkeyAlgorithms +ssh-rsa
+            PubkeyAcceptedAlgorithms +ssh-rsa
+          EOF
+
+          ssh-keyscan -t rsa ssh.dev.azure.com >> ~/.ssh/known_hosts
+
+          git push "$AZURE_SSH_URL" --mirror --force

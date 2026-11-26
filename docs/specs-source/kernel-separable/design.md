@@ -1,0 +1,119 @@
+<!-- ESTADO:INICIO -->
+> **Estado del documento** — veredicto: `ABSORBIDO` · versión ODD: `odd/specs/kernel-separable.md` · fecha: 2026-11-21
+>
+> | Requisito | Estado | Evidencia |
+> |---|---|---|
+> | R1 | IMPLEMENTADO | `deri_gauss.py:34-42`: `gk` normalizado por su suma; simetría por construcción (`i` en `[-n, n]`) |
+> | R2 | IMPLEMENTADO | `deri_gauss.py:40-43`: `dgk = -(1/σ²)·i·gk`, antisimétrico |
+> | R3 | IMPLEMENTADO | `deri_gauss.py:51-52`; contraste ejecutado en esta reverificación: `sepFilter2D` con correlación sobre `−dgk` y `BORDER_CONSTANT`, y referencia NumPy, discrepancia ≤ 7e-17 (5 casos, σ=1.0–4.0). Sin cross-check automático versionado |
+> | R4 | IMPLEMENTADO | `convolucion.py:25-34`: soporte inclusivo `j ∈ [i−nk, i+nk]` con `j0/j1` recortados (zero-padding); equivalencia con `np.convolve(mode='same')` ≤ 6e-17 en tamaños habituales |
+> | R5 | IMPLEMENTADO | `deri_gauss.py:21-23`: retorno temprano antes de `n = round(3σ)` (`:30`); tests `tests/unit/Preprocesamiento/test_etapa1_kernel_separable.py:17,25` |
+> | R6 | PENDIENTE | no implementado: el módulo es modelo puro sin visualización (`deri_gauss.py:1-8`); no existen `wc = min(640, nc−1)` ni `wr` |
+>
+> **Pendientes:** R6 — visualización de cortes (`wc = min(640, nc−1)`, `wr` acotada a `[0, nr−1]`): nunca implementada; el módulo no contiene código de visualización.
+> **Divergencias verificadas:** R4.2 — el caso literal `n ≤ 2·nk` es inconsistente con la referencia `np.convolve(mode='same')` (p.ej. imagen 5×5 con σ=3: referencia (5,19) vs salida (5,5)); el código calcula la convolución completa centrada con zero-padding. R3/R4 — no hay cross-check automático versionado: `tests/utilidades.py:44-49` define `derivada_gaussiana_referencia` y ningún test la invoca (0 usos).
+> **Inciertos:** ninguno.
+<!-- ESTADO:FIN -->
+
+# Design Document — kernel-separable
+
+## 1. Contexto y causa raíz de las divergencias
+
+La etapa ① fue traducida de MATLAB a Python. En MATLAB los rangos
+`j0:j1` son **inclusivos**; en Python `range(j0, j1)` es **exclusivo** del
+extremo superior. Esa diferencia de convención, no la matemática, originó el
+defecto crítico (D1).
+
+### D1 (CRÍTICA) — Tap extremo perdido en `ConvR`/`ConvC`
+
+```python
+j1 = i + nk          # MATLAB: j1 era el último índice INCLUIDO
+for j in range(j0, j1):   # Python: excluye j1 → nunca evalúa j = i+nk
+```
+
+Consecuencia: el tap `gk[0]` (distancia `+nk`) jamás se usa. El filtro resulta
+**asimétrico** y su respuesta efectiva está **desplazada medio píxel**, con
+error medido de hasta ~12% frente a la referencia en un ejemplo mínimo
+(evidencia en `tasks.md`).
+
+Corrección: `j1 = i + nk + 1` con clamps `j0 = max(i−nk, 0)` y
+`j1 = min(i+nk+1, n)`. La semántica de borde se mantiene: zero-padding
+(los `j` fuera de `[0, n−1]` simplemente no aportan, equivalente a sumar 0).
+
+### D2 — Guard de `sigma` después de dimensionar arrays
+
+`if sigma <= 0: return zeros` está **debajo** de
+`gk = np.zeros((n*2)+1)` con `n = 3*sigma`. Con `sigma = −1`,
+`np.zeros(−1)` lanza `ValueError` antes de llegar al guard.
+Corrección: mover el guard al inicio, antes de calcular `n`.
+
+### D3 — Columna hardcodeada en la visualización
+
+`dibujar_en_hilo_principal` grafica `DGY[:,640]`. Cualquier imagen con menos de
+641 columnas produce `IndexError`. Corrección: `wc = min(640, nc−1)` y acotar
+también `wr` a `[0, nr−1]`.
+
+### Divergencias registradas, fuera de alcance de este fix
+
+### D4 (RESUELTO) — `sigma` flotante no truena
+
+`range(3*sigma)` con `sigma` flotante lanzaba `TypeError` (MATLAB lo permitía).
+Decisión de producto: `n = round(3*sigma)` y `nk = round(3*sigma)` (redondeo al
+entero más cercano, como MATLAB) antes de dimensionar `gk`/`dgk`, en
+`src/odin/Preprocesamiento/models/deri_gauss.py`. `sigma` se conserva como
+float en todos los cálculos matemáticos (`s2`, `dgk`, `gk`). Con
+`sigma <= 0` el guard corto-circuito retorna ceros antes de cualquier cálculo
+(D2). Verificado con `sigma ∈ {1.5, 2.5}` (forma, finitud, tipo `ndarray`).
+- **D5**: convolución en Python puro (~57M de iteraciones para 1280×720).
+  Candidata futura a `scipy.ndimage`/`cv2.sepFilter2D` o NumPy vectorizado.
+- **D6**: `Convolucion/ConvR.py` y `Convolucion/ConvC.py` son duplicados exactos
+  — muertos: nada los importa (`Convolucion/__init__.py` está comentado y
+  `DeriGauss` importa el módulo `Conv2D`, que define sus propias copias).
+- Código muerto: bloques comentados, variables `ds`/`l` sin uso.
+
+## 2. Decisiones
+
+- **Arreglar en su sitio, no reemplazar por `cv2.sepFilter2D`** (D5): cambiar de
+  implementación alteraría el manejo de bordes y el perfil de rendimiento a la
+  vez que la corrección; hacerlo en un solo paso impide aislar la causa de
+  cualquier regresión. La sustitución queda como tarea futura con su propia
+  verificación.
+- **Mantener el zero-padding** como semántica de borde: es la que el código
+  actual ya simula y la que esperan las etapas siguientes; cambiarla es un
+  requerimiento nuevo, no un fix.
+- **Los duplicados muertos (D6) no se tocan en este fix**: se documentan para
+  una limpieza dedicada.
+
+## 3. Verificación (estrategia)
+
+Sin suite de tests en el proyecto, la verificación es por **ejecución de baterías
+numéricas** contra referencias independientes:
+
+1. **AC 4.2** — 100 casos aleatorios (tamaños y kernels variados) + casos de
+   borde, comparando `ConvR`/`ConvC` contra correlación de NumPy de referencia
+   (zero-padding, rango inclusivo), tolerancia relativa `1e-12`.
+2. **AC 3.3** — cross-check de `DerivGauss` completo contra
+   `cv2.sepFilter2D` con `BORDER_CONSTANT` en el interior, tolerancia `1e-9`.
+3. **AC 5.1/5.2** — `sigma ∈ {0, −1}` retorna ceros sin excepción.
+4. **AC 6.1/6.2** — visualización con imagen angosta (p.ej. 100×80) sin
+   `IndexError`.
+5. Humo de importación del paquete `odin.Preprocesamiento`.
+
+### 3.1 Corrección del AC 3.3 tras la primera ejecución (lección registrada)
+
+La primera ejecución del cross-check contra OpenCV **falsificó el AC tal como
+estaba escrito**: dio diferencias de ~0.14 en el interior. El árbitro con un
+delta (impulso unitario) demostró que:
+
+- La respuesta de ODIN **sí** coincide con la teoría de la convolución 2D
+  separable (mi "teoría" inicial olvidó el factor `gk[centro]≈0.133` del passe Y
+  en Δy=0 — el error estaba en la expectativa, no en el código).
+- OpenCV calcula **correlación**; ODIN calcula **convolución** (la convención
+  del `conv2` de MATLAB original). Con kernel antisimétrico (`dgk`) ambas
+  difieren **exactamente por el signo**.
+
+AC 3.3 corregido: comparar contra `sepFilter2D` con correlación sobre `−dgk`;
+resultado tras el fix D1: `max|diff| = 6.9e-17 / 5.6e-17` (imagen completa,
+bordes incluidos — el zero-padding de `BORDER_CONSTANT` coincide con el de
+ODIN). Impacto medido del fix D1: la versión previa tenía `0.0015` de error
+interior frente a la misma referencia.
