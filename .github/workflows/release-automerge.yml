@@ -6,8 +6,8 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  pull-requests: read
 
 jobs:
   automerge:
@@ -17,7 +17,11 @@ jobs:
     steps:
       - name: Habilitar auto-merge (squash) al quedar los checks en verde
         env:
-          GH_TOKEN: ${{ github.token }}
+          # Debe ser un PAT, no github.token: un merge hecho con GITHUB_TOKEN no
+          # dispara workflows, y el push a main tiene que disparar Release-Please
+          # para crear el tag y la release. Con GITHUB_TOKEN el PR se mergea y
+          # la version queda sin tag ni release, en silencio.
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
         run: |
           gh pr merge "${{ github.event.pull_request.number }}" \
             --repo "${{ github.repository }}" \
