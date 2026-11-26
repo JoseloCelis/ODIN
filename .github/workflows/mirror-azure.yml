@@ -1,0 +1,44 @@
+name: Mirror to Azure Repos (full repo + docs for Wiki)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Mirror to Azure (with docs/)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout GitHub repo (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate docs/ (derived, not in GitHub repo)
+        run: |
+          python3 scripts/sync_docs.py --verbose
+
+      - name: Configure Git for Azure push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add azure "https://${{ secrets.AZURE_DEVOPS_PAT }}@dev.azure.com/${{ secrets.AZURE_ORG }}/${{ secrets.AZURE_PROJECT }}/_git/${{ secrets.AZURE_REPO }}"
+
+      - name: Push to Azure (force mirror, includes generated docs/)
+        run: |
+          git push azure --mirror --force
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          AZURE_ORG: ${{ secrets.AZURE_ORG }}
+          AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
+          AZURE_REPO: ${{ secrets.AZURE_REPO }}
