@@ -81,4 +81,10 @@ jobs:
             echo "PR #$ABIERTO ya estaba abierto: el push lo actualizó."
           fi
 
-          gh pr merge "$BRANCH" --auto --squash || echo "auto-merge no aplicable (¿ya estaba habilitado?)"
+          if ! gh pr merge "$BRANCH" --auto --squash; then
+            if [ "$(gh pr view "$BRANCH" --json autoMergeRequest --jq '.autoMergeRequest != null')" != "true" ]; then
+              echo "::error::No se pudo habilitar auto-merge y no estaba habilitado: el PR queda abierto y los espejos de docs/ desincronizados hasta que alguien lo mergee a mano."
+              exit 1
+            fi
+            echo "auto-merge ya estaba habilitado."
+          fi
