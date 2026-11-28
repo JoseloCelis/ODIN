@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.7](https://github.com/JoseloCelis/ODIN/compare/v0.4.6...v0.4.7) (2026-11-28)
+
+
+### Documentation
+
+* **agentes:** corregir la regla de tokens y recortar la sección 10 al mínimo indispensable ([#61](https://github.com/JoseloCelis/ODIN/issues/61)) ([8b73deb](https://github.com/JoseloCelis/ODIN/commit/8b73debd29fe4b92ed4fbca17174133b48ead87e))
+
 ## [0.4.6](https://github.com/JoseloCelis/ODIN/compare/v0.4.5...v0.4.6) (2026-11-28)
 
 
