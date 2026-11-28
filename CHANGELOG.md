@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.6](https://github.com/JoseloCelis/ODIN/compare/v0.4.5...v0.4.6) (2026-11-28)
+
+
+### Documentation
+
+* **agentes:** documentar el sistema de diseno, el tooling MCP y las decisiones durables ([#59](https://github.com/JoseloCelis/ODIN/issues/59)) ([ee97954](https://github.com/JoseloCelis/ODIN/commit/ee9795437c8cd9bba2a4c1c2da2f1bb19cb24337))
+
 ## [0.4.5](https://github.com/JoseloCelis/ODIN/compare/v0.4.4...v0.4.5) (2026-11-26)
 
 
