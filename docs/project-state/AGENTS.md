@@ -244,8 +244,9 @@ The design system is **specified locally and mirrored in Penpot**, which is the 
 * **Penpot:** file `Desktop Dashboard`, page `Page 1`, 7 boards of 1440×900 on a 1540×1000 grid: `01 System Design Tokens` (0,0) · `02 Dashboard Principal` (1540,0) · `05 Pipeline Workflow` (3080,0) · `03 Recorte Interactivo` (0,1000) · `04 Resultados del Pipeline` (1540,1000) · `06 Interactive Viewer` (3080,1000) · `07 Operador Compacto` (0,2000).
 
 ### Library contract
-* **Colors:** canonical `color/*` set (21 tokens; base, canvas, surfaces, borders, accent, text, state + board-specific roles such as `bg-viewer`, `grid-line`, `success-bg`).
-* **Typography:** 8 styles `typography/*` (title 32/700, heading 20/700, metric 20/600, subtitle 16/400, body 13/400, body-strong 13/600, caption 11/400, label 10/600).
+* **Colors:** canonical `color/*` set (21 tokens; base, canvas, surfaces, borders, accent, text, state + board-specific roles such as `bg-viewer`, `grid-line`, `success-bg`). Token set `ODIN System` holds 59 tokens in 8 types.
+* **Typography:** 8 text styles `typography/*` (title 32/700, heading 20/700, metric 20/600, subtitle 16/400, body 13/400, body-strong 13/600, caption 11/400, label 10/600).
+* **Type scale (tokens):** 13 `type/*` sizes — `label` 10 · `caption` 11 · `small` 12 · `body` 13 · `ui` 14 · `body-lg` 15 · `subtitle` 16 · `heading-sm` 18 · `heading` 20 · `heading-md` 22 · `heading-lg` 24 · `display` 28 · `title` 32. Every text on all seven boards carries the `fontSize` token whose value matches its size (264 texts, 0 literals).
 * **Components:** exactly 4 masters, taken from the reference strip at the bottom of board `01` (`Boton/sugerido`, `Boton/plano`, `Boton/destructivo`, `Badge/estado`). Never recreate them elsewhere.
 * **Font:** always the internal id `sourcesanspro`; the display name `'Source Sans Pro'` is **rejected** by the Plugin API.
 
@@ -258,7 +259,7 @@ The design system is **specified locally and mirrored in Penpot**, which is the 
 3. **A child's `x`/`y` are PAGE coordinates**, not parent-relative: after `appendChild`, place with `penpotUtils.setParentXY(shape, x, y)`. Assigning `x` directly leaves `parentX` hugely negative and `clipContent` renders an empty board.
 4. **Never apply a fallback token** to shapes whose current value you do not know: `applyToken` overwrites the value, so a “default” token is a destructive edit, not a no-op.
 5. **The plugin exposes no history/undo API.** Any destructive mistake can only be reverted by the human with `Ctrl+Z` in the Penpot UI — so verify the intent before mutating, not after.
-6. **Known limitation, board `04` only:** `applyToken(token, ['fontSize'])` changes the applied value but **does not persist the binding** (`shape.tokens` keeps only `fill`, even when re-read); the other boards persist fully. Consequence: board `04`'s 42 texts carry literal sizes (histogram `11×10 · 12×1 · 13×29 · 18×1 · 22×1`) and only `fill` is tokenized. That state is verified healthy: its PNG exports to exactly **91,288 base64 chars = 68,465 bytes**. Do not paper over it with a fallback token — a direct value edit is the only lever, and the export must be re-measured afterwards.
+6. **Token application is value-sensitive, not board-sensitive.** `applyToken(token, ['fontSize'])` persists only when the token's value matches the shape's current size; applying a token of a different value (for example a generic `type.body` to every text) silently rewrites the size and then looks like a persistence failure. Always resolve the token by value (`parseFloat(token.value) === parseFloat(shape.fontSize)`); if the size has no token, **create the token first** — never leave the literal and never apply a neighbouring value. Verified on board `04`: 0/42 bindings with the wrong-token approach, **42/42** after matching by value, with the PNG byte-identical (`91,288` base64 = `68,465` bytes).
 
 ### Verification protocol
 * **PNG export is deterministic:** two consecutive exports of the same board return identical bytes, so byte parity is a valid “nothing moved” proof. Bind tokens whose value equals the current literal and require the board PNG to be byte-identical afterwards.
