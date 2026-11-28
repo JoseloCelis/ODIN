@@ -1,0 +1,84 @@
+name: Sincronizar espejos de docs/
+
+# Release Please escribe solo el CHANGELOG.md de la raiz, pero docs/project-state/
+# es un espejo que exige scripts/sync_docs.py. Sin este workflow cada release
+# dejaba el espejo atras y habia que abrir un PR a mano (paso con 0.4.7 y 0.4.8).
+#
+# El ruleset "Bloqueo Main" tiene bypass_actors vacio: nadie puede empujar a main
+# directamente, asi que la unica ruta es un PR. Se usa MY_RELEASE_PLEASE_TOKEN y
+# no github.token porque un PR abierto con GITHUB_TOKEN no dispara workflows y
+# sus checks requeridos nunca correrian: el auto-merge quedaria esperando para
+# siempre.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: docs-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Sincronizar espejos
+        run: python3 scripts/sync_docs.py
+
+      - name: Detectar cambios
+        id: diff
+        run: |
+          if [ -z "$(git status --porcelain docs/)" ]; then
+            echo "Los espejos ya estaban sincronizados."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git status --short docs/
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Abrir o actualizar el PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          BRANCH="chore/espejos-docs"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add -A docs/
+          git commit -m "docs(project-state): sincronizar espejos de docs/"
+          git push --force origin "$BRANCH"
+
+          ABIERTO="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$ABIERTO" ]; then
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs(project-state): sincronizar espejos de docs/" \
+              --body "PR automático: los espejos de \`docs/\` quedaron atrás de sus fuentes canónicas.
+
+          Lo abrió \`scripts/sync_docs.py\` desde el workflow **Sincronizar espejos de docs/**, disparado por el push a \`main\` (normalmente el commit de Release Please).
+
+          Sólo contiene copias generadas: no hay edición manual. Se mergea solo cuando \`test\` y \`security\` pasan."
+          else
+            echo "PR #$ABIERTO ya estaba abierto: el push lo actualizó."
+          fi
+
+          gh pr merge "$BRANCH" --auto --squash || echo "auto-merge no aplicable (¿ya estaba habilitado?)"
