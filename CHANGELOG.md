@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.8](https://github.com/JoseloCelis/ODIN/compare/v0.4.7...v0.4.8) (2026-11-28)
+
+
+### Documentation
+
+* **diseno:** actualizar el contrato del sistema de diseño al estado real ([#63](https://github.com/JoseloCelis/ODIN/issues/63)) ([48de38d](https://github.com/JoseloCelis/ODIN/commit/48de38d00ebb9a8ac067664a82704b183e8b4363))
+
 ## [0.4.7](https://github.com/JoseloCelis/ODIN/compare/v0.4.6...v0.4.7) (2026-11-28)
 
 
