@@ -239,45 +239,34 @@ Every patch or PR generated or audited by `opecode`, `agy`, or `harness pi` **MU
 The design system is **specified locally and mirrored in Penpot**, which is the shared visual surface, not a separate source of truth.
 
 ### Sources of truth
-* **Tokens (local):** `design/system.md` — concise token contract.
-* **Artboards (local):** `design/odin-desktop-dashboard/*.html` — 6 static artboards (`01-pipeline-workflow`, `02-interactive-viewer`, `03-compact-operator`, `04-system-tokens`, `05-recorte-interactivo`, `06-resultados-pipeline`).
-* **Penpot:** file `Desktop Dashboard`, page `Page 1`, 7 boards of 1440×900 on a 1540×1000 grid: `01 System Design Tokens` (0,0) · `02 Dashboard Principal` (1540,0) · `05 Pipeline Workflow` (3080,0) · `03 Recorte Interactivo` (0,1000) · `04 Resultados del Pipeline` (1540,1000) · `06 Interactive Viewer` (3080,1000) · `07 Operador Compacto` (0,2000).
-
-### Library contract
-* **Colors:** canonical `color/*` set (21 tokens; base, canvas, surfaces, borders, accent, text, state + board-specific roles such as `bg-viewer`, `grid-line`, `success-bg`).
-* **Typography:** 8 styles `typography/*` (title 32/700, heading 20/700, metric 20/600, subtitle 16/400, body 13/400, body-strong 13/600, caption 11/400, label 10/600).
-* **Components:** exactly 4 masters, taken from the reference strip at the bottom of board `01` (`Boton/sugerido`, `Boton/plano`, `Boton/destructivo`, `Badge/estado`). Never recreate them elsewhere.
-* **Font:** always the internal id `sourcesanspro`; the display name `'Source Sans Pro'` is **rejected** by the Plugin API.
-
-### Scale criterion
-**Tokens are the single source of truth for scales**; library `typography/*` styles are the application layer and must mirror the token values exactly. Scales follow the `gtk-ui-ux-engineer` skill: spacing `4/8/12/16/24/32`; radius `sm 4 · md 8 · lg 12 · xl 16 · full 9999`, with semantic `radius.button 6` (Adwaita renders 6, not 8), `radius.card 12`, `radius.window 12`; type scale as listed above; weights `400/600/700`.
+* **Contract:** `design/system.md` — every token, scale and measured export length. **Do not duplicate it here.**
+* **Artboards:** `design/odin-desktop-dashboard/*.html` — 6 static files, visual reference only.
+* **Penpot:** file `Desktop Dashboard`, page `Page 1`, boards `01`–`07` of 1440×900 on a 1540×1000 grid.
+* **Library:** token set `ODIN System` (59 tokens, 8 types), 4 component masters, font id `sourcesanspro` (the display name is rejected by the Plugin API).
 
 ### Mutation rules (non-negotiable)
-1. **`penpot_api_info` before every Plugin API call.** Never guess a property or member name; the API rejects wrong ones at runtime and one wrong guess already cost 138 failed shapes.
-2. **`applyToken(token, ['all'])` fails for `borderRadius` tokens** — pass all four corners (`borderRadiusTopLeft`, `borderRadiusTopRight`, `borderRadiusBottomRight`, `borderRadiusBottomLeft`).
-3. **A child's `x`/`y` are PAGE coordinates**, not parent-relative: after `appendChild`, place with `penpotUtils.setParentXY(shape, x, y)`. Assigning `x` directly leaves `parentX` hugely negative and `clipContent` renders an empty board.
-4. **Never apply a fallback token** to shapes whose current value you do not know: `applyToken` overwrites the value, so a “default” token is a destructive edit, not a no-op.
-5. **The plugin exposes no history/undo API.** Any destructive mistake can only be reverted by the human with `Ctrl+Z` in the Penpot UI — so verify the intent before mutating, not after.
-6. **Known limitation, board `04` only:** `applyToken(token, ['fontSize'])` changes the applied value but **does not persist the binding** (`shape.tokens` keeps only `fill`, even when re-read); the other boards persist fully. Consequence: board `04`'s 42 texts carry literal sizes (histogram `11×10 · 12×1 · 13×29 · 18×1 · 22×1`) and only `fill` is tokenized. That state is verified healthy: its PNG exports to exactly **91,288 base64 chars = 68,465 bytes**. Do not paper over it with a fallback token — a direct value edit is the only lever, and the export must be re-measured afterwards.
+1. **`penpot_api_info` before every Plugin API call** — never guess a member; one wrong guess already cost 138 failed shapes.
+2. **Never apply a token whose value differs from the shape's current value.** It rewrites the value silently and then looks like a persistence failure. Resolve the token by value (`parseFloat(token.value) === parseFloat(shape.fontSize)`); if that size has no token, **create the token first** — never leave the literal, never apply a neighbour. Verified on board `04`: 0/42 bindings the wrong way, **42/42** matching by value, PNG byte-identical.
+3. **`applyToken(…, ['all'])` fails for `borderRadius`** — pass the four corners.
+4. **No history/undo API:** a mistake is revertible only by the human with `Ctrl+Z`. Verify intent before mutating, not after.
 
-### Verification protocol
-* **PNG export is deterministic:** two consecutive exports of the same board return identical bytes, so byte parity is a valid “nothing moved” proof. Bind tokens whose value equals the current literal and require the board PNG to be byte-identical afterwards.
-* **Structural invariants:** `misaligned == 0` (`|parentX − x + boardX| ≤ 2`) and `outside == 0` (no child overflowing its board). An empty board exports ~9.5 KB of base64; a populated one 84–134 KB.
-* **Measured reference set (2026-11-28, base64 length = `ceil(bytes/3)*4`):** `01` 133,100 · `02` 89,904 · `03` 75,272 · `04` 91,288 · `05` 123,808 · `06` 110,492 · `07` 112,736. Compare against these before accepting any mutation; note that `91,288` is base64 characters, not raw bytes (`68,465`).
-* **The model cannot see images.** Never claim a board “looks right”: report measured facts and ask the human to confirm visually.
+### Verification
+* The PNG export is deterministic: binding a same-value token must leave the board **byte-identical**. Measured lengths, layout invariants (`setParentXY`, `misaligned`/`outside`) and the gotcha list live in `design/system.md` and the `penpot-uiux-design` skill.
+* **The model cannot see images.** Report measured facts; ask the human to confirm visually.
+* **There is no comparison against the past:** `export_shape` returns current bytes only, never historical ones, so causality can only be proven forward (change a token, measure, change it back, measure).
 
 ---
 
 ## 11. Tooling: MCP & Context7
 
-MCP servers (`penpot`, `context7`, `web_search`) are **codemode-only**: they are not declared as direct tools, so they are called from a codemode script. Discover them with `searchTools("<topic>")` and confirm arguments with `describeTool(name)`; never invent a tool name.
+MCP servers (`penpot`, `context7`, `web_search`) are **codemode-only**: call them from a codemode script via `searchTools`/`describeTool`, never invent a tool name.
 
-* **`context7` is for any library, not just Penpot.** Use it whenever current documentation beats memory: GTK4/PyGObject, Libadwaita, NumPy/SciPy, OpenCV, Penpot Plugin API, Vercel AI SDK/Zod/Zustand, CI actions. Resolve the library id first (`/org/project`), keep to at most three calls per question, and prefer it over recalling an API from memory.
-* **For the Penpot Plugin API, `penpot_api_info` wins** over Context7 because it reads the version actually installed; Context7 is for conceptual or cross-version checks.
-* **Subagents can reach these MCP servers through codemode** (verified 2026-11-28), so MCP-bound mechanical work is delegable; probe reachability before assuming otherwise.
-* **Local automation:** `gentle-ai` and `gga` live in `~/.local/bin`; a local (unversioned) `.git/hooks/pre-commit` runs `gga run` when available and never breaks commits when it is not.
-* **Code intelligence — `codegraph`**: this repo is indexed in `.codegraph/` (134 files · 1,507 nodes · 3,237 edges), excluded through `.git/info/exclude` and never committed. Reach it as the MCP tool `codegraph_explore` (codemode; a session started before the registration needs `/reload`) or through the `codegraph` CLI for everything that surface does not expose: `sync` (after a batch of edits), `status`, `query`, `node`, `callers`, `callees`, `impact`, `explore`, `context`, `unlock`. If the tool inventory does not list it, that is not evidence it is missing — check the CLI before falling back to `grep -rn`.
-* **Machine-scoped configuration does not belong in this file.** MCP servers, agent directories, credentials and their file paths are personal to the workstation: they live in Engram with `scope: personal`. This document records only what the *project* needs, so that it stays portable across the three workstations.
+* **Subagents reach these MCP servers through codemode** (`high_level_overview`, `penpot_api_info`, `execute_code`, `export_shape`), so Penpot work is delegable; probe reachability before assuming otherwise.
+* **The token set lives at `library.local.tokens.sets[0]`** and `applyToken` resolves tokens **by name, not by id** — the active set and theme decide the actual token.
+
+* **`context7` for any library** (GTK4/PyGObject, NumPy/SciPy, OpenCV, Penpot, CI actions): resolve the id first, at most three calls per question, prefer it over recalling an API. For the Penpot Plugin API, **`penpot_api_info` wins** — it reads the installed version.
+* **`codegraph`** (`.codegraph/`, git-excluded) for cross-file or symbol questions: MCP tool or CLI (`callers`, `impact`, `node`, `sync`). If the tool is missing, check the CLI before falling back to `grep -rn`.
+* **Machine-scoped configuration** (MCP servers, credentials, paths) lives in Engram `scope: personal`, never in this file.
 
 ---
 
@@ -288,7 +277,7 @@ MCP servers (`penpot`, `context7`, `web_search`) are **codemode-only**: they are
 * **Documented debt, do not delete:** in `DerivGauss`, a floating `sigma` breaks the kernel, so it is cast with `int(3*sigma)` (see `.kiro/specs/kernel-separable/design.md`, D4).
 * **Kiro tends to truncate or rewrite `AGENTS.md`:** review this file after any Kiro session.
 * **Never `jq -r … > file` without validating output:** a Gemini `null` once destroyed the `v0.1.0` release notes.
-* **Release notes** are generated by Gemini as direct Markdown (`systemInstruction` + `sed`/`awk` trimming from the first heading); the workflow fails before `gh release edit` if no model answers. Working models are `gemini-3.5-flash-lite` / `gemini-flash-lite-latest`; `2.5-*` returns 404 and `3.6/3.7/3.8-flash` return 503.
+* **Release notes** are generated by Gemini as Markdown; working models `gemini-3.5-flash-lite` / `gemini-flash-lite-latest` (`2.5-*` → 404, `3.6`–`3.8-flash` → 503), and the workflow fails before `gh release edit` if no model answers.
 * **`hypothesis` is installed via apt** (`python3-hypothesis`): the agent sandbox has no `sudo`.
-* **When a shared helper changes signature, re-check every caller** before declaring the task done.
+* **Verify what a subagent reports:** a worker once claimed "0 unbound literals" while board `04` still had 42 texts with no size binding.
 * **gentle-ai release assets use underscores** (`gentle-ai_<v>_linux_amd64.tar.gz`); the hyphenated variant returns a 9-byte error. Global `gentle-ai install` fails on the `pi` preflight — narrow it with `--agents <one mapped>`.
