@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.9](https://github.com/JoseloCelis/ODIN/compare/v0.4.8...v0.4.9) (2026-11-28)
+
+
+### Documentation
+
+* **agentes:** documentar los espejos de docs/ y sincronizar el CHANGELOG con 0.4.8 ([#66](https://github.com/JoseloCelis/ODIN/issues/66)) ([6ab6c0a](https://github.com/JoseloCelis/ODIN/commit/6ab6c0aa1d2c4b25558057db66de98d7264556c3))
+
 ## [0.4.8](https://github.com/JoseloCelis/ODIN/compare/v0.4.7...v0.4.8) (2026-11-28)
 
 
