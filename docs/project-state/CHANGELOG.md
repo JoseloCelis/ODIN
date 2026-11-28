@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.7](https://github.com/JoseloCelis/ODIN/compare/v0.4.6...v0.4.7) (2026-11-28)
+
+
+### Documentation
+
+* **agentes:** corregir la regla de tokens y recortar la sección 10 al mínimo indispensable ([#61](https://github.com/JoseloCelis/ODIN/issues/61)) ([8b73deb](https://github.com/JoseloCelis/ODIN/commit/8b73debd29fe4b92ed4fbca17174133b48ead87e))
+
+## [0.4.6](https://github.com/JoseloCelis/ODIN/compare/v0.4.5...v0.4.6) (2026-11-28)
+
+
+### Documentation
+
+* **agentes:** documentar el sistema de diseno, el tooling MCP y las decisiones durables ([#59](https://github.com/JoseloCelis/ODIN/issues/59)) ([ee97954](https://github.com/JoseloCelis/ODIN/commit/ee9795437c8cd9bba2a4c1c2da2f1bb19cb24337))
+
+## [0.4.5](https://github.com/JoseloCelis/ODIN/compare/v0.4.4...v0.4.5) (2026-11-26)
+
+
+### Bug Fixes
+
+* **ci:** usar PAT en el auto-merge para que el push a main dispare Release-Please ([#56](https://github.com/JoseloCelis/ODIN/issues/56)) ([2067f7f](https://github.com/JoseloCelis/ODIN/commit/2067f7ffb95f033ee1e472b335bd272590738594))
+
 ## [0.4.4](https://github.com/JoseloCelis/ODIN/compare/v0.4.3...v0.4.4) (2026-11-26)
 
 
